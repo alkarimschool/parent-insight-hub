@@ -44,6 +44,8 @@ function Dashboard() {
     queryFn: async () => {
       return await getStats();
     },
+    refetchInterval: 3000,
+    refetchOnWindowFocus: true,
   });
 
   const recentList = useQuery({
@@ -51,6 +53,8 @@ function Dashboard() {
     queryFn: async () => {
       return await getRecent({ data: { level: selectedLevel } });
     },
+    refetchInterval: 3000,
+    refetchOnWindowFocus: true,
   });
 
   const s = stats.data;

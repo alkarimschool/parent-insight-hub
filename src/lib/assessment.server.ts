@@ -189,26 +189,25 @@ export async function submitAndAnalyze(data: SubmitInput) {
 
   // 1. Save / Upsert Parent in Supabase
   let parent: any = null;
-  const { data: pInserted, error: pErr } = await supabaseAdmin
+  const { data: pExisting } = await supabaseAdmin
     .from("parents")
-    .insert({ name: data.parent.name, whatsapp: data.parent.whatsapp })
-    .select()
-    .single();
+    .select("*")
+    .eq("whatsapp", data.parent.whatsapp)
+    .maybeSingle();
 
-  if (pErr) {
-    const { data: pExisting } = await supabaseAdmin
-      .from("parents")
-      .select("*")
-      .eq("whatsapp", data.parent.whatsapp)
-      .maybeSingle();
-
-    if (pExisting) {
-      parent = pExisting;
-      await supabaseAdmin.from("parents").update({ name: data.parent.name }).eq("id", parent.id);
-    } else {
-      throw new Error("Gagal menyimpan data orang tua di Supabase: " + pErr.message);
-    }
+  if (pExisting) {
+    parent = pExisting;
+    await supabaseAdmin.from("parents").update({ name: data.parent.name }).eq("id", parent.id);
   } else {
+    const { data: pInserted, error: pErr } = await supabaseAdmin
+      .from("parents")
+      .insert({ name: data.parent.name, whatsapp: data.parent.whatsapp })
+      .select()
+      .single();
+
+    if (pErr || !pInserted) {
+      throw new Error("Gagal menyimpan data orang tua di Supabase: " + (pErr?.message || "Error"));
+    }
     parent = pInserted;
   }
 

@@ -51,6 +51,8 @@ function ParentsList() {
       const data = await getParentsList();
       return data ?? [];
     },
+    refetchInterval: 3000,
+    refetchOnWindowFocus: true,
   });
 
   const rows = (list.data ?? []).filter((r: any) => {
