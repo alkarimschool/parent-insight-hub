@@ -42,3 +42,16 @@ export const updateParentChildFn = createServerFn({ method: "POST" })
     const { updateParentChildAssessmentServer } = await import("./admin.server");
     return updateParentChildAssessmentServer(data);
   });
+
+export const getAdminParentsFn = createServerFn({ method: "POST" })
+  .handler(async () => {
+    const { getAdminParentsListServer } = await import("./admin.server");
+    return getAdminParentsListServer();
+  });
+
+export const deleteAssessmentFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const { deleteAssessmentServer } = await import("./admin.server");
+    return deleteAssessmentServer(data.id);
+  });

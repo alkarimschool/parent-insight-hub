@@ -1,14 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { ExternalLink, Edit3, Trash2, Save, X, Search, CheckCircle2, GraduationCap } from "lucide-react";
+import { ExternalLink, Edit3, Trash2, Save, X, Search, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { updateParentChildFn } from "@/lib/admin.functions";
+import { updateParentChildFn, getAdminParentsFn, deleteAssessmentFn } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/parents")({
   component: ParentsList,
@@ -16,21 +15,18 @@ export const Route = createFileRoute("/_authenticated/admin/parents")({
 
 function ParentsList() {
   const qc = useQueryClient();
+  const getParentsList = useServerFn(getAdminParentsFn);
   const updateParentChild = useServerFn(updateParentChildFn);
+  const deleteAssessment = useServerFn(deleteAssessmentFn);
 
   const [q, setQ] = useState("");
   const [editingRow, setEditingRow] = useState<any>(null);
   const [saving, setSaving] = useState(false);
 
   const list = useQuery({
-    queryKey: ["admin-parents-list"],
+    queryKey: ["admin-parents-list-rpc"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("assessments")
-        .select("id, status, education_level, created_at, parent_id, child_id, parents(id, name, whatsapp), children(id, name, birth_date, school)")
-        .order("created_at", { ascending: false })
-        .limit(300);
-
+      const data = await getParentsList();
       return data ?? [];
     },
   });
@@ -76,7 +72,7 @@ function ParentsList() {
       });
       toast.success("Data berhasil diperbarui di Supabase.");
       setEditingRow(null);
-      qc.invalidateQueries({ queryKey: ["admin-parents-list"] });
+      qc.invalidateQueries({ queryKey: ["admin-parents-list-rpc"] });
     } catch (err: any) {
       toast.error(err?.message ?? "Gagal menyimpan perubahan.");
     } finally {
@@ -86,10 +82,13 @@ function ParentsList() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus data asesmen ini dari database?")) return;
-    const { error } = await supabase.from("assessments").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Data asesmen berhasil dihapus.");
-    qc.invalidateQueries({ queryKey: ["admin-parents-list"] });
+    try {
+      await deleteAssessment({ data: { id } });
+      toast.success("Data asesmen berhasil dihapus.");
+      qc.invalidateQueries({ queryKey: ["admin-parents-list-rpc"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Gagal menghapus data.");
+    }
   };
 
   return (

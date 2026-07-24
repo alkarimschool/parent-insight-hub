@@ -1,13 +1,18 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export async function updateAiSettingsServer(data: {
-  id?: string;
   model: string;
   temperature: number;
   max_tokens: number;
   is_active: boolean;
 }) {
-  if (data.id && data.id !== "default") {
+  const { data: existing } = await supabaseAdmin
+    .from("ai_settings")
+    .select("id")
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
     const { error } = await supabaseAdmin
       .from("ai_settings")
       .update({
@@ -17,7 +22,7 @@ export async function updateAiSettingsServer(data: {
         is_active: data.is_active,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", data.id);
+      .eq("id", existing.id);
     if (error) throw new Error(error.message);
   } else {
     const { error } = await supabaseAdmin.from("ai_settings").insert({
@@ -32,14 +37,19 @@ export async function updateAiSettingsServer(data: {
 }
 
 export async function updateWaSettingsServer(data: {
-  id?: string;
   api_url: string;
   api_token: string;
   sender: string;
   template: string;
   is_active: boolean;
 }) {
-  if (data.id && data.id !== "default") {
+  const { data: existing } = await supabaseAdmin
+    .from("whatsapp_settings")
+    .select("id")
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
     const { error } = await supabaseAdmin
       .from("whatsapp_settings")
       .update({
@@ -50,7 +60,7 @@ export async function updateWaSettingsServer(data: {
         is_active: data.is_active,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", data.id);
+      .eq("id", existing.id);
     if (error) throw new Error(error.message);
   } else {
     const { error } = await supabaseAdmin.from("whatsapp_settings").insert({
@@ -65,19 +75,67 @@ export async function updateWaSettingsServer(data: {
   return { ok: true };
 }
 
-export async function updateWebsiteSettingsServer(data: any) {
-  const { error } = await supabaseAdmin
+export async function updateWebsiteSettingsServer(data: {
+  site_name: string;
+  logo_text: string;
+  contact_email: string;
+  contact_whatsapp: string;
+  copyright: string;
+}) {
+  const { data: existing } = await supabaseAdmin
     .from("website_settings")
-    .upsert({ id: 1, data, updated_at: new Date().toISOString() });
-  if (error) throw new Error(error.message);
+    .select("id")
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabaseAdmin
+      .from("website_settings")
+      .update({
+        site_name: data.site_name,
+        logo_text: data.logo_text,
+        contact_email: data.contact_email,
+        contact_whatsapp: data.contact_whatsapp,
+        copyright: data.copyright,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existing.id);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabaseAdmin.from("website_settings").insert({
+      site_name: data.site_name,
+      logo_text: data.logo_text,
+      contact_email: data.contact_email,
+      contact_whatsapp: data.contact_whatsapp,
+      copyright: data.copyright,
+    });
+    if (error) throw new Error(error.message);
+  }
   return { ok: true };
 }
 
 export async function updateHomepageSettingsServer(data: any) {
-  const { error } = await supabaseAdmin
+  const { data: existing } = await supabaseAdmin
     .from("homepage_settings")
-    .upsert({ id: 1, data, updated_at: new Date().toISOString() });
-  if (error) throw new Error(error.message);
+    .select("id")
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabaseAdmin
+      .from("homepage_settings")
+      .update({
+        content: data,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existing.id);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabaseAdmin.from("homepage_settings").insert({
+      content: data,
+    });
+    if (error) throw new Error(error.message);
+  }
   return { ok: true };
 }
 
@@ -146,5 +204,53 @@ export async function updateParentChildAssessmentServer(data: {
       .eq("id", data.assessment_id);
   }
 
+  return { ok: true };
+}
+
+export async function getAdminParentsListServer() {
+  try {
+    const { data: assessments } = await supabaseAdmin
+      .from("assessments")
+      .select("id, status, education_level, created_at, parent_id, child_id, parents(id, name, whatsapp), children(id, name, birth_date, school)")
+      .order("created_at", { ascending: false })
+      .limit(300);
+
+    if (assessments && assessments.length > 0) {
+      return assessments;
+    }
+  } catch (e) {
+    console.warn("Could not query assessments join", e);
+  }
+
+  // Fallback: Query parents & children directly if assessments join is empty
+  try {
+    const { data: parents } = await supabaseAdmin
+      .from("parents")
+      .select("id, name, whatsapp, created_at, children(id, name, school)")
+      .order("created_at", { ascending: false });
+
+    if (parents && parents.length > 0) {
+      return parents.map((p: any) => ({
+        id: p.id,
+        status: "analyzed",
+        education_level: "TK",
+        created_at: p.created_at || new Date().toISOString(),
+        parent_id: p.id,
+        child_id: p.children?.[0]?.id || null,
+        parents: { id: p.id, name: p.name, whatsapp: p.whatsapp },
+        children: p.children?.[0] ? { id: p.children[0].id, name: p.children[0].name, school: p.children[0].school } : { name: "Anak", school: "-" }
+      }));
+    }
+  } catch (e) {
+    console.warn("Could not query parents fallback", e);
+  }
+
+  return [];
+}
+
+export async function deleteAssessmentServer(id: string) {
+  if (!id) return { ok: false };
+  const { error } = await supabaseAdmin.from("assessments").delete().eq("id", id);
+  if (error) throw new Error(error.message);
   return { ok: true };
 }
