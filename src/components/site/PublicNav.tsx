@@ -6,7 +6,7 @@ export function PublicNav({ siteName, logoText }: { siteName: string; logoText: 
 
   const desktopNavs = [
     { label: "Beranda", to: "/", exact: true, icon: Home },
-    { label: "Assessment", to: "/assessment", icon: ClipboardEdit },
+    { label: "Assessment", to: "/assessment/level", icon: ClipboardEdit },
     { label: "Hasil", to: "/results", icon: BarChart3 },
     { label: "Tentang", to: "/about", icon: Lightbulb },
     { label: "Admin", to: "/admin", icon: UserCheck },
@@ -44,7 +44,7 @@ export function PublicNav({ siteName, logoText }: { siteName: string; logoText: 
             );
           })}
           <Link
-            to="/assessment"
+            to="/assessment/level"
             className="ml-2 inline-flex items-center rounded-full bg-gradient-hero px-4 py-2 text-xs font-semibold text-primary-foreground shadow-soft transition hover:opacity-90"
           >
             Mulai Assessment

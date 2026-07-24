@@ -49,7 +49,7 @@ function Home() {
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              to="/assessment"
+              to="/assessment/level"
               className="group inline-flex items-center gap-2 rounded-full bg-gradient-hero px-6 py-3 text-sm font-semibold text-primary-foreground shadow-elevated transition hover:-translate-y-0.5"
             >
               {h?.hero_cta ?? "Mulai Assessment"}
@@ -133,7 +133,7 @@ function Home() {
           <h2 className="text-3xl font-bold sm:text-4xl">Siap memahami perkembangan anak Anda?</h2>
           <p className="mx-auto mt-3 max-w-xl opacity-90">Selesaikan asesmen dalam 5–10 menit dan dapatkan laporan personal.</p>
           <Link
-            to="/assessment"
+            to="/assessment/level"
             className="mt-6 inline-flex items-center gap-2 rounded-full bg-background px-6 py-3 text-sm font-semibold text-primary shadow-soft transition hover:-translate-y-0.5"
           >
             {h?.hero_cta ?? "Mulai Assessment"}

@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   },
   {
     label: "Assessment",
-    to: "/assessment",
+    to: "/assessment/level",
     icon: ClipboardEdit,
   },
   {

@@ -6,66 +6,134 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
-import { Plus, Trash2, Save } from "lucide-react";
+import { Plus, Trash2, Save, Filter, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
+import { EducationLevel } from "@/lib/questions.data";
 
 export const Route = createFileRoute("/_authenticated/admin/questions")({ component: QuestionsAdmin });
 
 function QuestionsAdmin() {
   const qc = useQueryClient();
+  const [levelFilter, setLevelFilter] = useState<string>("TK");
+
   const data = useQuery({
-    queryKey: ["admin-questions"],
+    queryKey: ["admin-questions-list", levelFilter],
     queryFn: async () => {
+      let q = supabase.from("questions").select("*").order("order_index");
+      if (levelFilter !== "ALL") {
+        q = q.eq("education_level", levelFilter);
+      }
       const [{ data: qs }, { data: cats }] = await Promise.all([
-        supabase.from("questions").select("*").order("order_index"),
+        q,
         supabase.from("question_categories").select("*").order("order_index"),
       ]);
       return { qs: qs ?? [], cats: cats ?? [] };
     },
   });
+
   const [text, setText] = useState("");
   const [catId, setCatId] = useState("");
+  const [addLevel, setAddLevel] = useState<EducationLevel>("TK");
 
   const add = async () => {
     if (!text) return toast.error("Isi pertanyaan.");
     const max = Math.max(0, ...(data.data?.qs ?? []).map((q: any) => q.order_index ?? 0));
-    const { error } = await supabase.from("questions").insert({ text, category_id: catId || null, order_index: max + 1 });
+    const targetLevel = levelFilter !== "ALL" ? levelFilter : addLevel;
+
+    const { error } = await supabase.from("questions").insert({
+      text,
+      category_id: catId || null,
+      order_index: max + 1,
+      education_level: targetLevel,
+      is_active: true,
+    });
     if (error) return toast.error(error.message);
     setText("");
-    toast.success("Ditambahkan.");
-    qc.invalidateQueries({ queryKey: ["admin-questions"] });
+    toast.success(`Pertanyaan jenjang ${targetLevel} ditambahkan.`);
+    qc.invalidateQueries({ queryKey: ["admin-questions-list"] });
   };
+
   const update = async (id: string, patch: any) => {
     const { error } = await supabase.from("questions").update(patch).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Disimpan.");
-    qc.invalidateQueries({ queryKey: ["admin-questions"] });
+    toast.success("Pertanyaan berhasil diperbarui.");
+    qc.invalidateQueries({ queryKey: ["admin-questions-list"] });
   };
+
   const remove = async (id: string) => {
     if (!confirm("Hapus pertanyaan ini?")) return;
     const { error } = await supabase.from("questions").delete().eq("id", id);
     if (error) return toast.error(error.message);
-    qc.invalidateQueries({ queryKey: ["admin-questions"] });
+    toast.success("Pertanyaan dihapus.");
+    qc.invalidateQueries({ queryKey: ["admin-questions-list"] });
   };
 
   const cats = data.data?.cats ?? [];
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold">Kelola Pertanyaan</h1>
-      <div className="mt-4 rounded-2xl border border-border/60 bg-card p-5 shadow-soft">
-        <div className="grid gap-3 sm:grid-cols-[1fr_200px_auto]">
-          <Input placeholder="Pertanyaan baru…" value={text} onChange={(e) => setText(e.target.value)} />
-          <select className="rounded-md border border-input bg-background px-3 text-sm" value={catId} onChange={(e) => setCatId(e.target.value)}>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Kelola Pertanyaan Assessment</h1>
+          <p className="text-sm text-muted-foreground">Filter dan kelola pertanyaan berdasarkan jenjang pendidikan (TK, SD, SMP, SMA).</p>
+        </div>
+        {/* LEVEL FILTER TABS */}
+        <div className="flex items-center gap-1.5 rounded-full border border-border/60 bg-card p-1 shadow-soft">
+          {["TK", "SD", "SMP", "SMA", "ALL"].map((lvl) => (
+            <button
+              key={lvl}
+              type="button"
+              onClick={() => setLevelFilter(lvl)}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                levelFilter === lvl
+                  ? "bg-gradient-hero text-primary-foreground shadow-soft"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`}
+            >
+              {lvl === "ALL" ? "Semua Jenjang" : lvl}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ADD QUESTION BOX */}
+      <div className="rounded-3xl border border-border/60 bg-card p-5 shadow-soft space-y-4">
+        <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+          <Plus className="h-4 w-4 text-primary" /> Tambah Pertanyaan Baru ({levelFilter === "ALL" ? addLevel : levelFilter})
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-[1fr_160px_140px_auto]">
+          <Input placeholder="Teks pertanyaan baru…" value={text} onChange={(e) => setText(e.target.value)} />
+          <select className="rounded-xl border border-input bg-background px-3 text-xs font-medium" value={catId} onChange={(e) => setCatId(e.target.value)}>
             <option value="">-- Kategori --</option>
             {cats.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
-          <Button onClick={add}><Plus className="mr-1 h-4 w-4" /> Tambah</Button>
+          {levelFilter === "ALL" && (
+            <select className="rounded-xl border border-input bg-background px-3 text-xs font-medium" value={addLevel} onChange={(e) => setAddLevel(e.target.value as EducationLevel)}>
+              <option value="TK">Jenjang TK</option>
+              <option value="SD">Jenjang SD</option>
+              <option value="SMP">Jenjang SMP</option>
+              <option value="SMA">Jenjang SMA</option>
+            </select>
+          )}
+          <Button onClick={add} className="rounded-full bg-gradient-hero shadow-soft">
+            <Plus className="mr-1 h-4 w-4" /> Simpan
+          </Button>
         </div>
       </div>
-      <div className="mt-6 space-y-3">
-        {data.data?.qs?.map((q: any) => (
-          <Row key={q.id} q={q} cats={cats} onUpdate={(p: any) => update(q.id, p)} onDelete={() => remove(q.id)} />
-        ))}
+
+      {/* QUESTIONS LIST */}
+      <div className="space-y-3">
+        {data.isLoading ? (
+          <div className="py-12 text-center text-muted-foreground">Memuat pertanyaan…</div>
+        ) : data.data?.qs?.length === 0 ? (
+          <div className="rounded-2xl border border-border/60 bg-card p-8 text-center text-sm text-muted-foreground">
+            Belum ada pertanyaan terdaftar untuk jenjang {levelFilter}. Tambahkan pertanyaan baru di atas.
+          </div>
+        ) : (
+          data.data?.qs?.map((q: any) => (
+            <Row key={q.id} q={q} cats={cats} onUpdate={(p: any) => update(q.id, p)} onDelete={() => remove(q.id)} />
+          ))
+        )}
       </div>
     </div>
   );
@@ -74,20 +142,35 @@ function QuestionsAdmin() {
 function Row({ q, cats, onUpdate, onDelete }: any) {
   const [t, setT] = useState(q.text);
   const [c, setC] = useState(q.category_id ?? "");
+  const [lvl, setLvl] = useState(q.education_level ?? "TK");
   const [o, setO] = useState(q.order_index);
+
   return (
     <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-soft">
-      <div className="grid gap-3 sm:grid-cols-[1fr_180px_100px_auto]">
-        <Textarea value={t} onChange={(e) => setT(e.target.value)} rows={2} />
-        <select className="rounded-md border border-input bg-background px-3 text-sm" value={c} onChange={(e) => setC(e.target.value)}>
+      <div className="grid gap-3 sm:grid-cols-[1fr_140px_100px_80px_auto]">
+        <Textarea value={t} onChange={(e) => setT(e.target.value)} rows={2} className="text-xs" />
+        <select className="rounded-xl border border-input bg-background px-3 text-xs" value={c} onChange={(e) => setC(e.target.value)}>
           <option value="">-- Kategori --</option>
           {cats.map((cat: any) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
         </select>
-        <Input type="number" value={o} onChange={(e) => setO(Number(e.target.value))} />
+        <select className="rounded-xl border border-input bg-background px-3 text-xs font-semibold" value={lvl} onChange={(e) => setLvl(e.target.value)}>
+          <option value="TK">TK</option>
+          <option value="SD">SD</option>
+          <option value="SMP">SMP</option>
+          <option value="SMA">SMA</option>
+        </select>
+        <Input type="number" value={o} onChange={(e) => setO(Number(e.target.value))} className="text-xs" />
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-xs"><Switch checked={q.is_active} onCheckedChange={(v) => onUpdate({ is_active: v })} /> Aktif</label>
-          <Button size="sm" variant="outline" onClick={() => onUpdate({ text: t, category_id: c || null, order_index: o })}><Save className="h-4 w-4" /></Button>
-          <Button size="sm" variant="destructive" onClick={onDelete}><Trash2 className="h-4 w-4" /></Button>
+          <label className="flex items-center gap-1.5 text-xs font-medium cursor-pointer">
+            <Switch checked={q.is_active} onCheckedChange={(v) => onUpdate({ is_active: v })} />
+            Aktif
+          </label>
+          <Button size="sm" variant="outline" onClick={() => onUpdate({ text: t, category_id: c || null, education_level: lvl, order_index: o })} className="rounded-full">
+            <Save className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="destructive" onClick={onDelete} className="rounded-full">
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>

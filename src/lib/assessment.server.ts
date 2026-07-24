@@ -1,9 +1,17 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { callLovableAiJson } from "./ai.server";
+import { EducationLevel } from "./questions.data";
 
 interface SubmitInput {
   parent: { name: string; whatsapp: string };
-  child: { name: string; gender: "L" | "P"; birth_date: string; school?: string; class_name?: string };
+  child: {
+    name: string;
+    gender: "L" | "P";
+    birth_date: string;
+    school?: string;
+    class_name?: string;
+    education_level?: EducationLevel;
+  };
   answers: Array<{ question_id: string; score: number }>;
 }
 
@@ -11,44 +19,64 @@ function isUUID(str: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
-function generateFallbackResult(childName: string, parentName: string, avgScore: number) {
+function generateFallbackResult(childName: string, parentName: string, avgScore: number, level: EducationLevel = "TK") {
   const isHigh = avgScore >= 3.8;
+
+  const academicTexts: Record<EducationLevel, string> = {
+    TK: `${childName} menunjukkan tahap perkembangan calistung awal yang positif, mengenal huruf dasar, angka, warna, bentuk, serta daya ingat yang baik untuk usia TK.`,
+    SD: `${childName} memiliki kemampuan literasi dan numerasi yang berkembang baik, mampu membaca, memahami cerita, serta menyelesaikan soal matematika dasar Sekolah Dasar.`,
+    SMP: `${childName} menunjukkan pemikiran kritis awal, mampu menganalisis materi pelajaran SMP, serta menyelesaikan tugas proyek dan pemecahan masalah dengan baik.`,
+    SMA: `${childName} memiliki kesiapan akademik tingkat lanjut yang solid, pemikiran analitis, inisiatif riset/studi mandiri, serta wawasan kesiapan kuliah dan karier.`,
+  };
+
+  const academicDevTexts: Record<EducationLevel, string> = {
+    TK: `Berikan stimulasi calistung berbasis permainan interaktif (flashcard, membaca dongeng bersama, dan membilang benda harian 10-15 menit).`,
+    SD: `Dampingi latihan membaca pemahaman cerita pendek, soal cerita numerasi, dan buatkan jadwal belajar mandiri tanpa distraction gadget.`,
+    SMP: `Dorong anak melakukan pemetaan konsep (mind mapping), diskusi berpikir kritis tentang isu hangat, dan penyusunan target nilai akademik pribadi.`,
+    SMA: `Fasilitasi tryout ujian masuk perguruan tinggi, eksplorasi jurusan kuliah/karier, latihan public speaking, serta riset literatur mandiri.`,
+  };
+
   return {
-    ringkasan: `Berdasarkan hasil asesmen perkembangan, ${childName} menunjukkan tahap tumbuh kembang yang ${isHigh ? "sangat optimal" : "baik dan terus berkembang"}. Anak aktif berinteraksi, memiliki rasa ingin tahu tinggi, serta siap mengeksplorasi aktivitas baru.`,
+    ringkasan: `Berdasarkan hasil asesmen perkembangan jenjang ${level}, ${childName} menunjukkan performa tumbuh kembang yang ${isHigh ? "sangat optimal" : "baik dan terus berkembang"}. Anak aktif, memiliki potensi positif, dan siap menghadapi tantangan belajar.`,
     kelebihan: [
-      `Kemampuan berkomunikasi dan menyampaikan pendapat dengan jelas.`,
-      `Minat eksplorasi awal pada pengenalan huruf, angka, dan benda sekitar.`,
-      `Kemandirian dalam aktivitas harian dan merapikan perlengkapan pribadi.`
+      `Kemampuan komunikasi dan pemahaman materi yang baik sesuai jenjang ${level}.`,
+      `Minat eksplorasi tinggi dalam aktivitas belajar dan pengembangan diri.`,
+      `Kemandirian dan tanggung jawab yang positif.`
     ],
     area_pengembangan: [
-      `Melatih regulasi emosi saat menghadapi tantangan atau kegiatan baru.`,
-      `Meningkatkan daya tahan konsentrasi dan stimulasi calistung dasar (membaca, menulis, berhitung) melalui metode bermain.`
+      `Meningkatkan konsistensi manajemen waktu dan daya tahan fokus belajar.`,
+      `Melatih regulasi emosi saat menghadapi situasi kompetitif atau tekanan tinggi.`
     ],
-    kecerdasan_sosial: `${childName} menunjukkan interaksi sosial yang hangat, mudah bergaul dengan teman seusia, dan mulai memahami empati.`,
-    kecerdasan_emosional: `Anak memiliki tingkat percaya diri yang positif. Pendampingan orang tua akan membantu memperkuat ketahanan emosionalnya.`,
-    kemampuan_komunikasi: `Anak dapat memahami instruksi sederhana dan berani bercerita tentang aktivitas sehari-hari.`,
-    kemandirian: `Tingkat kemandirian anak sudah baik untuk usia 3-6 tahun dalam melakukan rutinitas sehari-hari.`,
-    kemampuan_belajar: `Anak memiliki ketekunan yang baik dan antusias ketika mempelajari hal-hal baru.`,
-    kemampuan_akademik: `${childName} menunjukkan pengenalan yang baik pada huruf dasar, angka, warna, bentuk, serta kemampuan membilang benda sederhana sesuai dengan usianya.`,
-    potensi: `Potensi dominan terlihat pada kecerdasan sosial-komunikasi, literasi awal/akademik dasar, dan kemandirian.`,
+    kemampuan_akademik: academicTexts[level],
+    kecerdasan_sosial: `${childName} menunjukkan interaksi sosial yang sehat, mampu bekerja sama dalam tim, dan beradaptasi baik di lingkungan sekolah.`,
+    kecerdasan_emosional: `Anak memiliki tingkat percaya diri yang positif serta mulai memahami kontrol emosi mandiri.`,
+    kemampuan_komunikasi: `Anak dapat menyampaikan pemikiran, pendapat, atau ide dengan jelas dan percaya diri.`,
+    kemandirian: `Tingkat kemandirian anak sangat baik dalam mengelola rutinitas dan tugas harian jenjang ${level}.`,
+    kemampuan_belajar: `Anak memiliki antusiasme dan ketekunan yang baik ketika mempelajari konsep baru.`,
+    karakter: `Memiliki karakter pembelajar yang jujur, disiplin, dan bertanggung jawab.`,
+    potensi: `Potensi dominan terlihat pada bidang akademik analitis, kepemimpinan, dan komunikasi sosial.`,
+    minat_bakat: `Menunjukkan ketertarikan kuat pada pengembangan ilmu pengetahuan, seni kreatif, dan pemecahan masalah.`,
     area_stimulasi: [
-      `Permainan kartu bergambar (flashcard) huruf dan angka untuk melatih akademis awal.`,
-      `Aktivitas menggambar, mencoret huruf, serta menghitung benda-benda di rumah secara menyenangkan.`
+      `Latihan pemecahan masalah (problem solving) secara bertahap.`,
+      `Aktivitas diskusi dan refleksi mandiri bersama orang tua di rumah.`
     ],
     perhatian_orangtua: [
-      `Berikan pujian spesifik saat anak berusaha mengenali huruf/angka baru.`,
-      `Jadikan kegiatan belajar akademis awal sebagai bentuk permainan yang tidak membebani anak.`
+      `Berikan apresiasi spesifik atas usaha belajar anak, bukan hanya hasil akhir.`,
+      `Dukung minat bakat dan berikan ruang ekspresi positif bagi anak.`
     ],
     treatment: [
-      { kategori: "Stimulasi Akademik Awal", aktivitas: "Bermain tebak huruf dan membilang buah/mainan bersama 10-15 menit sehari." },
-      { kategori: "Aktivitas Motorik & Seni", aktivitas: "Mewarnai, membentuk lilin/playdough menjadi huruf atau angka." },
-      { kategori: "Rutinitas Rumah", aktivitas: "Membaca buku cerita bergambar bersama sebelum tidur." }
+      { kategori: `Pengembangan Akademik ${level}`, aktivitas: academicDevTexts[level] },
+      { kategori: "Pendampingan Karakter", aktivitas: "Diskusikan nilai-nilai kejujuran, tanggung jawab, dan empati sosial." },
+      { kategori: "Rutinitas Rumah", aktivitas: "Bangun komunikasi terbuka harian dan ruang evaluasi belajar yang nyaman." }
     ],
-    kesimpulan: `Perkembangan dan kemampuan akademik awal ${childName} berjalan sangat baik. Apresiasi dan pendampingan konsisten dari Ibu/Bapak ${parentName} di rumah akan semakin memperkuat potensi si kecil.`
+    rekomendasi_akademik: academicDevTexts[level],
+    kesimpulan: `Perkembangan dan kemampuan akademik jenjang ${level} ${childName} berjalan sangat baik. Apresiasi dan pendampingan konsisten dari Ibu/Bapak ${parentName} di rumah akan semakin memperkuat kesuksesannya.`
   };
 }
 
 export async function submitAndAnalyze(data: SubmitInput) {
+  const level: EducationLevel = data.child.education_level || "TK";
+
   // 1. Insert parent
   const { data: parent, error: pErr } = await supabaseAdmin
     .from("parents")
@@ -57,7 +85,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .single();
   if (pErr || !parent) throw new Error("Gagal menyimpan data orang tua: " + pErr?.message);
 
-  // 2. Insert child
+  // 2. Insert child with education_level
   const { data: child, error: cErr } = await supabaseAdmin
     .from("children")
     .insert({
@@ -72,10 +100,15 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .single();
   if (cErr || !child) throw new Error("Gagal menyimpan data anak: " + cErr?.message);
 
-  // 3. Insert assessment
+  // 3. Insert assessment with education_level
   const { data: assessment, error: aErr } = await supabaseAdmin
     .from("assessments")
-    .insert({ parent_id: parent.id, child_id: child.id, status: "analyzing" })
+    .insert({
+      parent_id: parent.id,
+      child_id: child.id,
+      education_level: level,
+      status: "analyzing",
+    })
     .select()
     .single();
   if (aErr || !assessment) throw new Error("Gagal membuat assessment: " + aErr?.message);
@@ -91,7 +124,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     await supabaseAdmin.from("assessment_answers").insert(answerRows);
   }
 
-  // 5. Fetch questions for prompt context
+  // 5. Fetch questions text for prompt context
   const qIds = validAnswers.map((a) => a.question_id);
   let answersText = "";
   if (qIds.length > 0) {
@@ -114,15 +147,22 @@ export async function submitAndAnalyze(data: SubmitInput) {
       .join("\n");
   }
 
-  // 6. Get active prompt + settings with fallbacks
+  // 6. Get active prompt for chosen level
   const [{ data: prompt }, { data: settings }] = await Promise.all([
-    supabaseAdmin.from("ai_prompts").select("*").eq("is_active", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+    supabaseAdmin
+      .from("ai_prompts")
+      .select("*")
+      .eq("is_active", true)
+      .eq("education_level", level)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
     supabaseAdmin.from("ai_settings").select("*").eq("is_active", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   const activePrompt = prompt ?? {
-    system_prompt: "Anda adalah asisten psikolog anak. Buat analisis komprehensif perkembangan dan kemampuan akademik awal anak dalam JSON valid.",
-    user_template: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJawaban:\n{{answers}}",
+    system_prompt: `Anda adalah psikolog dan konsultan pendidikan anak jenjang ${level}. Buat analisis 13 bagian dalam JSON valid.`,
+    user_template: `Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: {{education_level}}\nJawaban:\n{{answers}}`,
   };
 
   const filled = activePrompt.user_template
@@ -130,7 +170,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .replace(/\{\{parent_whatsapp\}\}/g, data.parent.whatsapp)
     .replace(/\{\{child_name\}\}/g, data.child.name)
     .replace(/\{\{child_gender\}\}/g, data.child.gender === "L" ? "Laki-laki" : "Perempuan")
-    .replace(/\{\{child_birth_date\}\}/g, data.child.birth_date || "-")
+    .replace(/\{\{education_level\}\}/g, level)
     .replace(/\{\{child_school\}\}/g, data.child.school || "-")
     .replace(/\{\{answers\}\}/g, answersText);
 
@@ -139,16 +179,15 @@ export async function submitAndAnalyze(data: SubmitInput) {
   "ringkasan": "string",
   "kelebihan": ["string"],
   "area_pengembangan": ["string"],
+  "kemampuan_akademik": "string (analisis kemampuan akademik spesifik jenjang ${level})",
   "kecerdasan_sosial": "string",
   "kecerdasan_emosional": "string",
-  "kemampuan_komunikasi": "string",
-  "kemandirian": "string",
-  "kemampuan_belajar": "string",
-  "kemampuan_akademik": "string (analisis pengenalan huruf, angka, bentuk, calistung dasar)",
+  "karakter": "string",
   "potensi": "string",
-  "area_stimulasi": ["string"],
+  "minat_bakat": "string",
   "perhatian_orangtua": ["string"],
   "treatment": [{"kategori": "string", "aktivitas": "string"}],
+  "rekomendasi_akademik": "string (rekomendasi konkret pengembangan akademik jenjang ${level})",
   "kesimpulan": "string"
 }`;
 
@@ -180,7 +219,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
   }
 
   if (!parsedResult || !parsedResult.ringkasan) {
-    parsedResult = generateFallbackResult(data.child.name, data.parent.name, avgScore);
+    parsedResult = generateFallbackResult(data.child.name, data.parent.name, avgScore, level);
     rawText = JSON.stringify(parsedResult);
   }
 

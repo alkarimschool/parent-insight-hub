@@ -17,6 +17,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ResultsRouteImport } from './routes/results'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AssessmentIndexRouteImport } from './routes/assessment.index'
+import { Route as AssessmentLevelRouteImport } from './routes/assessment.level'
 import { Route as AssessmentQuestionsRouteImport } from './routes/assessment.questions'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
@@ -64,6 +65,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
 const AssessmentIndexRoute = AssessmentIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AssessmentRoute,
+} as any)
+const AssessmentLevelRoute = AssessmentLevelRouteImport.update({
+  id: '/level',
+  path: '/level',
   getParentRoute: () => AssessmentRoute,
 } as any)
 const AssessmentQuestionsRoute = AssessmentQuestionsRouteImport.update({
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/results': typeof ResultsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/assessment/level': typeof AssessmentLevelRoute
   '/assessment/questions': typeof AssessmentQuestionsRoute
   '/assessment/': typeof AssessmentIndexRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/results': typeof ResultsRoute
+  '/assessment/level': typeof AssessmentLevelRoute
   '/assessment/questions': typeof AssessmentQuestionsRoute
   '/assessment': typeof AssessmentIndexRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/results': typeof ResultsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/assessment/level': typeof AssessmentLevelRoute
   '/assessment/questions': typeof AssessmentQuestionsRoute
   '/assessment/': typeof AssessmentIndexRoute
   '/_authenticated/admin/logs': typeof AuthenticatedAdminLogsRoute
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/results'
     | '/admin'
+    | '/assessment/level'
     | '/assessment/questions'
     | '/assessment/'
     | '/admin/logs'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/results'
+    | '/assessment/level'
     | '/assessment/questions'
     | '/assessment'
     | '/admin/logs'
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/results'
     | '/_authenticated/admin'
+    | '/assessment/level'
     | '/assessment/questions'
     | '/assessment/'
     | '/_authenticated/admin/logs'
@@ -292,6 +304,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/assessment/'
       preLoaderRoute: typeof AssessmentIndexRouteImport
+      parentRoute: typeof AssessmentRoute
+    }
+    '/assessment/level': {
+      id: '/assessment/level'
+      path: '/level'
+      fullPath: '/assessment/level'
+      preLoaderRoute: typeof AssessmentLevelRouteImport
       parentRoute: typeof AssessmentRoute
     }
     '/assessment/questions': {
@@ -395,12 +414,14 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface AssessmentRouteChildren {
+  AssessmentLevelRoute: typeof AssessmentLevelRoute
   AssessmentQuestionsRoute: typeof AssessmentQuestionsRoute
   AssessmentIndexRoute: typeof AssessmentIndexRoute
   AssessmentResultIdRoute: typeof AssessmentResultIdRoute
 }
 
 const AssessmentRouteChildren: AssessmentRouteChildren = {
+  AssessmentLevelRoute: AssessmentLevelRoute,
   AssessmentQuestionsRoute: AssessmentQuestionsRoute,
   AssessmentIndexRoute: AssessmentIndexRoute,
   AssessmentResultIdRoute: AssessmentResultIdRoute,

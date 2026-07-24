@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link, useSearch } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { fetchWebsite } from "@/lib/settings";
 import { PublicNav } from "@/components/site/PublicNav";
@@ -6,8 +6,9 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, GraduationCap, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { EducationLevel } from "@/lib/questions.data";
 
 export const Route = createFileRoute("/assessment/")({
   head: () => ({
@@ -19,24 +20,47 @@ export const Route = createFileRoute("/assessment/")({
   component: AssessmentFormPage,
 });
 
+const LEVEL_NAMES: Record<EducationLevel, string> = {
+  TK: "👶 TK / PAUD (Usia 3–6 Tahun)",
+  SD: "📘 Sekolah Dasar (SD)",
+  SMP: "📗 Sekolah Menengah (SMP)",
+  SMA: "🎓 SMA / SMK",
+};
+
 function AssessmentFormPage() {
   const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite });
   const navigate = useNavigate();
-  const [form, setForm] = useState({
+  const search: any = useSearch({ from: "/assessment/" });
+
+  const [form, setForm] = useState<{
+    parent_name: string;
+    whatsapp: string;
+    child_name: string;
+    school: string;
+    education_level: EducationLevel;
+  }>({
     parent_name: "",
     whatsapp: "",
     child_name: "",
     school: "",
+    education_level: (search?.level as EducationLevel) || "TK",
   });
 
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem("paa_form");
       if (saved) {
-        setForm(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setForm((prev) => ({
+          ...prev,
+          ...parsed,
+          education_level: search?.level || parsed.education_level || "TK",
+        }));
+      } else if (search?.level) {
+        setForm((prev) => ({ ...prev, education_level: search.level }));
       }
     } catch {}
-  }, []);
+  }, [search]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,17 +75,41 @@ function AssessmentFormPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-soft">
+    <div className="min-h-screen bg-gradient-soft pb-24 md:pb-12">
       <PublicNav
         siteName={website.data?.site_name ?? "Parent Awareness Assessment"}
         logoText={website.data?.logo_text ?? "PAA"}
       />
       <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-foreground sm:text-4xl">Data Orang Tua & Anak</h1>
-          <p className="mt-2 text-muted-foreground">Isi data berikut untuk memulai asesmen.</p>
+          <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary">
+            <GraduationCap className="h-4 w-4" /> {LEVEL_NAMES[form.education_level]}
+          </div>
+          <h1 className="mt-4 text-3xl font-bold text-foreground sm:text-4xl">Data Orang Tua & Anak</h1>
+          <p className="mt-2 text-muted-foreground">Isi data berikut untuk memulai asesmen jenjang {form.education_level}.</p>
         </div>
-        <form onSubmit={submit} className="rounded-3xl border border-border/60 bg-card p-6 shadow-soft sm:p-8">
+
+        <form onSubmit={submit} className="rounded-3xl border border-border/60 bg-card p-6 shadow-soft sm:p-8 space-y-6">
+          {/* JENJANG SELECTION BADGE & SELECTOR */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <Label className="font-semibold text-foreground">Jenjang Pendidikan Terpilih *</Label>
+              <Link to="/assessment/level" className="text-xs font-semibold text-primary hover:underline">
+                Ubah Jenjang
+              </Link>
+            </div>
+            <select
+              value={form.education_level}
+              onChange={(e) => setForm({ ...form, education_level: e.target.value as EducationLevel })}
+              className="w-full rounded-2xl border border-input bg-background p-3 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+            >
+              <option value="TK">👶 TK / PAUD (Usia 3–6 Tahun)</option>
+              <option value="SD">📘 Sekolah Dasar (SD)</option>
+              <option value="SMP">📗 Sekolah Menengah (SMP)</option>
+              <option value="SMA">🎓 SMA / SMK</option>
+            </select>
+          </div>
+
           <div className="grid gap-5">
             <div>
               <Label htmlFor="parent_name">Nama Orang Tua *</Label>
@@ -104,7 +152,7 @@ function AssessmentFormPage() {
               <Label htmlFor="school">Nama Sekolah</Label>
               <Input
                 id="school"
-                placeholder="Contoh: TK Islam Al-Karim"
+                placeholder="Contoh: TK / SD / SMP / SMA Al-Karim"
                 value={form.school}
                 onChange={(e) => setForm({ ...form, school: e.target.value })}
                 className="mt-1.5"
@@ -112,12 +160,13 @@ function AssessmentFormPage() {
               />
             </div>
           </div>
-          <div className="mt-8 flex items-center justify-between gap-3">
-            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
-              ← Kembali
+
+          <div className="mt-8 flex items-center justify-between gap-3 pt-4 border-t border-border/40">
+            <Link to="/assessment/level" className="text-sm text-muted-foreground hover:text-foreground">
+              ← Pilih Jenjang
             </Link>
             <Button type="submit" size="lg" className="rounded-full bg-gradient-hero shadow-soft">
-              Lanjut Assessment <ArrowRight className="ml-1 h-4 w-4" />
+              Lanjut Assessment {form.education_level} <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         </form>

@@ -84,15 +84,18 @@ export async function updateHomepageSettingsServer(data: any) {
 export async function updatePromptServer(data: {
   id?: string;
   name: string;
+  education_level?: string;
   system_prompt: string;
   user_template: string;
   is_active: boolean;
 }) {
+  const level = data.education_level || "TK";
   if (data.id && data.id !== "default") {
     const { error } = await supabaseAdmin
       .from("ai_prompts")
       .update({
         name: data.name,
+        education_level: level,
         system_prompt: data.system_prompt,
         user_template: data.user_template,
         is_active: data.is_active,
@@ -103,6 +106,7 @@ export async function updatePromptServer(data: {
   } else {
     const { error } = await supabaseAdmin.from("ai_prompts").insert({
       name: data.name,
+      education_level: level,
       system_prompt: data.system_prompt,
       user_template: data.user_template,
       is_active: data.is_active,
