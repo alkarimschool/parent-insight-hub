@@ -308,25 +308,29 @@ export async function submitAndAnalyze(data: SubmitInput) {
 
     activePrompt = prompt;
     settings = set;
-
-    if (!activePrompt) {
-      const { data: genPrompt } = await supabaseAdmin
-        .from("ai_prompts")
-        .select("*")
-        .eq("is_active", true)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      activePrompt = genPrompt;
-    }
   } catch (e) {
     console.warn("Prompt / settings fetch error", e);
   }
 
+  // Guaranteed level-specific default prompt if database prompt for specific level is not found
   if (!activePrompt) {
+    const defaultSystemPrompts: Record<EducationLevel, string> = {
+      TK: "Anda adalah psikolog anak dan konsultan pendidikan usia dini (TK / PAUD). Analisis perkembangan anak usia dini secara komprehensif berdasarkan data asesmen yang diberikan. Fokus pada: perkembangan motorik, bahasa, sosial, emosi, akademik awal (calistung), kemandirian, dan kesiapan sekolah. JANGAN menggunakan istilah atau format untuk jenjang SD, SMP, atau SMA. Balas HANYA dalam format JSON valid.",
+      SD: "Anda adalah psikolog pendidikan dan konsultan akademik Sekolah Dasar (SD). Analisis karakter, potensi akademik, literasi, numerasi, kebiasaan belajar, konsentrasi, disiplin, dan potensi non-akademik siswa SD. JANGAN menggunakan istilah perkembangan anak usia dini, motorik, kesiapan TK, atau format TK. Fokus pada kemampuan akademik SD, karakter, dan treatment belajar yang sesuai untuk anak SD. Balas HANYA dalam format JSON valid.",
+      SMP: "Anda adalah psikolog remaja dan konsultan pendidikan Sekolah Menengah Pertama (SMP). Analisis prestasi akademik, motivasi belajar, berpikir kritis, pergaulan dan pengaruh teman, pengendalian emosi, kepemimpinan, potensi, minat, dan rekomendasi pengembangan remaja awal. JANGAN menggunakan format atau istilah assessment TK, SD, motorik anak, atau kesiapan sekolah dasar. Fokus pada dinamika remaja awal usia 12-15 tahun. Balas HANYA dalam format JSON valid.",
+      SMA: "Anda adalah konsultan pendidikan tinggi, psikolog karier, dan mentor pengembangan diri untuk siswa SMA/SMK. Analisis prestasi akademik, minat karier, minat kuliah, bakat dominan, public speaking, leadership, problem solving, pengembangan diri, kesiapan dunia kerja, dan rekomendasi jurusan kuliah. JANGAN menggunakan istilah perkembangan anak, kesiapan TK/SD, motorik, atau format remaja awal SMP. Fokus pada kesiapan masa depan, perguruan tinggi, dan karier siswa SMA/SMK. Balas HANYA dalam format JSON valid."
+    };
+
+    const defaultUserTemplates: Record<EducationLevel, string> = {
+      TK: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: TK / PAUD\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis perkembangan anak usia dini yang komprehensif.",
+      SD: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: Sekolah Dasar (SD)\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis karakter dan potensi akademik siswa SD yang komprehensif. Sertakan analisis literasi, numerasi, kebiasaan belajar, disiplin, karakter, dan rekomendasi treatment belajar SD.",
+      SMP: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: Sekolah Menengah Pertama (SMP)\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis perkembangan remaja awal dan akademik SMP yang komprehensif. Sertakan analisis motivasi, berpikir kritis, pergaulan, pengendalian emosi, kepemimpinan, dan rekomendasi pengembangan untuk remaja SMP.",
+      SMA: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: SMA / SMK\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis minat, bakat, dan kesiapan masa depan siswa SMA/SMK yang komprehensif. Sertakan analisis minat karier, minat kuliah, bakat dominan, kesiapan dunia kerja, dan rekomendasi jurusan kuliah."
+    };
+
     activePrompt = {
-      system_prompt: `Anda adalah psikolog dan konsultan pendidikan anak jenjang ${level}. Buat analisis 13 bagian dalam JSON valid.`,
-      user_template: `Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: {{education_level}}\nJawaban:\n{{answers}}`,
+      system_prompt: defaultSystemPrompts[level] || defaultSystemPrompts.TK,
+      user_template: defaultUserTemplates[level] || defaultUserTemplates.TK,
     };
   }
 
