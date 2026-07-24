@@ -9,38 +9,220 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AssessmentRouteImport } from './routes/assessment'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AssessmentQuestionsRouteImport } from './routes/assessment.questions'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AssessmentResultIdRouteImport } from './routes/assessment.result.$id'
+import { Route as AuthenticatedAdminWebsiteRouteImport } from './routes/_authenticated/admin.website'
+import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin.settings'
+import { Route as AuthenticatedAdminQuestionsRouteImport } from './routes/_authenticated/admin.questions'
+import { Route as AuthenticatedAdminPromptRouteImport } from './routes/_authenticated/admin.prompt'
+import { Route as AuthenticatedAdminParentsRouteImport } from './routes/_authenticated/admin.parents'
+import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssessmentRoute = AssessmentRouteImport.update({
+  id: '/assessment',
+  path: '/assessment',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AssessmentQuestionsRoute = AssessmentQuestionsRouteImport.update({
+  id: '/questions',
+  path: '/questions',
+  getParentRoute: () => AssessmentRoute,
+} as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AssessmentResultIdRoute = AssessmentResultIdRouteImport.update({
+  id: '/result/$id',
+  path: '/result/$id',
+  getParentRoute: () => AssessmentRoute,
+} as any)
+const AuthenticatedAdminWebsiteRoute =
+  AuthenticatedAdminWebsiteRouteImport.update({
+    id: '/website',
+    path: '/website',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminSettingsRoute =
+  AuthenticatedAdminSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminQuestionsRoute =
+  AuthenticatedAdminQuestionsRouteImport.update({
+    id: '/questions',
+    path: '/questions',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminPromptRoute =
+  AuthenticatedAdminPromptRouteImport.update({
+    id: '/prompt',
+    path: '/prompt',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminParentsRoute =
+  AuthenticatedAdminParentsRouteImport.update({
+    id: '/parents',
+    path: '/parents',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminLogsRoute = AuthenticatedAdminLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/assessment': typeof AssessmentRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/assessment/questions': typeof AssessmentQuestionsRoute
+  '/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/admin/parents': typeof AuthenticatedAdminParentsRoute
+  '/admin/prompt': typeof AuthenticatedAdminPromptRoute
+  '/admin/questions': typeof AuthenticatedAdminQuestionsRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/admin/website': typeof AuthenticatedAdminWebsiteRoute
+  '/assessment/result/$id': typeof AssessmentResultIdRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/assessment': typeof AssessmentRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/assessment/questions': typeof AssessmentQuestionsRoute
+  '/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/admin/parents': typeof AuthenticatedAdminParentsRoute
+  '/admin/prompt': typeof AuthenticatedAdminPromptRoute
+  '/admin/questions': typeof AuthenticatedAdminQuestionsRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/admin/website': typeof AuthenticatedAdminWebsiteRoute
+  '/assessment/result/$id': typeof AssessmentResultIdRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/assessment': typeof AssessmentRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/assessment/questions': typeof AssessmentQuestionsRoute
+  '/_authenticated/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/_authenticated/admin/parents': typeof AuthenticatedAdminParentsRoute
+  '/_authenticated/admin/prompt': typeof AuthenticatedAdminPromptRoute
+  '/_authenticated/admin/questions': typeof AuthenticatedAdminQuestionsRoute
+  '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/_authenticated/admin/website': typeof AuthenticatedAdminWebsiteRoute
+  '/assessment/result/$id': typeof AssessmentResultIdRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/assessment'
+    | '/auth'
+    | '/admin'
+    | '/assessment/questions'
+    | '/admin/logs'
+    | '/admin/parents'
+    | '/admin/prompt'
+    | '/admin/questions'
+    | '/admin/settings'
+    | '/admin/website'
+    | '/assessment/result/$id'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/assessment'
+    | '/auth'
+    | '/assessment/questions'
+    | '/admin/logs'
+    | '/admin/parents'
+    | '/admin/prompt'
+    | '/admin/questions'
+    | '/admin/settings'
+    | '/admin/website'
+    | '/assessment/result/$id'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/assessment'
+    | '/auth'
+    | '/_authenticated/admin'
+    | '/assessment/questions'
+    | '/_authenticated/admin/logs'
+    | '/_authenticated/admin/parents'
+    | '/_authenticated/admin/prompt'
+    | '/_authenticated/admin/questions'
+    | '/_authenticated/admin/settings'
+    | '/_authenticated/admin/website'
+    | '/assessment/result/$id'
+    | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AssessmentRoute: typeof AssessmentRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assessment': {
+      id: '/assessment'
+      path: '/assessment'
+      fullPath: '/assessment'
+      preLoaderRoute: typeof AssessmentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +230,133 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/assessment/questions': {
+      id: '/assessment/questions'
+      path: '/questions'
+      fullPath: '/assessment/questions'
+      preLoaderRoute: typeof AssessmentQuestionsRouteImport
+      parentRoute: typeof AssessmentRoute
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/assessment/result/$id': {
+      id: '/assessment/result/$id'
+      path: '/result/$id'
+      fullPath: '/assessment/result/$id'
+      preLoaderRoute: typeof AssessmentResultIdRouteImport
+      parentRoute: typeof AssessmentRoute
+    }
+    '/_authenticated/admin/website': {
+      id: '/_authenticated/admin/website'
+      path: '/website'
+      fullPath: '/admin/website'
+      preLoaderRoute: typeof AuthenticatedAdminWebsiteRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/settings': {
+      id: '/_authenticated/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AuthenticatedAdminSettingsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/questions': {
+      id: '/_authenticated/admin/questions'
+      path: '/questions'
+      fullPath: '/admin/questions'
+      preLoaderRoute: typeof AuthenticatedAdminQuestionsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/prompt': {
+      id: '/_authenticated/admin/prompt'
+      path: '/prompt'
+      fullPath: '/admin/prompt'
+      preLoaderRoute: typeof AuthenticatedAdminPromptRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/parents': {
+      id: '/_authenticated/admin/parents'
+      path: '/parents'
+      fullPath: '/admin/parents'
+      preLoaderRoute: typeof AuthenticatedAdminParentsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/logs': {
+      id: '/_authenticated/admin/logs'
+      path: '/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof AuthenticatedAdminLogsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminLogsRoute: typeof AuthenticatedAdminLogsRoute
+  AuthenticatedAdminParentsRoute: typeof AuthenticatedAdminParentsRoute
+  AuthenticatedAdminPromptRoute: typeof AuthenticatedAdminPromptRoute
+  AuthenticatedAdminQuestionsRoute: typeof AuthenticatedAdminQuestionsRoute
+  AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
+  AuthenticatedAdminWebsiteRoute: typeof AuthenticatedAdminWebsiteRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminLogsRoute: AuthenticatedAdminLogsRoute,
+  AuthenticatedAdminParentsRoute: AuthenticatedAdminParentsRoute,
+  AuthenticatedAdminPromptRoute: AuthenticatedAdminPromptRoute,
+  AuthenticatedAdminQuestionsRoute: AuthenticatedAdminQuestionsRoute,
+  AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
+  AuthenticatedAdminWebsiteRoute: AuthenticatedAdminWebsiteRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
+interface AssessmentRouteChildren {
+  AssessmentQuestionsRoute: typeof AssessmentQuestionsRoute
+  AssessmentResultIdRoute: typeof AssessmentResultIdRoute
+}
+
+const AssessmentRouteChildren: AssessmentRouteChildren = {
+  AssessmentQuestionsRoute: AssessmentQuestionsRoute,
+  AssessmentResultIdRoute: AssessmentResultIdRoute,
+}
+
+const AssessmentRouteWithChildren = AssessmentRoute._addFileChildren(
+  AssessmentRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AssessmentRoute: AssessmentRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
