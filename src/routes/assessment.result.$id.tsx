@@ -57,7 +57,7 @@ function ResultPage() {
   const c = data?.content as any;
   const childName = data?.child_name ?? "Anak";
   const parentName = data?.parent_name ?? "Orang Tua";
-  const level = (data?.education_level ?? "TK") as string;
+  const level = (data?.education_level || c?.shortName || c?.education_level || "TK") as string;
   const content = getAssessmentContent(level);
 
   // Synchronize dynamic metadata (title, description, Open Graph, Twitter metadata)
@@ -96,18 +96,18 @@ function ResultPage() {
         {/* Dynamic Badge, H1, Description, Metadata */}
         <div className="mb-8 text-center print:mb-6">
           <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-bold text-primary print:bg-transparent print:p-0 print:text-black">
-            <span className="print:hidden">{content.icon}</span> <GraduationCap className="h-4 w-4 print:hidden" /> {c?.badge || content.badge}
+            <span className="print:hidden">{content.icon}</span> <GraduationCap className="h-4 w-4 print:hidden" /> {content.badge}
           </div>
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl print:mt-2 print:text-2xl print:text-black">
             {content.getHeader(childName)}
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base print:text-xs print:text-gray-700">
-            {c?.description || content.description}
+            {content.description}
           </p>
           <div className="mt-3 flex flex-wrap justify-center gap-4 text-xs font-medium text-muted-foreground print:text-gray-800">
             <span>Orang Tua: <strong className="text-foreground print:text-black">{parentName}</strong></span>
             <span>•</span>
-            <span>Jenjang: <strong className="text-foreground print:text-black">{c?.shortName || content.shortName} ({c?.fullName || content.fullName})</strong></span>
+            <span>Jenjang: <strong className="text-foreground print:text-black">{content.shortName} ({content.fullName})</strong></span>
             {data?.created_at && (
               <>
                 <span>•</span>
@@ -124,17 +124,17 @@ function ResultPage() {
           </div>
         ) : (
           <div className="grid gap-5">
-            <Section title={c?.sections?.s1 || content.sections.s1}><p>{c.ringkasan}</p></Section>
-            <Section title={c?.sections?.s2 || content.sections.s2}><List items={c.kelebihan} /></Section>
-            <Section title={c?.sections?.s3 || content.sections.s3}><List items={c.area_pengembangan} /></Section>
-            <Section title={c?.sections?.s4 || content.sections.s4}><p>{c.kemampuan_akademik ?? c.kemampuan_belajar}</p></Section>
-            <Section title={c?.sections?.s5 || content.sections.s5}><p>{c.kecerdasan_sosial}</p></Section>
-            <Section title={c?.sections?.s6 || content.sections.s6}><p>{c.kecerdasan_emosional}</p></Section>
-            <Section title={c?.sections?.s7 || content.sections.s7}><p>{c.karakter ?? "Memiliki karakter pembelajar yang jujur, disiplin, dan bertanggung jawab."}</p></Section>
-            <Section title={c?.sections?.s8 || content.sections.s8}><p>{c.potensi}</p></Section>
-            <Section title={c?.sections?.s9 || content.sections.s9}><p>{c.minat_bakat ?? "Terlihat minat pada pemecahan masalah dan eksplorasi ilmu pengetahuan."}</p></Section>
-            <Section title={c?.sections?.s10 || content.sections.s10}><List items={c.perhatian_orangtua} /></Section>
-            <Section title={c?.sections?.s11 || content.sections.s11}>
+            <Section title={content.sections.s1}><p>{c.ringkasan}</p></Section>
+            <Section title={content.sections.s2}><List items={c.kelebihan} /></Section>
+            <Section title={content.sections.s3}><List items={c.area_pengembangan} /></Section>
+            <Section title={content.sections.s4}><p>{c.kemampuan_akademik ?? c.kemampuan_belajar}</p></Section>
+            <Section title={content.sections.s5}><p>{c.kecerdasan_sosial}</p></Section>
+            <Section title={content.sections.s6}><p>{c.kecerdasan_emosional}</p></Section>
+            <Section title={content.sections.s7}><p>{c.karakter ?? "Memiliki karakter pembelajar yang jujur, disiplin, dan bertanggung jawab."}</p></Section>
+            <Section title={content.sections.s8}><p>{c.potensi}</p></Section>
+            <Section title={content.sections.s9}><p>{c.minat_bakat ?? "Terlihat minat pada pemecahan masalah dan eksplorasi ilmu pengetahuan."}</p></Section>
+            <Section title={content.sections.s10}><List items={c.perhatian_orangtua} /></Section>
+            <Section title={content.sections.s11}>
               {Array.isArray(c.treatment) ? (
                 <ul className="space-y-3">
                   {c.treatment.map((t: any, i: number) => (
@@ -148,8 +148,8 @@ function ResultPage() {
                 <p>{String(c.treatment ?? "")}</p>
               )}
             </Section>
-            <Section title={c?.sections?.s12 || content.sections.s12}><p>{c.rekomendasi_akademik ?? c.kemampuan_akademik}</p></Section>
-            <Section title={c?.sections?.s13 || content.sections.s13}><p className="italic font-medium text-foreground print:text-black">{c.kesimpulan}</p></Section>
+            <Section title={content.sections.s12}><p>{c.rekomendasi_akademik ?? c.kemampuan_akademik}</p></Section>
+            <Section title={content.sections.s13}><p className="italic font-medium text-foreground print:text-black">{c.kesimpulan}</p></Section>
 
             <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">
               <Link to="/" className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-accent">

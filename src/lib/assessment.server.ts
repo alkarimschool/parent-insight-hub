@@ -623,11 +623,36 @@ export async function getAssessmentResultServer(assessmentId: string) {
       : Promise.resolve({ data: null }),
   ]);
 
-  const level: EducationLevel = (assessment.education_level as EducationLevel) || "TK";
+  let content = aiRes?.content as any;
+
+  // 4. Determine true level from assessment DB, content, or ringkasan text heuristics
+  let level: EducationLevel = (assessment.education_level as EducationLevel);
+
+  if (content && typeof content === "object") {
+    const contentLevel = (content.shortName || content.education_level || content.level) as EducationLevel;
+    if (contentLevel && ["TK", "SD", "SMP", "SMA", "SMK"].includes(contentLevel)) {
+      level = contentLevel;
+    } else if (content.ringkasan) {
+      const r = String(content.ringkasan).toLowerCase();
+      if (r.includes("remaja awal") || r.includes("smp") || r.includes("sekolah menengah pertama")) {
+        level = "SMP";
+      } else if (r.includes("vokasi") || r.includes("smk") || r.includes("kejuruan")) {
+        level = "SMK";
+      } else if (r.includes("perguruan tinggi") || r.includes("sma") || r.includes("sekolah menengah atas")) {
+        level = "SMA";
+      } else if (r.includes("sekolah dasar") || r.includes("sd")) {
+        level = "SD";
+      }
+    }
+  }
+
+  if (!level || !["TK", "SD", "SMP", "SMA", "SMK"].includes(level)) {
+    level = "TK";
+  }
+
   const assessmentContent = getAssessmentContent(level);
 
-  // 4. Ensure complete 13-section level analysis content
-  let content = aiRes?.content as any;
+  // 5. Ensure complete 13-section level analysis content
   if (!content || typeof content !== "object" || !content.ringkasan) {
     content = generateFallbackResult(child?.name || "Anak", parent?.name || "Orang Tua", 4.0, level);
   }
@@ -653,6 +678,15 @@ export async function getAssessmentResultServer(assessmentId: string) {
       .replace(/perkembangan anak usia dini \(TK \/ PAUD\)/gi, `karakter dan potensi akademik ${assessmentContent.fullName}`)
       .replace(/perkembangan anak usia dini/gi, `potensi dan kebiasaan belajar ${assessmentContent.fullName}`)
       .replace(/anak usia dini/gi, `peserta didik ${assessmentContent.shortName}`);
+  }
+
+  // Update DB if DB education_level was incorrect
+  if (assessment.education_level !== level) {
+    try {
+      await supabaseAdmin.from("assessments").update({ education_level: level }).eq("id", assessmentId);
+    } catch (e) {
+      console.warn("Could not update assessment education_level in DB:", e);
+    }
   }
 
   return {
