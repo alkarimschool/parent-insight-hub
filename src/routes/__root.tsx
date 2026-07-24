@@ -117,6 +117,8 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+import { BottomNav } from "@/components/site/BottomNav";
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
@@ -124,6 +126,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <BottomNav />
       <Toaster position="top-center" richColors />
     </QueryClientProvider>
   );
