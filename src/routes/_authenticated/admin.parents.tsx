@@ -58,22 +58,27 @@ function ParentsList() {
   const rows = (list.data ?? []).filter((r: any) => {
     if (!q) return true;
     const s = q.toLowerCase();
+    const p = Array.isArray(r.parents) ? r.parents[0] : r.parents;
+    const c = Array.isArray(r.children) ? r.children[0] : r.children;
     return (
-      r.children?.name?.toLowerCase().includes(s) ||
-      r.parents?.whatsapp?.includes(s) ||
+      c?.name?.toLowerCase().includes(s) ||
+      p?.whatsapp?.includes(s) ||
+      p?.name?.toLowerCase().includes(s) ||
       r.education_level?.toLowerCase().includes(s) ||
-      r.children?.school?.toLowerCase().includes(s)
+      c?.school?.toLowerCase().includes(s)
     );
   });
 
   const handleEditClick = (r: any) => {
+    const p = Array.isArray(r.parents) ? r.parents[0] : r.parents;
+    const c = Array.isArray(r.children) ? r.children[0] : r.children;
     setEditingRow({
       assessment_id: r.id,
-      parent_id: r.parents?.id,
-      child_id: r.children?.id,
-      child_name: r.children?.name ?? "",
-      whatsapp: r.parents?.whatsapp ?? "",
-      school: r.children?.school ?? "",
+      parent_id: p?.id || r.parent_id,
+      child_id: c?.id || r.child_id,
+      child_name: c?.name ?? "",
+      whatsapp: p?.whatsapp ?? "",
+      school: c?.school ?? "",
       education_level: r.education_level ?? "TK",
     });
   };
@@ -174,7 +179,9 @@ function ParentsList() {
             ) : (
               rows.map((r: any) => {
                 const lvl = r.education_level ?? "TK";
-                const waLink = formatWaLink(r.parents?.whatsapp ?? "", r.children?.name ?? "", lvl, r.id);
+                const pObj = Array.isArray(r.parents) ? r.parents[0] : r.parents;
+                const cObj = Array.isArray(r.children) ? r.children[0] : r.children;
+                const waLink = formatWaLink(pObj?.whatsapp ?? "", cObj?.name ?? "", lvl, r.id);
 
                 return (
                   <tr key={r.id} className="hover:bg-muted/30 transition">
@@ -182,15 +189,15 @@ function ParentsList() {
                       {new Date(r.created_at).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
                     </td>
                     <td className="p-3.5 font-bold text-foreground">
-                      {r.children?.name ?? "-"}
-                      {r.children?.school && <div className="text-[11px] font-normal text-muted-foreground">{r.children.school}</div>}
+                      {cObj?.name ?? "-"}
+                      {cObj?.school && <div className="text-[11px] font-normal text-muted-foreground">{cObj.school}</div>}
                     </td>
                     <td className="p-3.5">
                       <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary">
                         <GraduationCap className="h-3 w-3" /> {lvl}
                       </span>
                     </td>
-                    <td className="p-3.5 font-mono text-muted-foreground">{r.parents?.whatsapp ?? "-"}</td>
+                    <td className="p-3.5 font-mono text-muted-foreground">{pObj?.whatsapp ?? "-"}</td>
                     <td className="p-3.5">
                       <div className="flex items-center gap-2">
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${r.status === "analyzed" ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>

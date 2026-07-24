@@ -224,18 +224,104 @@ export async function updateParentChildAssessmentServer(data: {
 }
 
 export async function getAdminParentsListServer() {
-  const { data: assessments, error } = await supabaseAdmin
-    .from("assessments")
-    .select("id, status, education_level, created_at, parent_id, child_id, parents(id, name, whatsapp), children(id, name, birth_date, school)")
-    .order("created_at", { ascending: false })
-    .limit(300);
+  const [{ data: assessments, error: aErr }, { data: parents, error: pErr }] = await Promise.all([
+    supabaseAdmin
+      .from("assessments")
+      .select("id, status, education_level, created_at, parent_id, child_id, parents(id, name, whatsapp), children(id, name, birth_date, school)")
+      .order("created_at", { ascending: false })
+      .limit(500),
+    supabaseAdmin
+      .from("parents")
+      .select("id, name, whatsapp, created_at, children(id, name, birth_date, school), assessments(id, status, education_level, created_at, child_id)")
+      .order("created_at", { ascending: false })
+      .limit(500)
+  ]);
 
-  if (error) {
-    console.error("getAdminParentsListServer error:", error.message);
-    return [];
+  if (aErr) console.error("getAdminParentsListServer assessments error:", aErr.message);
+  if (pErr) console.error("getAdminParentsListServer parents error:", pErr.message);
+
+  const resultList: any[] = [];
+  const processedAssessmentIds = new Set<string>();
+  const processedParentIds = new Set<string>();
+
+  if (assessments && Array.isArray(assessments)) {
+    for (const a of assessments) {
+      if (a.id) processedAssessmentIds.add(a.id);
+      if (a.parent_id) processedParentIds.add(a.parent_id);
+
+      let parentObj = Array.isArray(a.parents) ? a.parents[0] : a.parents;
+      let childObj = Array.isArray(a.children) ? a.children[0] : a.children;
+
+      if (!parentObj && a.parent_id && parents) {
+        const foundP = parents.find((p: any) => p.id === a.parent_id);
+        if (foundP) {
+          parentObj = { id: foundP.id, name: foundP.name, whatsapp: foundP.whatsapp };
+        }
+      }
+
+      if (!childObj && a.child_id && parents) {
+        for (const p of parents) {
+          if (p.children && Array.isArray(p.children)) {
+            const foundC = p.children.find((c: any) => c.id === a.child_id);
+            if (foundC) {
+              childObj = foundC;
+              break;
+            }
+          }
+        }
+      }
+
+      resultList.push({
+        id: a.id,
+        status: a.status || "analyzed",
+        education_level: a.education_level || "TK",
+        created_at: a.created_at || new Date().toISOString(),
+        parent_id: a.parent_id,
+        child_id: a.child_id,
+        parents: parentObj || { id: a.parent_id, name: "Orang Tua", whatsapp: "-" },
+        children: childObj || { id: a.child_id, name: "Anak", school: "" },
+      });
+    }
   }
 
-  return assessments ?? [];
+  if (parents && Array.isArray(parents)) {
+    for (const p of parents) {
+      const pAssessments = p.assessments as any[];
+      if (pAssessments && pAssessments.length > 0) {
+        for (const pa of pAssessments) {
+          if (!processedAssessmentIds.has(pa.id)) {
+            processedAssessmentIds.add(pa.id);
+            const foundC = Array.isArray(p.children) ? p.children[0] : null;
+            resultList.push({
+              id: pa.id,
+              status: pa.status || "analyzed",
+              education_level: pa.education_level || "TK",
+              created_at: pa.created_at || p.created_at,
+              parent_id: p.id,
+              child_id: pa.child_id || foundC?.id,
+              parents: { id: p.id, name: p.name, whatsapp: p.whatsapp },
+              children: foundC || { name: "Anak", school: "" },
+            });
+          }
+        }
+      } else if (!processedParentIds.has(p.id)) {
+        const foundC = Array.isArray(p.children) ? p.children[0] : null;
+        resultList.push({
+          id: p.id,
+          status: "pending",
+          education_level: "TK",
+          created_at: p.created_at || new Date().toISOString(),
+          parent_id: p.id,
+          child_id: foundC?.id,
+          parents: { id: p.id, name: p.name, whatsapp: p.whatsapp },
+          children: foundC || { name: "Anak", school: "" },
+        });
+      }
+    }
+  }
+
+  resultList.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return resultList;
 }
 
 export async function getAdminStatsServer() {
