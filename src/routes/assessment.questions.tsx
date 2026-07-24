@@ -16,8 +16,31 @@ export const Route = createFileRoute("/assessment/questions")({
   component: QuestionsPage,
 });
 
-interface QRow { id: string; text: string; order_index: number; category_id: string | null }
-interface CatRow { id: string; name: string; order_index: number }
+const DEFAULT_CATS: CatRow[] = [
+  { id: "c1", name: "Komunikasi", order_index: 1 },
+  { id: "c2", name: "Sosial dan Emosional", order_index: 2 },
+  { id: "c3", name: "Kemandirian", order_index: 3 },
+  { id: "c4", name: "Belajar dan Konsentrasi", order_index: 4 },
+  { id: "c5", name: "Perilaku dan Potensi", order_index: 5 },
+];
+
+const DEFAULT_QUESTIONS: QRow[] = [
+  { id: "q1", category_id: "c1", text: "Apakah anak mampu menyampaikan keinginan, pendapat, atau perasaannya dengan jelas kepada orang lain?", order_index: 1 },
+  { id: "q2", category_id: "c1", text: "Ketika diberikan arahan sederhana, apakah anak dapat memahami dan melakukannya dengan baik?", order_index: 2 },
+  { id: "q3", category_id: "c1", text: "Apakah anak berani bertanya, menjawab pertanyaan, atau bercerita kepada orang lain?", order_index: 3 },
+  { id: "q4", category_id: "c2", text: "Apakah anak mudah bermain dan bergaul dengan teman-teman seusianya?", order_index: 4 },
+  { id: "q5", category_id: "c2", text: "Saat menghadapi kekecewaan, apakah anak mampu mengendalikan emosinya tanpa marah atau menangis berlebihan?", order_index: 5 },
+  { id: "q6", category_id: "c2", text: "Apakah anak menunjukkan rasa peduli, seperti membantu atau menghibur orang lain yang sedang sedih atau kesulitan?", order_index: 6 },
+  { id: "q7", category_id: "c3", text: "Apakah anak mampu melakukan kegiatan sehari-hari seperti makan, memakai pakaian, atau merapikan mainan secara mandiri?", order_index: 7 },
+  { id: "q8", category_id: "c3", text: "Apakah anak terbiasa menjaga dan merapikan barang-barang miliknya setelah digunakan?", order_index: 8 },
+  { id: "q9", category_id: "c3", text: "Apakah anak berani mencoba aktivitas atau pengalaman baru tanpa harus selalu didampingi orang tua?", order_index: 9 },
+  { id: "q10", category_id: "c4", text: "Apakah anak mampu berkonsentrasi mengikuti kegiatan atau bermain selama sekitar 10–15 menit?", order_index: 10 },
+  { id: "q11", category_id: "c4", text: "Apakah anak sering menunjukkan rasa ingin tahu dengan bertanya atau mencoba hal-hal baru?", order_index: 11 },
+  { id: "q12", category_id: "c4", text: "Apakah anak tetap berusaha menyelesaikan tugas atau permainan meskipun mengalami kesulitan?", order_index: 12 },
+  { id: "q13", category_id: "c5", text: "Apakah anak mampu mengikuti aturan yang berlaku di rumah maupun di sekolah tanpa harus selalu diingatkan?", order_index: 13 },
+  { id: "q14", category_id: "c5", text: "Apakah anak sering menunjukkan ketertarikan yang kuat terhadap aktivitas tertentu, seperti menggambar, bernyanyi, menari, berhitung, olahraga, atau kegiatan kreatif lainnya?", order_index: 14 },
+  { id: "q15", category_id: "c5", text: "Menurut Anda, apakah perkembangan anak saat ini sudah sesuai dengan usianya?", order_index: 15 },
+];
 
 const SCALE = [
   { v: 5, label: "Selalu" },
@@ -52,11 +75,18 @@ function QuestionsPage() {
   const questions = useQuery({
     queryKey: ["questions-active"],
     queryFn: async () => {
-      const [{ data: qs }, { data: cats }] = await Promise.all([
-        supabase.from("questions").select("id,text,order_index,category_id,is_active").eq("is_active", true).order("order_index"),
-        supabase.from("question_categories").select("id,name,order_index").order("order_index"),
-      ]);
-      return { qs: (qs ?? []) as QRow[], cats: (cats ?? []) as CatRow[] };
+      try {
+        const [{ data: qs }, { data: cats }] = await Promise.all([
+          supabase.from("questions").select("id,text,order_index,category_id,is_active").eq("is_active", true).order("order_index"),
+          supabase.from("question_categories").select("id,name,order_index").order("order_index"),
+        ]);
+        if (qs && qs.length > 0) {
+          return { qs: qs as QRow[], cats: (cats ?? []) as CatRow[] };
+        }
+      } catch (e) {
+        console.warn("Using default questions fallback", e);
+      }
+      return { qs: DEFAULT_QUESTIONS, cats: DEFAULT_CATS };
     },
   });
 
