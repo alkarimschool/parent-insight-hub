@@ -20,7 +20,11 @@ const NAV = [
 function AdminLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const signOut = async () => { await supabase.auth.signOut(); navigate({ to: "/auth" }); };
+  const signOut = async () => {
+    localStorage.removeItem("paa_admin_logged_in");
+    await supabase.auth.signOut();
+    navigate({ to: "/auth" });
+  };
 
   return (
     <div className="flex min-h-screen bg-gradient-soft">
