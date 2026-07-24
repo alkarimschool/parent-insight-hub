@@ -75,10 +75,11 @@ function ResultPage() {
             <Section title="6. Kemampuan Komunikasi"><p>{c.kemampuan_komunikasi}</p></Section>
             <Section title="7. Kemandirian"><p>{c.kemandirian}</p></Section>
             <Section title="8. Kemampuan Belajar"><p>{c.kemampuan_belajar}</p></Section>
-            <Section title="9. Potensi Anak"><p>{c.potensi}</p></Section>
-            <Section title="10. Area yang Perlu Distimulasi"><List items={c.area_stimulasi} /></Section>
-            <Section title="11. Hal yang Perlu Menjadi Perhatian"><List items={c.perhatian_orangtua} /></Section>
-            <Section title="12. Treatment yang Direkomendasikan">
+            <Section title="9. Kemampuan Akademik Awal"><p>{c.kemampuan_akademik ?? c.kemampuan_belajar}</p></Section>
+            <Section title="10. Potensi Anak"><p>{c.potensi}</p></Section>
+            <Section title="11. Area yang Perlu Distimulasi"><List items={c.area_stimulasi} /></Section>
+            <Section title="12. Hal yang Perlu Menjadi Perhatian"><List items={c.perhatian_orangtua} /></Section>
+            <Section title="13. Treatment yang Direkomendasikan">
               {Array.isArray(c.treatment) ? (
                 <ul className="space-y-3">
                   {c.treatment.map((t: any, i: number) => (
@@ -92,7 +93,7 @@ function ResultPage() {
                 <p>{String(c.treatment ?? "")}</p>
               )}
             </Section>
-            <Section title="13. Kesimpulan"><p className="italic">{c.kesimpulan}</p></Section>
+            <Section title="14. Kesimpulan"><p className="italic">{c.kesimpulan}</p></Section>
 
             <div className="mt-4 flex justify-center gap-3">
               <Link to="/" className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-accent">

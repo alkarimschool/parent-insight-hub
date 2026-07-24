@@ -16,12 +16,16 @@ export const Route = createFileRoute("/assessment/questions")({
   component: QuestionsPage,
 });
 
+interface CatRow { id: string; name: string; order_index: number }
+interface QRow { id: string; category_id: string; text: string; order_index: number }
+
 const DEFAULT_CATS: CatRow[] = [
   { id: "c1", name: "Komunikasi", order_index: 1 },
   { id: "c2", name: "Sosial dan Emosional", order_index: 2 },
   { id: "c3", name: "Kemandirian", order_index: 3 },
   { id: "c4", name: "Belajar dan Konsentrasi", order_index: 4 },
-  { id: "c5", name: "Perilaku dan Potensi", order_index: 5 },
+  { id: "c5", name: "Kemampuan Akademik Awal", order_index: 5 },
+  { id: "c6", name: "Perilaku dan Potensi", order_index: 6 },
 ];
 
 const DEFAULT_QUESTIONS: QRow[] = [
@@ -37,9 +41,11 @@ const DEFAULT_QUESTIONS: QRow[] = [
   { id: "q10", category_id: "c4", text: "Apakah anak mampu berkonsentrasi mengikuti kegiatan atau bermain selama sekitar 10–15 menit?", order_index: 10 },
   { id: "q11", category_id: "c4", text: "Apakah anak sering menunjukkan rasa ingin tahu dengan bertanya atau mencoba hal-hal baru?", order_index: 11 },
   { id: "q12", category_id: "c4", text: "Apakah anak tetap berusaha menyelesaikan tugas atau permainan meskipun mengalami kesulitan?", order_index: 12 },
-  { id: "q13", category_id: "c5", text: "Apakah anak mampu mengikuti aturan yang berlaku di rumah maupun di sekolah tanpa harus selalu diingatkan?", order_index: 13 },
-  { id: "q14", category_id: "c5", text: "Apakah anak sering menunjukkan ketertarikan yang kuat terhadap aktivitas tertentu, seperti menggambar, bernyanyi, menari, berhitung, olahraga, atau kegiatan kreatif lainnya?", order_index: 14 },
-  { id: "q15", category_id: "c5", text: "Menurut Anda, apakah perkembangan anak saat ini sudah sesuai dengan usianya?", order_index: 15 },
+  { id: "q13", category_id: "c5", text: "Apakah anak mampu mengenal huruf dasar, angka, warna, bentuk, atau membilang/berhitung benda sederhana sesuai usianya?", order_index: 13 },
+  { id: "q14", category_id: "c5", text: "Apakah anak tertarik dan mulai mampu membaca kata pendek, menulis/mencoret huruf, atau mengelompokkan benda sesuai jumlahnya?", order_index: 14 },
+  { id: "q15", category_id: "c6", text: "Apakah anak mampu mengikuti aturan yang berlaku di rumah maupun di sekolah tanpa harus selalu diingatkan?", order_index: 15 },
+  { id: "q16", category_id: "c6", text: "Apakah anak sering menunjukkan ketertarikan yang kuat terhadap aktivitas tertentu, seperti menggambar, bernyanyi, menari, berhitung, olahraga, atau kegiatan kreatif lainnya?", order_index: 16 },
+  { id: "q17", category_id: "c6", text: "Menurut Anda, apakah perkembangan anak saat ini sudah sesuai dengan usianya?", order_index: 17 },
 ];
 
 const SCALE = [
@@ -108,6 +114,8 @@ function QuestionsPage() {
   const answered = list.filter((q) => answers[q.id]).length;
   const progress = list.length ? (answered / list.length) * 100 : 0;
 
+  const isSpecialScale = current?.order_index === 17 || current?.text.includes("sesuai dengan usianya");
+
   const handleSubmit = async () => {
     if (answered < list.length) { toast.error("Mohon isi semua pertanyaan."); return; }
     if (!formData) return;
@@ -147,7 +155,7 @@ function QuestionsPage() {
   if (!current) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-soft">
+    <div className="min-h-screen bg-gradient-soft pb-24 md:pb-12">
       <PublicNav siteName={website.data?.site_name ?? "PAA"} logoText="PAA" />
       <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
         <div className="mb-6">
@@ -162,7 +170,7 @@ function QuestionsPage() {
           <div className="text-xs font-semibold uppercase tracking-wider text-primary">Pertanyaan {idx + 1}</div>
           <h2 className="mt-2 text-xl font-semibold leading-relaxed text-foreground sm:text-2xl">{current.text}</h2>
           <div className="mt-8 grid gap-3">
-            {(current.order_index === 15 || idx === 14 ? SCALE_Q15 : SCALE).map((s) => {
+            {(isSpecialScale ? SCALE_Q15 : SCALE).map((s) => {
               const selected = answers[current.id] === s.v;
               return (
                 <button

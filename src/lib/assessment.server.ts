@@ -14,36 +14,37 @@ function isUUID(str: string) {
 function generateFallbackResult(childName: string, parentName: string, avgScore: number) {
   const isHigh = avgScore >= 3.8;
   return {
-    ringkasan: `Berdasarkan hasil asesmen perkembangan, ${childName} menunjukkan tahap tumbuh kembang yang ${isHigh ? "sangat optimal" : "baik dan terus berkembang"}. Anak aktif berinteraksi dan siap mengeksplorasi aktivitas baru.`,
+    ringkasan: `Berdasarkan hasil asesmen perkembangan, ${childName} menunjukkan tahap tumbuh kembang yang ${isHigh ? "sangat optimal" : "baik dan terus berkembang"}. Anak aktif berinteraksi, memiliki rasa ingin tahu tinggi, serta siap mengeksplorasi aktivitas baru.`,
     kelebihan: [
-      `Kemampuan berkomunikasi dan menyampaikan pendapat dengan baik.`,
-      `Rasa ingin tahu yang tinggi dalam mencoba pengalaman baru.`,
+      `Kemampuan berkomunikasi dan menyampaikan pendapat dengan jelas.`,
+      `Minat eksplorasi awal pada pengenalan huruf, angka, dan benda sekitar.`,
       `Kemandirian dalam aktivitas harian dan merapikan perlengkapan pribadi.`
     ],
     area_pengembangan: [
-      `Melatih regulasi emosi saat menghadapi situasi kekecewaan atau tantangan.`,
-      `Meningkatkan daya tahan fokus pada kegiatan berdurasi lebih panjang (15+ menit).`
+      `Melatih regulasi emosi saat menghadapi tantangan atau kegiatan baru.`,
+      `Meningkatkan daya tahan konsentrasi dan stimulasi calistung dasar (membaca, menulis, berhitung) melalui metode bermain.`
     ],
     kecerdasan_sosial: `${childName} menunjukkan interaksi sosial yang hangat, mudah bergaul dengan teman seusia, dan mulai memahami empati.`,
     kecerdasan_emosional: `Anak memiliki tingkat percaya diri yang positif. Pendampingan orang tua akan membantu memperkuat ketahanan emosionalnya.`,
     kemampuan_komunikasi: `Anak dapat memahami instruksi sederhana dan berani bercerita tentang aktivitas sehari-hari.`,
     kemandirian: `Tingkat kemandirian anak sudah baik untuk usia 3-6 tahun dalam melakukan rutinitas sehari-hari.`,
     kemampuan_belajar: `Anak memiliki ketekunan yang baik dan antusias ketika mempelajari hal-hal baru.`,
-    potensi: `Potensi dominan terlihat pada kecerdasan sosial-komunikasi, minat eksplorasi kreatif, dan kemandirian.`,
+    kemampuan_akademik: `${childName} menunjukkan pengenalan yang baik pada huruf dasar, angka, warna, bentuk, serta kemampuan membilang benda sederhana sesuai dengan usianya.`,
+    potensi: `Potensi dominan terlihat pada kecerdasan sosial-komunikasi, literasi awal/akademik dasar, dan kemandirian.`,
     area_stimulasi: [
-      `Permainan edukatif kelompok untuk melatih kerja sama dan kesabaran.`,
-      `Aktivitas seni, gambar, atau kriya untuk mengasah ekspresi emosi dan kreativitas.`
+      `Permainan kartu bergambar (flashcard) huruf dan angka untuk melatih akademis awal.`,
+      `Aktivitas menggambar, mencoret huruf, serta menghitung benda-benda di rumah secara menyenangkan.`
     ],
     perhatian_orangtua: [
-      `Berikan pujian spesifik saat anak berusaha menyelesaikan tantangan.`,
-      `Bantu anak mengenali dan menamai perasaannya saat merasa kecewa.`
+      `Berikan pujian spesifik saat anak berusaha mengenali huruf/angka baru.`,
+      `Jadikan kegiatan belajar akademis awal sebagai bentuk permainan yang tidak membebani anak.`
     ],
     treatment: [
-      { kategori: "Aktivitas Bermain", aktivitas: "Bermain peran dan puzzle bersama selama 15-20 menit sehari." },
-      { kategori: "Latihan Emosi", aktivitas: "Diskusikan perasaan anak dengan metode cerita dan apresiasi." },
-      { kategori: "Rutinitas Rumah", aktivitas: "Libatkan anak dalam tugas ringan rumah tangga secara mandiri." }
+      { kategori: "Stimulasi Akademik Awal", aktivitas: "Bermain tebak huruf dan membilang buah/mainan bersama 10-15 menit sehari." },
+      { kategori: "Aktivitas Motorik & Seni", aktivitas: "Mewarnai, membentuk lilin/playdough menjadi huruf atau angka." },
+      { kategori: "Rutinitas Rumah", aktivitas: "Membaca buku cerita bergambar bersama sebelum tidur." }
     ],
-    kesimpulan: `Perkembangan ${childName} berjalan sangat baik. Apresiasi dan pendampingan konsisten dari Ibu/Bapak ${parentName} di rumah akan semakin memperkuat potensi si kecil.`
+    kesimpulan: `Perkembangan dan kemampuan akademik awal ${childName} berjalan sangat baik. Apresiasi dan pendampingan konsisten dari Ibu/Bapak ${parentName} di rumah akan semakin memperkuat potensi si kecil.`
   };
 }
 
@@ -79,7 +80,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .single();
   if (aErr || !assessment) throw new Error("Gagal membuat assessment: " + aErr?.message);
 
-  // 4. Insert answers (filter valid UUIDs)
+  // 4. Insert answers
   const validAnswers = data.answers.filter((a) => isUUID(a.question_id));
   if (validAnswers.length > 0) {
     const answerRows = validAnswers.map((a) => ({
@@ -120,7 +121,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
   ]);
 
   const activePrompt = prompt ?? {
-    system_prompt: "Anda adalah asisten psikolog anak. Buat analisis 13 bagian dalam JSON valid.",
+    system_prompt: "Anda adalah asisten psikolog anak. Buat analisis komprehensif perkembangan dan kemampuan akademik awal anak dalam JSON valid.",
     user_template: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJawaban:\n{{answers}}",
   };
 
@@ -133,7 +134,8 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .replace(/\{\{child_school\}\}/g, data.child.school || "-")
     .replace(/\{\{answers\}\}/g, answersText);
 
-  const schemaHint = `\n\nBalas HANYA sebagai JSON valid dengan struktur:\n{
+  const schemaHint = `\n\nBalas HANYA sebagai JSON valid dengan struktur:
+{
   "ringkasan": "string",
   "kelebihan": ["string"],
   "area_pengembangan": ["string"],
@@ -142,6 +144,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
   "kemampuan_komunikasi": "string",
   "kemandirian": "string",
   "kemampuan_belajar": "string",
+  "kemampuan_akademik": "string (analisis pengenalan huruf, angka, bentuk, calistung dasar)",
   "potensi": "string",
   "area_stimulasi": ["string"],
   "perhatian_orangtua": ["string"],
