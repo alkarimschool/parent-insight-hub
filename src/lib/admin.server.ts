@@ -115,3 +115,36 @@ export async function updatePromptServer(data: {
   }
   return { ok: true };
 }
+
+export async function updateParentChildAssessmentServer(data: {
+  assessment_id: string;
+  parent_id?: string;
+  child_id?: string;
+  child_name: string;
+  whatsapp: string;
+  school?: string;
+  education_level?: string;
+}) {
+  if (data.parent_id) {
+    await supabaseAdmin
+      .from("parents")
+      .update({ whatsapp: data.whatsapp })
+      .eq("id", data.parent_id);
+  }
+
+  if (data.child_id) {
+    await supabaseAdmin
+      .from("children")
+      .update({ name: data.child_name, school: data.school || null })
+      .eq("id", data.child_id);
+  }
+
+  if (data.assessment_id) {
+    await supabaseAdmin
+      .from("assessments")
+      .update({ education_level: data.education_level || "TK" })
+      .eq("id", data.assessment_id);
+  }
+
+  return { ok: true };
+}

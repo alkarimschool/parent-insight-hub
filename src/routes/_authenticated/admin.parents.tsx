@@ -1,24 +1,36 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Edit3, Trash2, Save, X, Search, CheckCircle2, GraduationCap } from "lucide-react";
+import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { updateParentChildFn } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/parents")({
   component: ParentsList,
 });
 
 function ParentsList() {
+  const qc = useQueryClient();
+  const updateParentChild = useServerFn(updateParentChildFn);
+
   const [q, setQ] = useState("");
+  const [editingRow, setEditingRow] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+
   const list = useQuery({
-    queryKey: ["admin-parents"],
+    queryKey: ["admin-parents-list"],
     queryFn: async () => {
       const { data } = await supabase
         .from("assessments")
-        .select("id, status, created_at, parents(name, whatsapp), children(name, birth_date, school)")
+        .select("id, status, education_level, created_at, parent_id, child_id, parents(id, name, whatsapp), children(id, name, birth_date, school)")
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(300);
+
       return data ?? [];
     },
   });
@@ -27,54 +39,223 @@ function ParentsList() {
     if (!q) return true;
     const s = q.toLowerCase();
     return (
-      r.parents?.name?.toLowerCase().includes(s) ||
-      r.parents?.whatsapp?.includes(s) ||
       r.children?.name?.toLowerCase().includes(s) ||
+      r.parents?.whatsapp?.includes(s) ||
+      r.education_level?.toLowerCase().includes(s) ||
       r.children?.school?.toLowerCase().includes(s)
     );
   });
 
+  const handleEditClick = (r: any) => {
+    setEditingRow({
+      assessment_id: r.id,
+      parent_id: r.parents?.id,
+      child_id: r.children?.id,
+      child_name: r.children?.name ?? "",
+      whatsapp: r.parents?.whatsapp ?? "",
+      school: r.children?.school ?? "",
+      education_level: r.education_level ?? "TK",
+    });
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRow) return;
+    setSaving(true);
+    try {
+      await updateParentChild({
+        data: {
+          assessment_id: editingRow.assessment_id,
+          parent_id: editingRow.parent_id,
+          child_id: editingRow.child_id,
+          child_name: editingRow.child_name,
+          whatsapp: editingRow.whatsapp,
+          school: editingRow.school,
+          education_level: editingRow.education_level,
+        },
+      });
+      toast.success("Data berhasil diperbarui di Supabase.");
+      setEditingRow(null);
+      qc.invalidateQueries({ queryKey: ["admin-parents-list"] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Gagal menyimpan perubahan.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Hapus data asesmen ini dari database?")) return;
+    const { error } = await supabase.from("assessments").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Data asesmen berhasil dihapus.");
+    qc.invalidateQueries({ queryKey: ["admin-parents-list"] });
+  };
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold">Database Orang Tua</h1>
-      <div className="mt-4 flex gap-3">
-        <Input placeholder="Cari nama / WhatsApp / anak / sekolah…" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-sm" />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Database Asesmen & Orang Tua</h1>
+        <p className="text-sm text-muted-foreground">
+          Kelola data responden, nomor WhatsApp, nama anak, dan hasil analisis asesmen yang tersimpan di Supabase.
+        </p>
       </div>
-      <div className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-card shadow-soft">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
+
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari Nama Anak / WhatsApp / Sekolah…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="pl-9 text-xs"
+          />
+        </div>
+      </div>
+
+      {/* TABLE */}
+      <div className="overflow-x-auto rounded-3xl border border-border/60 bg-card shadow-soft">
+        <table className="w-full text-left text-xs">
+          <thead className="border-b border-border/60 bg-muted/40 font-semibold uppercase tracking-wider text-muted-foreground">
             <tr>
-              <th className="p-3">Orang Tua</th>
-              <th className="p-3">WhatsApp</th>
-              <th className="p-3">Anak</th>
-              <th className="p-3">Sekolah</th>
-              <th className="p-3">Tanggal</th>
-              <th className="p-3">Status</th>
-              <th className="p-3"></th>
+              <th className="p-3.5">Tanggal</th>
+              <th className="p-3.5">Nama Anak</th>
+              <th className="p-3.5">Jenjang</th>
+              <th className="p-3.5">No WhatsApp</th>
+              <th className="p-3.5">Hasil Analisis</th>
+              <th className="p-3.5 text-right">Aksi</th>
             </tr>
           </thead>
-          <tbody>
-            {rows.map((r: any) => (
-              <tr key={r.id} className="border-t border-border/60">
-                <td className="p-3 font-medium">{r.parents?.name}</td>
-                <td className="p-3">{r.parents?.whatsapp}</td>
-                <td className="p-3">{r.children?.name}</td>
-                <td className="p-3 text-muted-foreground">{r.children?.school ?? "-"}</td>
-                <td className="p-3 text-muted-foreground">{new Date(r.created_at).toLocaleString("id-ID")}</td>
-                <td className="p-3">
-                  <span className={"rounded-full px-2 py-0.5 text-xs font-semibold " + (r.status === "analyzed" ? "bg-primary/10 text-primary" : r.status === "failed" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground")}>{r.status}</span>
-                </td>
-                <td className="p-3">
-                  <Link to="/assessment/result/$id" params={{ id: r.id }} className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><ExternalLink className="h-3 w-3" /> Lihat</Link>
-                </td>
+          <tbody className="divide-y divide-border/40">
+            {list.isLoading ? (
+              <tr>
+                <td colSpan={6} className="p-8 text-center text-muted-foreground">Memuat database Supabase…</td>
               </tr>
-            ))}
-            {rows.length === 0 && (
-              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Belum ada data.</td></tr>
+            ) : rows.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="p-8 text-center text-muted-foreground">Belum ada data di database orang tua.</td>
+              </tr>
+            ) : (
+              rows.map((r: any) => {
+                const lvl = r.education_level ?? "TK";
+                return (
+                  <tr key={r.id} className="hover:bg-muted/30 transition">
+                    <td className="p-3.5 text-muted-foreground whitespace-nowrap">
+                      {new Date(r.created_at).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
+                    </td>
+                    <td className="p-3.5 font-bold text-foreground">
+                      {r.children?.name ?? "-"}
+                      {r.children?.school && <div className="text-[11px] font-normal text-muted-foreground">{r.children.school}</div>}
+                    </td>
+                    <td className="p-3.5">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary">
+                        <GraduationCap className="h-3 w-3" /> {lvl}
+                      </span>
+                    </td>
+                    <td className="p-3.5 font-mono text-muted-foreground">{r.parents?.whatsapp ?? "-"}</td>
+                    <td className="p-3.5">
+                      <div className="flex items-center gap-2">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${r.status === "analyzed" ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>
+                          {r.status === "analyzed" ? "Selesai Analisis" : "Diproses"}
+                        </span>
+                        <Link
+                          to="/assessment/result/$id"
+                          params={{ id: r.id }}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" /> Laporan {lvl}
+                        </Link>
+                      </div>
+                    </td>
+                    <td className="p-3.5 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button size="sm" variant="outline" onClick={() => handleEditClick(r)} className="rounded-full text-xs h-8 px-3">
+                          <Edit3 className="h-3.5 w-3.5 mr-1" /> Edit
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleDelete(r.id)} className="rounded-full text-xs h-8 px-2.5">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
+
+      {/* EDIT MODAL DIALOG */}
+      {editingRow && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl border border-border/80 bg-card p-6 shadow-elevated space-y-4">
+            <div className="flex items-center justify-between border-b border-border/40 pb-3">
+              <h3 className="font-bold text-foreground text-base">Edit Data Responden</h3>
+              <button onClick={() => setEditingRow(null)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
+              <div>
+                <Label htmlFor="edit_child_name" className="font-semibold">Nama Anak *</Label>
+                <Input
+                  id="edit_child_name"
+                  value={editingRow.child_name}
+                  onChange={(e) => setEditingRow({ ...editingRow, child_name: e.target.value })}
+                  className="mt-1 text-xs"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit_whatsapp" className="font-semibold">No WhatsApp *</Label>
+                <Input
+                  id="edit_whatsapp"
+                  value={editingRow.whatsapp}
+                  onChange={(e) => setEditingRow({ ...editingRow, whatsapp: e.target.value })}
+                  className="mt-1 text-xs"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit_education_level" className="font-semibold">Jenjang Pendidikan *</Label>
+                <select
+                  id="edit_education_level"
+                  value={editingRow.education_level}
+                  onChange={(e) => setEditingRow({ ...editingRow, education_level: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-input bg-background p-2.5 text-xs font-semibold"
+                >
+                  <option value="TK">👶 TK / PAUD</option>
+                  <option value="SD">📘 Sekolah Dasar (SD)</option>
+                  <option value="SMP">📗 Sekolah Menengah (SMP)</option>
+                  <option value="SMA">🎓 SMA / SMK</option>
+                </select>
+              </div>
+
+              <div>
+                <Label htmlFor="edit_school" className="font-semibold">Nama Sekolah</Label>
+                <Input
+                  id="edit_school"
+                  value={editingRow.school}
+                  onChange={(e) => setEditingRow({ ...editingRow, school: e.target.value })}
+                  className="mt-1 text-xs"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/40">
+                <Button type="button" variant="outline" onClick={() => setEditingRow(null)} className="rounded-full text-xs">
+                  Batal
+                </Button>
+                <Button type="submit" disabled={saving} className="rounded-full bg-gradient-hero text-xs shadow-soft">
+                  <Save className="h-3.5 w-3.5 mr-1" /> {saving ? "Menyimpan…" : "Simpan Perubahan"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

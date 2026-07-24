@@ -35,3 +35,10 @@ export const savePromptFn = createServerFn({ method: "POST" })
     const { updatePromptServer } = await import("./admin.server");
     return updatePromptServer(data);
   });
+
+export const updateParentChildFn = createServerFn({ method: "POST" })
+  .inputValidator((data: any) => data)
+  .handler(async ({ data }) => {
+    const { updateParentChildAssessmentServer } = await import("./admin.server");
+    return updateParentChildAssessmentServer(data);
+  });
