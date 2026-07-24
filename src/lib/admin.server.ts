@@ -224,49 +224,24 @@ export async function updateParentChildAssessmentServer(data: {
 }
 
 export async function getAdminParentsListServer() {
-  try {
-    const { data: assessments } = await supabaseAdmin
-      .from("assessments")
-      .select("id, status, education_level, created_at, parent_id, child_id, parents(id, name, whatsapp), children(id, name, birth_date, school)")
-      .order("created_at", { ascending: false })
-      .limit(300);
+  const { data: assessments, error } = await supabaseAdmin
+    .from("assessments")
+    .select("id, status, education_level, created_at, parent_id, child_id, parents(id, name, whatsapp), children(id, name, birth_date, school)")
+    .order("created_at", { ascending: false })
+    .limit(300);
 
-    if (assessments && assessments.length > 0) {
-      return assessments;
-    }
-  } catch (e) {
-    console.warn("Could not query assessments join", e);
+  if (error) {
+    console.error("Error querying assessments list:", error);
+    return [];
   }
 
-  try {
-    const { data: parents } = await supabaseAdmin
-      .from("parents")
-      .select("id, name, whatsapp, created_at, children(id, name, school)")
-      .order("created_at", { ascending: false });
-
-    if (parents && parents.length > 0) {
-      return parents.map((p: any) => ({
-        id: p.id,
-        status: "analyzed",
-        education_level: "TK",
-        created_at: p.created_at || new Date().toISOString(),
-        parent_id: p.id,
-        child_id: p.children?.[0]?.id || null,
-        parents: { id: p.id, name: p.name, whatsapp: p.whatsapp },
-        children: p.children?.[0] ? { id: p.children[0].id, name: p.children[0].name, school: p.children[0].school } : { name: "Anak", school: "-" }
-      }));
-    }
-  } catch (e) {
-    console.warn("Could not query parents fallback", e);
-  }
-
-  return [];
+  return assessments ?? [];
 }
 
 export async function deleteAssessmentServer(id: string) {
   if (!id) throw new Error("ID Assessment tidak valid.");
 
-  // 1. Fetch details before deletion
+  // 1. Fetch details before deletion to clean up children and parents
   const { data: assessment } = await supabaseAdmin
     .from("assessments")
     .select("id, parent_id, child_id, education_level, parents(id, name, whatsapp), children(id, name)")
@@ -279,7 +254,7 @@ export async function deleteAssessmentServer(id: string) {
   const parentName = (assessment as any)?.parents?.name || "Orang Tua";
   const level = assessment?.education_level || "TK";
 
-  // 2. Cascade Delete in order to prevent foreign key errors
+  // 2. Cascade Delete related records first
   try {
     await supabaseAdmin.from("ai_results").delete().eq("assessment_id", id);
   } catch (e) {
@@ -292,44 +267,31 @@ export async function deleteAssessmentServer(id: string) {
     console.warn("assessment_answers delete warning:", e);
   }
 
+  // 3. Delete assessment record
   const { error: deleteErr } = await supabaseAdmin.from("assessments").delete().eq("id", id);
   if (deleteErr) {
     console.error("Failed to delete assessment record:", deleteErr);
-    throw new Error("Gagal menghapus data. Silakan coba lagi. (" + deleteErr.message + ")");
+    throw new Error("Gagal menghapus data: " + deleteErr.message);
   }
 
-  // 3. Clean up orphaned child and parent records if no other assessments exist
+  // 4. Force delete child & parent records to keep database clean
   if (childId) {
     try {
-      const { count } = await supabaseAdmin
-        .from("assessments")
-        .select("*", { count: "exact", head: true })
-        .eq("child_id", childId);
-
-      if (count === 0) {
-        await supabaseAdmin.from("children").delete().eq("id", childId);
-      }
+      await supabaseAdmin.from("children").delete().eq("id", childId);
     } catch (e) {
-      console.warn("Child cleanup skipped:", e);
+      console.warn("Could not delete child record:", e);
     }
   }
 
   if (parentId) {
     try {
-      const { count } = await supabaseAdmin
-        .from("children")
-        .select("*", { count: "exact", head: true })
-        .eq("parent_id", parentId);
-
-      if (count === 0) {
-        await supabaseAdmin.from("parents").delete().eq("id", parentId);
-      }
+      await supabaseAdmin.from("parents").delete().eq("id", parentId);
     } catch (e) {
-      console.warn("Parent cleanup skipped:", e);
+      console.warn("Could not delete parent record:", e);
     }
   }
 
-  // 4. Record Activity Log
+  // 5. Record Activity Log
   try {
     await supabaseAdmin.from("activity_logs").insert({
       action: "DELETE DATA",
