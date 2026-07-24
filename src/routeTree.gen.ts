@@ -17,6 +17,7 @@ import { Route as AssessmentQuestionsRouteImport } from './routes/assessment.que
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AssessmentResultIdRouteImport } from './routes/assessment.result.$id'
+import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin.settings'
 import { Route as AuthenticatedAdminQuestionsRouteImport } from './routes/_authenticated/admin.questions'
 import { Route as AuthenticatedAdminPromptRouteImport } from './routes/_authenticated/admin.prompt'
 import { Route as AuthenticatedAdminParentsRouteImport } from './routes/_authenticated/admin.parents'
@@ -60,6 +61,12 @@ const AssessmentResultIdRoute = AssessmentResultIdRouteImport.update({
   path: '/result/$id',
   getParentRoute: () => AssessmentRoute,
 } as any)
+const AuthenticatedAdminSettingsRoute =
+  AuthenticatedAdminSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminQuestionsRoute =
   AuthenticatedAdminQuestionsRouteImport.update({
     id: '/questions',
@@ -88,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/admin/parents': typeof AuthenticatedAdminParentsRoute
   '/admin/prompt': typeof AuthenticatedAdminPromptRoute
   '/admin/questions': typeof AuthenticatedAdminQuestionsRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/assessment/result/$id': typeof AssessmentResultIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
@@ -99,6 +107,7 @@ export interface FileRoutesByTo {
   '/admin/parents': typeof AuthenticatedAdminParentsRoute
   '/admin/prompt': typeof AuthenticatedAdminPromptRoute
   '/admin/questions': typeof AuthenticatedAdminQuestionsRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/assessment/result/$id': typeof AssessmentResultIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
@@ -113,6 +122,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/parents': typeof AuthenticatedAdminParentsRoute
   '/_authenticated/admin/prompt': typeof AuthenticatedAdminPromptRoute
   '/_authenticated/admin/questions': typeof AuthenticatedAdminQuestionsRoute
+  '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/assessment/result/$id': typeof AssessmentResultIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/admin/parents'
     | '/admin/prompt'
     | '/admin/questions'
+    | '/admin/settings'
     | '/assessment/result/$id'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/admin/parents'
     | '/admin/prompt'
     | '/admin/questions'
+    | '/admin/settings'
     | '/assessment/result/$id'
     | '/admin'
   id:
@@ -151,6 +163,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/parents'
     | '/_authenticated/admin/prompt'
     | '/_authenticated/admin/questions'
+    | '/_authenticated/admin/settings'
     | '/assessment/result/$id'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
@@ -220,6 +233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssessmentResultIdRouteImport
       parentRoute: typeof AssessmentRoute
     }
+    '/_authenticated/admin/settings': {
+      id: '/_authenticated/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AuthenticatedAdminSettingsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/questions': {
       id: '/_authenticated/admin/questions'
       path: '/questions'
@@ -248,6 +268,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminParentsRoute: typeof AuthenticatedAdminParentsRoute
   AuthenticatedAdminPromptRoute: typeof AuthenticatedAdminPromptRoute
   AuthenticatedAdminQuestionsRoute: typeof AuthenticatedAdminQuestionsRoute
+  AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
@@ -255,6 +276,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminParentsRoute: AuthenticatedAdminParentsRoute,
   AuthenticatedAdminPromptRoute: AuthenticatedAdminPromptRoute,
   AuthenticatedAdminQuestionsRoute: AuthenticatedAdminQuestionsRoute,
+  AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
