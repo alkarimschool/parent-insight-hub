@@ -19,29 +19,29 @@ const LEVEL_TITLES: Record<string, {
   sec12: string;
 }> = {
   TK: {
-    badge: "👶 Laporan Assessment Jenjang TK / PAUD",
-    header: (c) => `Hasil Asesmen Perkembangan & Kesiapan Sekolah ${c ? `Ananda ${c}` : "Anak Anda"}`,
+    badge: "👶 Laporan Assessment Perkembangan Anak Usia Dini",
+    header: (c) => `Assessment Perkembangan Anak Usia Dini ${c ? `Ananda ${c}` : ""}`,
     subtitle: (p) => `Hasil analisis tumbuh kembang anak usia dini untuk Ibu/Bapak ${p} sebagai panduan kesiapan sekolah dan calistung awal.`,
     sec4: "4. Kemampuan Akademik Awal & Calistung TK",
     sec12: "12. Rekomendasi Stimulasi Calistung & Kesiapan Sekolah",
   },
   SD: {
-    badge: "📘 Laporan Assessment Jenjang Sekolah Dasar (SD)",
-    header: (c) => `Hasil Asesmen Akademik & Karakter SD ${c ? `Ananda ${c}` : "Anak Anda"}`,
+    badge: "📘 Laporan Assessment Karakter & Potensi Siswa SD",
+    header: (c) => `Assessment Karakter dan Potensi Siswa Sekolah Dasar ${c ? `Ananda ${c}` : ""}`,
     subtitle: (p) => `Hasil analisis kebiasaan belajar, literasi, numerasi, dan disiplin untuk Ibu/Bapak ${p} sebagai panduan pendampingan SD.`,
     sec4: "4. Kemampuan Akademik (Literasi & Numerasi SD)",
     sec12: "12. Rekomendasi Penguatan Literasi & Numerasi SD",
   },
   SMP: {
-    badge: "📗 Laporan Assessment Jenjang Sekolah Menengah (SMP)",
-    header: (c) => `Hasil Asesmen Remaja & Motivasi Akademik ${c ? `Ananda ${c}` : "Anak Anda"}`,
+    badge: "📗 Laporan Assessment Karakter & Perkembangan Remaja Awal",
+    header: (c) => `Assessment Karakter dan Perkembangan Remaja Awal ${c ? `Ananda ${c}` : ""}`,
     subtitle: (p) => `Hasil analisis pemikiran kritis, motivasi belajar, dan pergaulan remaja untuk Ibu/Bapak ${p} sebagai pendampingan SMP.`,
     sec4: "4. Kemampuan Akademik & Berpikir Kritis SMP",
     sec12: "12. Rekomendasi Pengembangan Akademik & Remaja SMP",
   },
   SMA: {
-    badge: "🎓 Laporan Assessment Jenjang SMA / SMK",
-    header: (c) => `Hasil Asesmen Kesiapan Kuliah & Karier ${c ? `Ananda ${c}` : "Anak Anda"}`,
+    badge: "🎓 Laporan Assessment Minat, Bakat, & Kesiapan Masa Depan",
+    header: (c) => `Assessment Minat, Bakat, dan Kesiapan Masa Depan ${c ? `Ananda ${c}` : ""}`,
     subtitle: (p) => `Hasil analisis kesiapan perguruan tinggi, pemikiran analitis, dan kepemimpinan untuk Ibu/Bapak ${p} sebagai pendampingan masa depan.`,
     sec4: "4. Kemampuan Analitis & Kesiapan Perguruan Tinggi",
     sec12: "12. Rekomendasi Strategi Kuliah & Dunia Karier",

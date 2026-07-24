@@ -13,14 +13,22 @@ export const Route = createFileRoute("/_authenticated/admin/parents")({
   component: ParentsList,
 });
 
+const LEVEL_TITLES_SHORT: Record<string, string> = {
+  TK: "Assessment Perkembangan Anak Usia Dini",
+  SD: "Assessment Karakter dan Potensi Siswa Sekolah Dasar",
+  SMP: "Assessment Karakter dan Perkembangan Remaja Awal",
+  SMA: "Assessment Minat, Bakat, dan Kesiapan Masa Depan",
+};
+
 function formatWaLink(phone: string, childName: string, level: string, assessmentId: string) {
   if (!phone) return "#";
   let clean = phone.replace(/[^0-9]/g, "");
   if (clean.startsWith("0")) clean = "62" + clean.slice(1);
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
   const reportUrl = `${baseUrl}/assessment/result/${assessmentId}`;
+  const title = LEVEL_TITLES_SHORT[level] || LEVEL_TITLES_SHORT.TK;
   const text = encodeURIComponent(
-    `Halo Ibu/Bapak, berikut adalah Laporan Asesmen Perkembangan Ananda ${childName || "Anak"} (Jenjang ${level}):\n\n${reportUrl}\n\nTerima kasih!`
+    `Halo Ibu/Bapak, berikut adalah Laporan ${title} Ananda ${childName || "Anak"}:\n\n${reportUrl}\n\nTerima kasih!`
   );
   return `https://wa.me/${clean}?text=${text}`;
 }

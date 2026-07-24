@@ -155,11 +155,19 @@ const LEVEL_PROFILES: Record<EducationLevel, {
   }
 };
 
+export const LEVEL_TITLES_MAP: Record<EducationLevel, string> = {
+  TK: "Assessment Perkembangan Anak Usia Dini",
+  SD: "Assessment Karakter dan Potensi Siswa Sekolah Dasar",
+  SMP: "Assessment Karakter dan Perkembangan Remaja Awal",
+  SMA: "Assessment Minat, Bakat, dan Kesiapan Masa Depan",
+};
+
 function generateFallbackResult(childName: string, parentName: string, avgScore: number, level: EducationLevel = "TK") {
   const isHigh = avgScore >= 3.8;
   const profile = LEVEL_PROFILES[level] || LEVEL_PROFILES.TK;
 
   return {
+    judul: LEVEL_TITLES_MAP[level] || LEVEL_TITLES_MAP.TK,
     ringkasan: profile.ringkasan(childName, isHigh),
     kelebihan: profile.kelebihan(childName),
     area_pengembangan: profile.area_pengembangan(childName),
@@ -238,6 +246,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
       .insert({
         parent_id: parent.id,
         child_id: child.id,
+        education_level: level,
         status: "analyzing",
       })
       .select()
@@ -345,6 +354,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
 
   const schemaHint = `\n\nBalas HANYA sebagai JSON valid dengan struktur:
 {
+  "judul": "string ('${LEVEL_TITLES_MAP[level]}')",
   "ringkasan": "string",
   "kelebihan": ["string"],
   "area_pengembangan": ["string"],
@@ -390,6 +400,8 @@ export async function submitAndAnalyze(data: SubmitInput) {
   if (!parsedResult || !parsedResult.ringkasan) {
     parsedResult = generateFallbackResult(data.child.name, data.parent.name, avgScore, level);
     rawText = JSON.stringify(parsedResult);
+  } else {
+    parsedResult.judul = LEVEL_TITLES_MAP[level] || LEVEL_TITLES_MAP.TK;
   }
 
   // Save AI result to DB
@@ -455,9 +467,14 @@ export async function getAssessmentResultServer(assessmentId: string) {
   const level: EducationLevel = (assessment.education_level as EducationLevel) || "TK";
 
   // 4. Ensure complete 13-section level analysis content
-  let content = aiRes?.content;
+  let content = aiRes?.content as any;
   if (!content || typeof content !== "object" || !content.ringkasan) {
     content = generateFallbackResult(child?.name || "Anak", parent?.name || "Orang Tua", 4.0, level);
+  } else {
+    content = {
+      ...content,
+      judul: LEVEL_TITLES_MAP[level] || LEVEL_TITLES_MAP.TK,
+    };
   }
 
   return {
