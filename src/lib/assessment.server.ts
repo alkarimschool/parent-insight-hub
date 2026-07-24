@@ -185,23 +185,33 @@ function generateFallbackResult(childName: string, parentName: string, avgScore:
 }
 
 export async function submitAndAnalyze(data: SubmitInput) {
-  const level: EducationLevel = data.child.education_level || "TK";
+  const level: EducationLevel = data.child?.education_level || "TK";
+
+  if (!data.parent?.name?.trim() || !data.parent?.whatsapp?.trim() || !data.child?.name?.trim()) {
+    throw new Error("Data Orang Tua dan Anak harus diisi lengkap.");
+  }
+  if (!data.answers || data.answers.length === 0) {
+    throw new Error("Silakan lengkapi seluruh pertanyaan sebelum mengirim assessment.");
+  }
 
   // 1. Save / Upsert Parent in Supabase
   let parent: any = null;
   const { data: pExisting } = await supabaseAdmin
     .from("parents")
     .select("*")
-    .eq("whatsapp", data.parent.whatsapp)
+    .eq("whatsapp", data.parent.whatsapp.trim())
     .maybeSingle();
 
   if (pExisting) {
     parent = pExisting;
-    await supabaseAdmin.from("parents").update({ name: data.parent.name }).eq("id", parent.id);
+    await supabaseAdmin
+      .from("parents")
+      .update({ name: data.parent.name.trim() })
+      .eq("id", parent.id);
   } else {
     const { data: pInserted, error: pErr } = await supabaseAdmin
       .from("parents")
-      .insert({ name: data.parent.name, whatsapp: data.parent.whatsapp })
+      .insert({ name: data.parent.name.trim(), whatsapp: data.parent.whatsapp.trim() })
       .select()
       .single();
 
@@ -216,7 +226,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .from("children")
     .insert({
       parent_id: parent.id,
-      name: data.child.name,
+      name: data.child.name.trim(),
       gender: data.child.gender || "L",
       birth_date: data.child.birth_date || "2020-01-01",
       school: data.child.school || null,
@@ -224,6 +234,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     })
     .select()
     .single();
+
   if (cErr || !child) throw new Error("Gagal menyimpan data anak di Supabase: " + cErr?.message);
 
   // 3. Insert assessment
@@ -257,45 +268,54 @@ export async function submitAndAnalyze(data: SubmitInput) {
     assessment = aData;
   }
 
-  // 4. Insert answers (only valid UUIDs)
-  const validAnswers = data.answers.filter((a) => isUUID(a.question_id));
-  if (validAnswers.length > 0) {
-    try {
-      const answerRows = validAnswers.map((a) => ({
+  // 4 & 5. Fetch/Seed DB questions for level and map answers to DB question UUIDs
+  const dbQuestions = await getOrSeedQuestionsForLevel(level);
+
+  const answerRows: Array<{ assessment_id: string; question_id: string; score: number }> = [];
+  const answersFormattedText: string[] = [];
+
+  data.answers.forEach((ans, idx) => {
+    let qUuid: string | null = null;
+    let qText = "Pertanyaan " + (idx + 1);
+    let catName = "Umum";
+
+    if (isUUID(ans.question_id)) {
+      qUuid = ans.question_id;
+      const foundQ = dbQuestions.find((q: any) => q.id === ans.question_id);
+      if (foundQ) {
+        qText = foundQ.text;
+        catName = (foundQ as any).question_categories?.name || "Umum";
+      }
+    } else {
+      const foundQ = dbQuestions[idx] || dbQuestions.find((q: any) => q.order_index === idx + 1);
+      if (foundQ) {
+        qUuid = foundQ.id;
+        qText = foundQ.text;
+        catName = (foundQ as any).question_categories?.name || "Umum";
+      }
+    }
+
+    if (qUuid && isUUID(qUuid)) {
+      answerRows.push({
         assessment_id: assessment.id,
-        question_id: a.question_id,
-        score: a.score,
-      }));
-      await supabaseAdmin.from("assessment_answers").insert(answerRows);
-    } catch (e) {
-      console.warn("Could not insert answers to assessment_answers table", e);
+        question_id: qUuid,
+        score: ans.score,
+      });
     }
-  }
 
-  // 5. Fetch questions text for prompt context
-  const qIds = validAnswers.map((a) => a.question_id);
-  let answersText = "";
-  if (qIds.length > 0) {
+    const label = ["Tidak Pernah", "Jarang", "Kadang-kadang", "Sering", "Selalu"][ans.score - 1] ?? "Cukup";
+    answersFormattedText.push(`[${catName}] ${qText} → ${ans.score}/5 (${label})`);
+  });
+
+  if (answerRows.length > 0) {
     try {
-      const { data: questions } = await supabaseAdmin
-        .from("questions")
-        .select("id, text, category_id, question_categories(name)")
-        .in("id", qIds);
-
-      answersText = data.answers
-        .map((a) => {
-          const q = questions?.find((qq) => qq.id === a.question_id);
-          const cat = (q as any)?.question_categories?.name ?? "";
-          const label = ["Tidak Pernah", "Jarang", "Kadang-kadang", "Sering", "Selalu"][a.score - 1] ?? "Cukup";
-          return `[${cat}] ${q?.text ?? "Pertanyaan"} → ${a.score} (${label})`;
-        })
-        .join("\n");
-    } catch {
-      answersText = data.answers.map((a, i) => `[Pertanyaan ${i + 1}] Skor: ${a.score}/5`).join("\n");
+      await supabaseAdmin.from("assessment_answers").insert(answerRows);
+    } catch (ansErr: any) {
+      console.warn("Could not insert answers to assessment_answers table:", ansErr?.message);
     }
-  } else {
-    answersText = data.answers.map((a, i) => `[Pertanyaan ${i + 1}] Skor: ${a.score}/5`).join("\n");
   }
+
+  const answersText = answersFormattedText.join("\n");
 
   // 6. Get active prompt for chosen level
   let activePrompt: any = null;
@@ -413,6 +433,22 @@ export async function submitAndAnalyze(data: SubmitInput) {
 
   // Update status to analyzed
   await supabaseAdmin.from("assessments").update({ status: "analyzed" }).eq("id", assessment.id);
+
+  // Save Activity Log: CREATE ASSESSMENT
+  try {
+    await supabaseAdmin.from("activity_logs").insert({
+      action: "CREATE ASSESSMENT",
+      details: {
+        assessment_id: assessment.id,
+        parent_name: data.parent.name,
+        child_name: data.child.name,
+        education_level: level,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (logErr: any) {
+    console.warn("Activity log insert error:", logErr?.message);
+  }
 
   // Optional: send WhatsApp notification
   try {

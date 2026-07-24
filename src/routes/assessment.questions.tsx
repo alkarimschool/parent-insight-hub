@@ -114,15 +114,24 @@ function QuestionsPage() {
   const progress = list.length ? (answered / list.length) * 100 : 0;
 
   const handleSubmit = async () => {
-    if (answered < list.length) { toast.error("Mohon isi semua pertanyaan."); return; }
-    if (!formData) return;
+    if (!formData || !formData.parent_name?.trim() || !formData.whatsapp?.trim() || !formData.child_name?.trim()) {
+      toast.error("Data orang tua/anak belum lengkap. Silakan kembali ke pengisian data.");
+      navigate({ to: "/assessment" });
+      return;
+    }
+    if (answered < list.length) {
+      toast.error("Silakan lengkapi seluruh pertanyaan sebelum mengirim assessment.");
+      return;
+    }
+    if (submitting) return;
+
     setSubmitting(true);
     try {
       const res = await submit({
         data: {
-          parent: { name: formData.parent_name, whatsapp: formData.whatsapp },
+          parent: { name: formData.parent_name.trim(), whatsapp: formData.whatsapp.trim() },
           child: {
-            name: formData.child_name,
+            name: formData.child_name.trim(),
             gender: formData.gender || "L",
             birth_date: formData.birth_date || "2020-01-01",
             school: formData.school || "",
@@ -132,12 +141,19 @@ function QuestionsPage() {
           answers: list.map((q) => ({ question_id: q.id, score: answers[q.id] })),
         },
       });
+
+      if (!res || !res.assessment_id) {
+        throw new Error("Gagal menerima ID Assessment dari server.");
+      }
+
       localStorage.removeItem(`paa_answers_${level}`);
       sessionStorage.removeItem("paa_form");
-      toast.success("Assessment berhasil dianalisis!");
+      toast.success("✅ Assessment berhasil dikirim dan dianalisis!");
       navigate({ to: "/assessment/result/$id", params: { id: res.assessment_id } });
     } catch (e: any) {
-      toast.error(e?.message ?? "Gagal menyimpan assessment.");
+      console.error("Submit assessment error:", e);
+      const msg = e?.message || e?.data?.message || "Gagal mengirim assessment. Silakan coba beberapa saat lagi.";
+      toast.error(msg);
       setSubmitting(false);
     }
   };
@@ -196,8 +212,8 @@ function QuestionsPage() {
                 Selanjutnya <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             ) : (
-              <Button type="button" onClick={handleSubmit} disabled={submitting || answered < list.length} className="rounded-full bg-gradient-hero shadow-soft">
-                {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menganalisis {level}…</>) : "Submit Assessment"}
+              <Button type="button" onClick={handleSubmit} disabled={submitting || answered < list.length} className="rounded-full bg-gradient-hero shadow-soft px-6 py-2.5 font-bold">
+                {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mengirim Assessment...</>) : "Submit Assessment"}
               </Button>
             )}
           </div>
