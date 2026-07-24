@@ -8,8 +8,8 @@ const SubmitSchema = z.object({
   }),
   child: z.object({
     name: z.string().trim().min(1).max(120),
-    gender: z.enum(["L", "P"]),
-    birth_date: z.string(),
+    gender: z.enum(["L", "P"]).optional().default("L"),
+    birth_date: z.string().optional().default("2020-01-01"),
     school: z.string().trim().max(200).optional().default(""),
     class_name: z.string().trim().max(120).optional().default(""),
   }),

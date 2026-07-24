@@ -37,15 +37,12 @@ function AssessmentPage() {
     parent_name: "",
     whatsapp: "",
     child_name: "",
-    gender: "L" as "L" | "P",
-    birth_date: "",
     school: "",
-    class_name: "",
   });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.parent_name || !form.whatsapp || !form.child_name || !form.birth_date) {
+    if (!form.parent_name || !form.whatsapp || !form.child_name) {
       toast.error("Mohon lengkapi data wajib.");
       return;
     }
@@ -67,43 +64,20 @@ function AssessmentPage() {
           <div className="grid gap-5">
             <div>
               <Label htmlFor="parent_name">Nama Orang Tua *</Label>
-              <Input id="parent_name" value={form.parent_name} onChange={(e) => setForm({ ...form, parent_name: e.target.value })} className="mt-1.5" maxLength={120} />
+              <Input id="parent_name" value={form.parent_name} onChange={(e) => setForm({ ...form, parent_name: e.target.value })} className="mt-1.5" maxLength={120} required />
             </div>
             <div>
               <Label htmlFor="whatsapp">Nomor WhatsApp *</Label>
-              <Input id="whatsapp" placeholder="08xxxxxxxxxx" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} className="mt-1.5" maxLength={30} />
+              <Input id="whatsapp" placeholder="08xxxxxxxxxx" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} className="mt-1.5" maxLength={30} required />
             </div>
             <hr className="border-border/60" />
             <div>
               <Label htmlFor="child_name">Nama Anak *</Label>
-              <Input id="child_name" value={form.child_name} onChange={(e) => setForm({ ...form, child_name: e.target.value })} className="mt-1.5" maxLength={120} />
+              <Input id="child_name" value={form.child_name} onChange={(e) => setForm({ ...form, child_name: e.target.value })} className="mt-1.5" maxLength={120} required />
             </div>
             <div>
-              <Label>Jenis Kelamin *</Label>
-              <RadioGroup value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v as "L" | "P" })} className="mt-2 flex gap-6">
-                <label className="flex items-center gap-2 text-sm"><RadioGroupItem value="L" /> Laki-laki</label>
-                <label className="flex items-center gap-2 text-sm"><RadioGroupItem value="P" /> Perempuan</label>
-              </RadioGroup>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="birth_date">Tanggal Lahir *</Label>
-                <Input id="birth_date" type="date" value={form.birth_date} onChange={(e) => setForm({ ...form, birth_date: e.target.value })} className="mt-1.5" />
-              </div>
-              <div>
-                <Label>Umur</Label>
-                <Input value={calcAge(form.birth_date)} readOnly className="mt-1.5 bg-muted" />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="school">Nama Sekolah</Label>
-                <Input id="school" value={form.school} onChange={(e) => setForm({ ...form, school: e.target.value })} className="mt-1.5" maxLength={200} />
-              </div>
-              <div>
-                <Label htmlFor="class_name">Kelas</Label>
-                <Input id="class_name" value={form.class_name} onChange={(e) => setForm({ ...form, class_name: e.target.value })} className="mt-1.5" maxLength={120} />
-              </div>
+              <Label htmlFor="school">Nama Sekolah</Label>
+              <Input id="school" value={form.school} onChange={(e) => setForm({ ...form, school: e.target.value })} className="mt-1.5" maxLength={200} />
             </div>
           </div>
           <div className="mt-8 flex items-center justify-between gap-3">
