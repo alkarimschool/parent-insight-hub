@@ -231,81 +231,126 @@ export async function getAdminParentsListServer() {
     .limit(300);
 
   if (error) {
-    console.error("Error querying assessments list:", error);
+    console.error("getAdminParentsListServer error:", error.message);
     return [];
   }
 
   return assessments ?? [];
 }
 
-export async function deleteAssessmentServer(id: string) {
-  if (!id) throw new Error("ID Assessment tidak valid.");
+/**
+ * Hapus data assessment beserta SELURUH data relasi.
+ *
+ * Schema FK cascade chain:
+ *   parents  ← ON DELETE CASCADE ←  children  ← ON DELETE CASCADE ←  assessments
+ *   assessments  ← ON DELETE CASCADE ←  assessment_answers
+ *   assessments  ← ON DELETE CASCADE ←  ai_results
+ *
+ * Strategi: Hapus `parents` record → PostgreSQL CASCADE otomatis menghapus
+ * children, assessments, assessment_answers, dan ai_results.
+ *
+ * Jika parent memiliki >1 child/assessment, seluruhnya ikut terhapus.
+ * Jika ingin hanya menghapus 1 assessment tanpa menghapus parent,
+ * cukup hapus assessment saja (children tetap, cascade hapus answers & results).
+ */
+export async function deleteAssessmentServer(assessmentId: string) {
+  if (!assessmentId) throw new Error("ID Assessment tidak valid.");
 
-  // 1. Fetch details before deletion to clean up children and parents
-  const { data: assessment } = await supabaseAdmin
+  // 1. Fetch assessment + parent_id for logging & cascade root
+  const { data: assessment, error: fetchErr } = await supabaseAdmin
     .from("assessments")
     .select("id, parent_id, child_id, education_level, parents(id, name, whatsapp), children(id, name)")
-    .eq("id", id)
+    .eq("id", assessmentId)
     .maybeSingle();
 
-  const childId = assessment?.child_id;
-  const parentId = assessment?.parent_id;
+  if (fetchErr) {
+    console.error("deleteAssessmentServer fetch error:", fetchErr.message);
+    throw new Error("Gagal membaca data assessment: " + fetchErr.message);
+  }
+
+  if (!assessment) {
+    throw new Error("Data assessment tidak ditemukan di database.");
+  }
+
+  const parentId = assessment.parent_id;
   const childName = (assessment as any)?.children?.name || "Anak";
   const parentName = (assessment as any)?.parents?.name || "Orang Tua";
-  const level = assessment?.education_level || "TK";
+  const level = assessment.education_level || "TK";
 
-  // 2. Cascade Delete related records first
-  try {
-    await supabaseAdmin.from("ai_results").delete().eq("assessment_id", id);
-  } catch (e) {
-    console.warn("ai_results delete warning:", e);
-  }
+  // 2. Check how many assessments this parent has
+  const { count: parentAssessmentCount } = await supabaseAdmin
+    .from("assessments")
+    .select("*", { count: "exact", head: true })
+    .eq("parent_id", parentId);
 
-  try {
-    await supabaseAdmin.from("assessment_answers").delete().eq("assessment_id", id);
-  } catch (e) {
-    console.warn("assessment_answers delete warning:", e);
-  }
+  const errors: string[] = [];
 
-  // 3. Delete assessment record
-  const { error: deleteErr } = await supabaseAdmin.from("assessments").delete().eq("id", id);
-  if (deleteErr) {
-    console.error("Failed to delete assessment record:", deleteErr);
-    throw new Error("Gagal menghapus data: " + deleteErr.message);
-  }
+  if (parentAssessmentCount !== null && parentAssessmentCount <= 1) {
+    // Parent only has this 1 assessment — delete parent → CASCADE deletes everything
+    const { error: delParent } = await supabaseAdmin
+      .from("parents")
+      .delete()
+      .eq("id", parentId);
 
-  // 4. Force delete child & parent records to keep database clean
-  if (childId) {
-    try {
-      await supabaseAdmin.from("children").delete().eq("id", childId);
-    } catch (e) {
-      console.warn("Could not delete child record:", e);
+    if (delParent) {
+      console.error("CASCADE delete via parents failed:", delParent.message);
+      errors.push("parents: " + delParent.message);
+    }
+  } else {
+    // Parent has multiple assessments — only delete this assessment (preserves parent & other assessments)
+    // First explicitly delete child tables that might not cascade from assessment
+    const { error: delResults } = await supabaseAdmin
+      .from("ai_results")
+      .delete()
+      .eq("assessment_id", assessmentId);
+    if (delResults) errors.push("ai_results: " + delResults.message);
+
+    const { error: delAnswers } = await supabaseAdmin
+      .from("assessment_answers")
+      .delete()
+      .eq("assessment_id", assessmentId);
+    if (delAnswers) errors.push("assessment_answers: " + delAnswers.message);
+
+    const { error: delAssessment } = await supabaseAdmin
+      .from("assessments")
+      .delete()
+      .eq("id", assessmentId);
+    if (delAssessment) errors.push("assessments: " + delAssessment.message);
+
+    // Delete orphaned child record
+    if (assessment.child_id) {
+      const { error: delChild } = await supabaseAdmin
+        .from("children")
+        .delete()
+        .eq("id", assessment.child_id);
+      if (delChild) errors.push("children: " + delChild.message);
     }
   }
 
-  if (parentId) {
-    try {
-      await supabaseAdmin.from("parents").delete().eq("id", parentId);
-    } catch (e) {
-      console.warn("Could not delete parent record:", e);
-    }
+  // 3. Verify deletion
+  const { data: verify } = await supabaseAdmin
+    .from("assessments")
+    .select("id")
+    .eq("id", assessmentId)
+    .maybeSingle();
+
+  if (verify) {
+    console.error("Assessment still exists after delete attempt. Errors:", errors);
+    throw new Error("Gagal menghapus data dari database. Detail: " + errors.join("; "));
   }
 
-  // 5. Record Activity Log
-  try {
-    await supabaseAdmin.from("activity_logs").insert({
-      action: "DELETE DATA",
-      details: {
-        assessment_id: id,
-        parent_name: parentName,
-        child_name: childName,
-        education_level: level,
-        timestamp: new Date().toISOString(),
-      },
-    });
-  } catch (e) {
-    console.warn("Could not insert activity_logs record:", e);
-  }
+  // 4. Activity Log
+  const { error: logErr } = await supabaseAdmin.from("activity_logs").insert({
+    action: "DELETE DATA",
+    details: {
+      assessment_id: assessmentId,
+      parent_name: parentName,
+      child_name: childName,
+      education_level: level,
+      timestamp: new Date().toISOString(),
+    },
+  });
+  if (logErr) console.warn("Activity log insert warning:", logErr.message);
 
-  return { ok: true, id };
+  return { ok: true, id: assessmentId };
 }

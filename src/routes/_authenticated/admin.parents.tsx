@@ -98,16 +98,21 @@ function ParentsList() {
     if (!deletingRow) return;
     setDeleting(true);
     try {
-      await deleteAssessment({ data: { id: deletingRow.id } });
-      toast.success("✅ Data berhasil dihapus.");
+      const result = await deleteAssessment({ data: { id: deletingRow.id } });
+      if (result && (result as any).ok) {
+        toast.success("✅ Data berhasil dihapus dari Supabase.");
+      } else {
+        toast.success("✅ Data berhasil dihapus.");
+      }
       setDeletingRow(null);
-      // Invalidate queries across Admin Dashboard to immediately reflect decreased count
-      qc.invalidateQueries({ queryKey: ["admin-parents-list-rpc"] });
+      // Force hard refetch from Supabase (not from cache)
+      await qc.refetchQueries({ queryKey: ["admin-parents-list-rpc"] });
       qc.invalidateQueries({ queryKey: ["admin-stats-multi-level"] });
       qc.invalidateQueries({ queryKey: ["admin-recent-list"] });
     } catch (e: any) {
-      console.error("Error deleting assessment record:", e);
-      toast.error("Gagal menghapus data. Silakan coba lagi.");
+      console.error("Delete error detail:", e);
+      const msg = e?.message || e?.data?.message || "Gagal menghapus data. Silakan coba lagi.";
+      toast.error(msg);
     } finally {
       setDeleting(false);
     }
