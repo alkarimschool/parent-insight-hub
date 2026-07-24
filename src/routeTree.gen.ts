@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AssessmentRouteImport } from './routes/assessment'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AssessmentQuestionsRouteImport } from './routes/assessment.questions'
+import { Route as AssessmentResultIdRouteImport } from './routes/assessment.result.$id'
 
 const AssessmentRoute = AssessmentRouteImport.update({
   id: '/assessment',
@@ -28,29 +29,46 @@ const AssessmentQuestionsRoute = AssessmentQuestionsRouteImport.update({
   path: '/questions',
   getParentRoute: () => AssessmentRoute,
 } as any)
+const AssessmentResultIdRoute = AssessmentResultIdRouteImport.update({
+  id: '/result/$id',
+  path: '/result/$id',
+  getParentRoute: () => AssessmentRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/assessment': typeof AssessmentRouteWithChildren
   '/assessment/questions': typeof AssessmentQuestionsRoute
+  '/assessment/result/$id': typeof AssessmentResultIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/assessment': typeof AssessmentRouteWithChildren
   '/assessment/questions': typeof AssessmentQuestionsRoute
+  '/assessment/result/$id': typeof AssessmentResultIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/assessment': typeof AssessmentRouteWithChildren
   '/assessment/questions': typeof AssessmentQuestionsRoute
+  '/assessment/result/$id': typeof AssessmentResultIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/assessment' | '/assessment/questions'
+  fullPaths:
+    | '/'
+    | '/assessment'
+    | '/assessment/questions'
+    | '/assessment/result/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/assessment' | '/assessment/questions'
-  id: '__root__' | '/' | '/assessment' | '/assessment/questions'
+  to: '/' | '/assessment' | '/assessment/questions' | '/assessment/result/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/assessment'
+    | '/assessment/questions'
+    | '/assessment/result/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -81,15 +99,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssessmentQuestionsRouteImport
       parentRoute: typeof AssessmentRoute
     }
+    '/assessment/result/$id': {
+      id: '/assessment/result/$id'
+      path: '/result/$id'
+      fullPath: '/assessment/result/$id'
+      preLoaderRoute: typeof AssessmentResultIdRouteImport
+      parentRoute: typeof AssessmentRoute
+    }
   }
 }
 
 interface AssessmentRouteChildren {
   AssessmentQuestionsRoute: typeof AssessmentQuestionsRoute
+  AssessmentResultIdRoute: typeof AssessmentResultIdRoute
 }
 
 const AssessmentRouteChildren: AssessmentRouteChildren = {
   AssessmentQuestionsRoute: AssessmentQuestionsRoute,
+  AssessmentResultIdRoute: AssessmentResultIdRoute,
 }
 
 const AssessmentRouteWithChildren = AssessmentRoute._addFileChildren(
