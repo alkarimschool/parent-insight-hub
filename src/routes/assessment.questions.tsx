@@ -43,9 +43,12 @@ const DEFAULT_QUESTIONS: QRow[] = [
   { id: "q12", category_id: "c4", text: "Apakah anak tetap berusaha menyelesaikan tugas atau permainan meskipun mengalami kesulitan?", order_index: 12 },
   { id: "q13", category_id: "c5", text: "Apakah anak mampu mengenal huruf dasar, angka, warna, bentuk, atau membilang/berhitung benda sederhana sesuai usianya?", order_index: 13 },
   { id: "q14", category_id: "c5", text: "Apakah anak tertarik dan mulai mampu membaca kata pendek, menulis/mencoret huruf, atau mengelompokkan benda sesuai jumlahnya?", order_index: 14 },
-  { id: "q15", category_id: "c6", text: "Apakah anak mampu mengikuti aturan yang berlaku di rumah maupun di sekolah tanpa harus selalu diingatkan?", order_index: 15 },
-  { id: "q16", category_id: "c6", text: "Apakah anak sering menunjukkan ketertarikan yang kuat terhadap aktivitas tertentu, seperti menggambar, bernyanyi, menari, berhitung, olahraga, atau kegiatan kreatif lainnya?", order_index: 16 },
-  { id: "q17", category_id: "c6", text: "Menurut Anda, apakah perkembangan anak saat ini sudah sesuai dengan usianya?", order_index: 17 },
+  { id: "q15", category_id: "c5", text: "Apakah anak mampu mengenali pola sederhana (seperti urutan warna/bentuk) atau menyelesaikan puzzle dan permainan logika seusianya?", order_index: 15 },
+  { id: "q16", category_id: "c5", text: "Apakah anak mampu mengingat dan menceritakan kembali cerita pendek, lirik lagu, atau informasi belajar yang pernah disampaikan?", order_index: 16 },
+  { id: "q17", category_id: "c5", text: "Apakah anak menunjukkan ketelitian dan rasa ingin tahu saat belajar kosa kata baru, konsep ukuran (besar/kecil), atau perbandingan jumlah (banyak/sedikit)?", order_index: 17 },
+  { id: "q18", category_id: "c6", text: "Apakah anak mampu mengikuti aturan yang berlaku di rumah maupun di sekolah tanpa harus selalu diingatkan?", order_index: 18 },
+  { id: "q19", category_id: "c6", text: "Apakah anak sering menunjukkan ketertarikan yang kuat terhadap aktivitas tertentu, seperti menggambar, bernyanyi, menari, berhitung, olahraga, atau kegiatan kreatif lainnya?", order_index: 19 },
+  { id: "q20", category_id: "c6", text: "Menurut Anda, apakah perkembangan anak saat ini sudah sesuai dengan usianya?", order_index: 20 },
 ];
 
 const SCALE = [
@@ -114,7 +117,7 @@ function QuestionsPage() {
   const answered = list.filter((q) => answers[q.id]).length;
   const progress = list.length ? (answered / list.length) * 100 : 0;
 
-  const isSpecialScale = current?.order_index === 17 || current?.text.includes("sesuai dengan usianya");
+  const isSpecialScale = current?.order_index === 20 || current?.text.includes("sesuai dengan usianya");
 
   const handleSubmit = async () => {
     if (answered < list.length) { toast.error("Mohon isi semua pertanyaan."); return; }
