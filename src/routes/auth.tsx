@@ -51,7 +51,7 @@ function AuthPage() {
           await supabase.auth.signUp({ email: emailToUse, password });
         }
       } catch {}
-      toast.success("Login Berhasil! Selamat datang, Admin mediaalkarim.");
+      toast.success("Login Berhasil! Selamat datang, Admin.");
       setLoading(false);
       navigate({ to: "/admin" as any });
       return;
@@ -111,7 +111,7 @@ function AuthPage() {
             <Input
               id="username"
               type="text"
-              placeholder="mediaalkarim"
+              placeholder="Masukkan username atau email"
               value={usernameOrEmail}
               onChange={(e) => setUsernameOrEmail(e.target.value)}
               className="mt-1.5"
