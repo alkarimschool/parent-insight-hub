@@ -81,9 +81,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Parent Awareness Assessment" },
       { name: "description", content: "Kenali potensi, kekuatan, dan kebutuhan perkembangan anak melalui asesmen berbasis AI." },
       { property: "og:title", content: "Parent Awareness Assessment" },
-      { property: "og:description", content: "Asesmen berbasis AI untuk perkembangan anak usia TK 3–6 tahun." },
+      { property: "og:description", content: "Kenali potensi, kekuatan, dan kebutuhan perkembangan anak melalui asesmen berbasis AI." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Parent Awareness Assessment" },
+      { name: "twitter:description", content: "Kenali potensi, kekuatan, dan kebutuhan perkembangan anak melalui asesmen berbasis AI." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/16c79f18-9403-4241-813d-ae5fae7b83af/id-preview-11c69560--ad7f5d0a-db09-4339-a7eb-ca5cfa3cf1ce.lovable.app-1784894967339.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/16c79f18-9403-4241-813d-ae5fae7b83af/id-preview-11c69560--ad7f5d0a-db09-4339-a7eb-ca5cfa3cf1ce.lovable.app-1784894967339.png" },
     ],
     links: [
       {
