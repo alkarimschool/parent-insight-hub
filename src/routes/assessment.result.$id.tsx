@@ -124,17 +124,17 @@ function ResultPage() {
           </div>
         ) : (
           <div className="grid gap-5">
-            <Section title="1. Ringkasan Assessment"><p>{c.ringkasan}</p></Section>
-            <Section title="2. Kelebihan Anak"><List items={c.kelebihan} /></Section>
-            <Section title="3. Area yang Perlu Dikembangkan"><List items={c.area_pengembangan} /></Section>
-            <Section title={c.sec4Title || content.sec4Title}><p>{c.kemampuan_akademik ?? c.kemampuan_belajar}</p></Section>
-            <Section title="5. Kemampuan Sosial"><p>{c.kecerdasan_sosial}</p></Section>
-            <Section title="6. Kemampuan Emosional"><p>{c.kecerdasan_emosional}</p></Section>
-            <Section title="7. Karakter"><p>{c.karakter ?? "Memiliki karakter pembelajar yang jujur, disiplin, dan bertanggung jawab."}</p></Section>
-            <Section title="8. Potensi"><p>{c.potensi}</p></Section>
-            <Section title="9. Minat dan Bakat"><p>{c.minat_bakat ?? "Terlihat minat pada pemecahan masalah dan eksplorasi ilmu pengetahuan."}</p></Section>
-            <Section title="10. Hal yang Perlu Menjadi Perhatian"><List items={c.perhatian_orangtua} /></Section>
-            <Section title="11. Rekomendasi Treatment">
+            <Section title={c?.sections?.s1 || content.sections.s1}><p>{c.ringkasan}</p></Section>
+            <Section title={c?.sections?.s2 || content.sections.s2}><List items={c.kelebihan} /></Section>
+            <Section title={c?.sections?.s3 || content.sections.s3}><List items={c.area_pengembangan} /></Section>
+            <Section title={c?.sections?.s4 || content.sections.s4}><p>{c.kemampuan_akademik ?? c.kemampuan_belajar}</p></Section>
+            <Section title={c?.sections?.s5 || content.sections.s5}><p>{c.kecerdasan_sosial}</p></Section>
+            <Section title={c?.sections?.s6 || content.sections.s6}><p>{c.kecerdasan_emosional}</p></Section>
+            <Section title={c?.sections?.s7 || content.sections.s7}><p>{c.karakter ?? "Memiliki karakter pembelajar yang jujur, disiplin, dan bertanggung jawab."}</p></Section>
+            <Section title={c?.sections?.s8 || content.sections.s8}><p>{c.potensi}</p></Section>
+            <Section title={c?.sections?.s9 || content.sections.s9}><p>{c.minat_bakat ?? "Terlihat minat pada pemecahan masalah dan eksplorasi ilmu pengetahuan."}</p></Section>
+            <Section title={c?.sections?.s10 || content.sections.s10}><List items={c.perhatian_orangtua} /></Section>
+            <Section title={c?.sections?.s11 || content.sections.s11}>
               {Array.isArray(c.treatment) ? (
                 <ul className="space-y-3">
                   {c.treatment.map((t: any, i: number) => (
@@ -148,8 +148,8 @@ function ResultPage() {
                 <p>{String(c.treatment ?? "")}</p>
               )}
             </Section>
-            <Section title={c?.sec12Title || content.sec12Title}><p>{c.rekomendasi_akademik ?? c.kemampuan_akademik}</p></Section>
-            <Section title="13. Kesimpulan"><p className="italic font-medium text-foreground print:text-black">{c.kesimpulan}</p></Section>
+            <Section title={c?.sections?.s12 || content.sections.s12}><p>{c.rekomendasi_akademik ?? c.kemampuan_akademik}</p></Section>
+            <Section title={c?.sections?.s13 || content.sections.s13}><p className="italic font-medium text-foreground print:text-black">{c.kesimpulan}</p></Section>
 
             <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">
               <Link to="/" className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-accent">

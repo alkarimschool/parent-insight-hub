@@ -527,13 +527,17 @@ export async function submitAndAnalyze(data: SubmitInput) {
   // Enforce level-specific metadata & sanitize ringkasan
   parsedResult = {
     ...parsedResult,
-    judul: assessmentContent.title,
     badge: assessmentContent.badge,
+    title: assessmentContent.title,
     description: assessmentContent.description,
+    summaryTitle: assessmentContent.summaryTitle,
+    introText: assessmentContent.introText,
+    reportTitle: assessmentContent.reportTitle,
+    metadataTitle: assessmentContent.metadataTitle,
+    metadataDescription: assessmentContent.metadataDescription,
     fullName: assessmentContent.fullName,
     shortName: assessmentContent.shortName,
-    sec4Title: assessmentContent.sec4Title,
-    sec12Title: assessmentContent.sec12Title,
+    sections: assessmentContent.sections,
   };
 
   if (level !== "TK" && parsedResult.ringkasan) {
@@ -631,13 +635,17 @@ export async function getAssessmentResultServer(assessmentId: string) {
   // Enforce level-specific metadata & sanitize ringkasan
   content = {
     ...content,
-    judul: assessmentContent.title,
     badge: assessmentContent.badge,
+    title: assessmentContent.title,
     description: assessmentContent.description,
+    summaryTitle: assessmentContent.summaryTitle,
+    introText: assessmentContent.introText,
+    reportTitle: assessmentContent.reportTitle,
+    metadataTitle: assessmentContent.metadataTitle,
+    metadataDescription: assessmentContent.metadataDescription,
     fullName: assessmentContent.fullName,
     shortName: assessmentContent.shortName,
-    sec4Title: assessmentContent.sec4Title,
-    sec12Title: assessmentContent.sec12Title,
+    sections: assessmentContent.sections,
   };
 
   if (level !== "TK" && content.ringkasan) {
