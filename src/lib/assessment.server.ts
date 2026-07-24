@@ -85,7 +85,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .single();
   if (pErr || !parent) throw new Error("Gagal menyimpan data orang tua: " + pErr?.message);
 
-  // 2. Insert child with education_level
+  // 2. Insert child
   const { data: child, error: cErr } = await supabaseAdmin
     .from("children")
     .insert({
@@ -100,8 +100,9 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .single();
   if (cErr || !child) throw new Error("Gagal menyimpan data anak: " + cErr?.message);
 
-  // 3. Insert assessment with education_level
-  const { data: assessment, error: aErr } = await supabaseAdmin
+  // 3. Insert assessment (with schema fallback if education_level column is missing)
+  let assessment: any = null;
+  const { data: aData, error: aErr } = await supabaseAdmin
     .from("assessments")
     .insert({
       parent_id: parent.id,
@@ -111,59 +112,105 @@ export async function submitAndAnalyze(data: SubmitInput) {
     })
     .select()
     .single();
-  if (aErr || !assessment) throw new Error("Gagal membuat assessment: " + aErr?.message);
 
-  // 4. Insert answers
+  if (aErr) {
+    // Retry without education_level if column doesn't exist on remote schema yet
+    const { data: aRetry, error: aRetryErr } = await supabaseAdmin
+      .from("assessments")
+      .insert({
+        parent_id: parent.id,
+        child_id: child.id,
+        status: "analyzing",
+      })
+      .select()
+      .single();
+
+    if (aRetryErr || !aRetry) throw new Error("Gagal membuat assessment: " + (aRetryErr?.message || aErr.message));
+    assessment = aRetry;
+  } else {
+    assessment = aData;
+  }
+
+  // 4. Insert answers (only valid UUIDs)
   const validAnswers = data.answers.filter((a) => isUUID(a.question_id));
   if (validAnswers.length > 0) {
-    const answerRows = validAnswers.map((a) => ({
-      assessment_id: assessment.id,
-      question_id: a.question_id,
-      score: a.score,
-    }));
-    await supabaseAdmin.from("assessment_answers").insert(answerRows);
+    try {
+      const answerRows = validAnswers.map((a) => ({
+        assessment_id: assessment.id,
+        question_id: a.question_id,
+        score: a.score,
+      }));
+      await supabaseAdmin.from("assessment_answers").insert(answerRows);
+    } catch (e) {
+      console.warn("Could not insert answers to assessment_answers table", e);
+    }
   }
 
   // 5. Fetch questions text for prompt context
   const qIds = validAnswers.map((a) => a.question_id);
   let answersText = "";
   if (qIds.length > 0) {
-    const { data: questions } = await supabaseAdmin
-      .from("questions")
-      .select("id, text, category_id, question_categories(name)")
-      .in("id", qIds);
+    try {
+      const { data: questions } = await supabaseAdmin
+        .from("questions")
+        .select("id, text, category_id, question_categories(name)")
+        .in("id", qIds);
 
-    answersText = data.answers
-      .map((a) => {
-        const q = questions?.find((qq) => qq.id === a.question_id);
-        const cat = (q as any)?.question_categories?.name ?? "";
-        const label = ["Tidak Pernah", "Jarang", "Kadang-kadang", "Sering", "Selalu"][a.score - 1] ?? "Cukup";
-        return `[${cat}] ${q?.text ?? "Pertanyaan"} → ${a.score} (${label})`;
-      })
-      .join("\n");
+      answersText = data.answers
+        .map((a) => {
+          const q = questions?.find((qq) => qq.id === a.question_id);
+          const cat = (q as any)?.question_categories?.name ?? "";
+          const label = ["Tidak Pernah", "Jarang", "Kadang-kadang", "Sering", "Selalu"][a.score - 1] ?? "Cukup";
+          return `[${cat}] ${q?.text ?? "Pertanyaan"} → ${a.score} (${label})`;
+        })
+        .join("\n");
+    } catch {
+      answersText = data.answers.map((a, i) => `[Pertanyaan ${i + 1}] Skor: ${a.score}/5`).join("\n");
+    }
   } else {
-    answersText = data.answers
-      .map((a, i) => `[Pertanyaan ${i + 1}] Skor: ${a.score}/5`)
-      .join("\n");
+    answersText = data.answers.map((a, i) => `[Pertanyaan ${i + 1}] Skor: ${a.score}/5`).join("\n");
   }
 
   // 6. Get active prompt for chosen level
-  const [{ data: prompt }, { data: settings }] = await Promise.all([
-    supabaseAdmin
-      .from("ai_prompts")
-      .select("*")
-      .eq("is_active", true)
-      .eq("education_level", level)
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabaseAdmin.from("ai_settings").select("*").eq("is_active", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-  ]);
+  let activePrompt: any = null;
+  let settings: any = null;
 
-  const activePrompt = prompt ?? {
-    system_prompt: `Anda adalah psikolog dan konsultan pendidikan anak jenjang ${level}. Buat analisis 13 bagian dalam JSON valid.`,
-    user_template: `Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: {{education_level}}\nJawaban:\n{{answers}}`,
-  };
+  try {
+    const [{ data: prompt }, { data: set }] = await Promise.all([
+      supabaseAdmin
+        .from("ai_prompts")
+        .select("*")
+        .eq("is_active", true)
+        .eq("education_level", level)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabaseAdmin.from("ai_settings").select("*").eq("is_active", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+
+    activePrompt = prompt;
+    settings = set;
+
+    if (!activePrompt) {
+      const { data: genPrompt } = await supabaseAdmin
+        .from("ai_prompts")
+        .select("*")
+        .eq("is_active", true)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      activePrompt = genPrompt;
+    }
+  } catch (e) {
+    console.warn("Prompt / settings fetch error", e);
+  }
+
+  if (!activePrompt) {
+    activePrompt = {
+      system_prompt: `Anda adalah psikolog dan konsultan pendidikan anak jenjang ${level}. Buat analisis 13 bagian dalam JSON valid.`,
+      user_template: `Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: {{education_level}}\nJawaban:\n{{answers}}`,
+    };
+  }
 
   const filled = activePrompt.user_template
     .replace(/\{\{parent_name\}\}/g, data.parent.name)
@@ -235,9 +282,9 @@ export async function submitAndAnalyze(data: SubmitInput) {
   await supabaseAdmin.from("assessments").update({ status: "analyzed" }).eq("id", assessment.id);
 
   // Optional: send WhatsApp notification
-  const { data: wa } = await supabaseAdmin.from("whatsapp_settings").select("*").eq("is_active", true).maybeSingle();
-  if (wa?.api_url && wa.api_token && wa.template) {
-    try {
+  try {
+    const { data: wa } = await supabaseAdmin.from("whatsapp_settings").select("*").eq("is_active", true).maybeSingle();
+    if (wa?.api_url && wa.api_token && wa.template) {
       const msg = wa.template
         .replace(/\{\{parent_name\}\}/g, data.parent.name)
         .replace(/\{\{child_name\}\}/g, data.child.name);
@@ -246,9 +293,9 @@ export async function submitAndAnalyze(data: SubmitInput) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${wa.api_token}` },
         body: JSON.stringify({ to: data.parent.whatsapp, from: wa.sender ?? "", message: msg }),
       });
-    } catch (e) {
-      console.warn("WA send failed", e);
     }
+  } catch (e) {
+    console.warn("WA send failed", e);
   }
 
   return { assessment_id: assessment.id, status: "analyzed" as const };
