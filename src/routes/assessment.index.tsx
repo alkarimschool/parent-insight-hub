@@ -72,7 +72,7 @@ function AssessmentFormPage() {
                 className="mt-1.5"
                 maxLength={120}
                 required
-                placeholder="Contoh: Ahmad Zamroni"
+                placeholder="Nagita Slavina"
               />
             </div>
             <div>
@@ -97,7 +97,7 @@ function AssessmentFormPage() {
                 className="mt-1.5"
                 maxLength={120}
                 required
-                placeholder="Contoh: Adiba"
+                placeholder="Rafathar Malik Ahmad"
               />
             </div>
             <div>
