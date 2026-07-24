@@ -472,13 +472,15 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .replace(/\{\{child_school\}\}/g, data.child.school || "-")
     .replace(/\{\{answers\}\}/g, answersText);
 
+  const assessmentContent = getAssessmentContent(level);
+
   const schemaHint = `\n\nBalas HANYA sebagai JSON valid dengan struktur:
 {
-  "judul": "string ('${LEVEL_TITLES_MAP[level]}')",
-  "ringkasan": "string",
+  "judul": "string ('${assessmentContent.title}')",
+  "ringkasan": "string (ringkasan analisis perkembangan/akademik khusus jenjang ${assessmentContent.fullName}, JANGAN sebut TK/anak usia dini jika jenjang bukan TK)",
   "kelebihan": ["string"],
   "area_pengembangan": ["string"],
-  "kemampuan_akademik": "string (analisis kemampuan akademik spesifik jenjang ${level})",
+  "kemampuan_akademik": "string (analisis kemampuan akademik/vokasional spesifik jenjang ${assessmentContent.shortName})",
   "kecerdasan_sosial": "string",
   "kecerdasan_emosional": "string",
   "karakter": "string",
@@ -486,7 +488,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
   "minat_bakat": "string",
   "perhatian_orangtua": ["string"],
   "treatment": [{"kategori": "string", "aktivitas": "string"}],
-  "rekomendasi_akademik": "string (rekomendasi konkret pengembangan akademik jenjang ${level})",
+  "rekomendasi_akademik": "string (rekomendasi konkret pengembangan akademik/vokasi jenjang ${assessmentContent.shortName})",
   "kesimpulan": "string"
 }`;
 
@@ -520,8 +522,25 @@ export async function submitAndAnalyze(data: SubmitInput) {
   if (!parsedResult || !parsedResult.ringkasan) {
     parsedResult = generateFallbackResult(data.child.name, data.parent.name, avgScore, level);
     rawText = JSON.stringify(parsedResult);
-  } else {
-    parsedResult.judul = LEVEL_TITLES_MAP[level] || LEVEL_TITLES_MAP.TK;
+  }
+
+  // Enforce level-specific metadata & sanitize ringkasan
+  parsedResult = {
+    ...parsedResult,
+    judul: assessmentContent.title,
+    badge: assessmentContent.badge,
+    description: assessmentContent.description,
+    fullName: assessmentContent.fullName,
+    shortName: assessmentContent.shortName,
+    sec4Title: assessmentContent.sec4Title,
+    sec12Title: assessmentContent.sec12Title,
+  };
+
+  if (level !== "TK" && parsedResult.ringkasan) {
+    parsedResult.ringkasan = parsedResult.ringkasan
+      .replace(/perkembangan anak usia dini \(TK \/ PAUD\)/gi, `karakter dan potensi akademik ${assessmentContent.fullName}`)
+      .replace(/perkembangan anak usia dini/gi, `potensi dan kebiasaan belajar ${assessmentContent.fullName}`)
+      .replace(/anak usia dini/gi, `peserta didik ${assessmentContent.shortName}`);
   }
 
   // Save AI result to DB
@@ -601,16 +620,31 @@ export async function getAssessmentResultServer(assessmentId: string) {
   ]);
 
   const level: EducationLevel = (assessment.education_level as EducationLevel) || "TK";
+  const assessmentContent = getAssessmentContent(level);
 
   // 4. Ensure complete 13-section level analysis content
   let content = aiRes?.content as any;
   if (!content || typeof content !== "object" || !content.ringkasan) {
     content = generateFallbackResult(child?.name || "Anak", parent?.name || "Orang Tua", 4.0, level);
-  } else {
-    content = {
-      ...content,
-      judul: LEVEL_TITLES_MAP[level] || LEVEL_TITLES_MAP.TK,
-    };
+  }
+
+  // Enforce level-specific metadata & sanitize ringkasan
+  content = {
+    ...content,
+    judul: assessmentContent.title,
+    badge: assessmentContent.badge,
+    description: assessmentContent.description,
+    fullName: assessmentContent.fullName,
+    shortName: assessmentContent.shortName,
+    sec4Title: assessmentContent.sec4Title,
+    sec12Title: assessmentContent.sec12Title,
+  };
+
+  if (level !== "TK" && content.ringkasan) {
+    content.ringkasan = content.ringkasan
+      .replace(/perkembangan anak usia dini \(TK \/ PAUD\)/gi, `karakter dan potensi akademik ${assessmentContent.fullName}`)
+      .replace(/perkembangan anak usia dini/gi, `potensi dan kebiasaan belajar ${assessmentContent.fullName}`)
+      .replace(/anak usia dini/gi, `peserta didik ${assessmentContent.shortName}`);
   }
 
   return {

@@ -96,18 +96,18 @@ function ResultPage() {
         {/* Dynamic Badge, H1, Description, Metadata */}
         <div className="mb-8 text-center print:mb-6">
           <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-bold text-primary print:bg-transparent print:p-0 print:text-black">
-            <span className="print:hidden">{content.icon}</span> <GraduationCap className="h-4 w-4 print:hidden" /> {content.badge}
+            <span className="print:hidden">{content.icon}</span> <GraduationCap className="h-4 w-4 print:hidden" /> {c?.badge || content.badge}
           </div>
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl print:mt-2 print:text-2xl print:text-black">
             {content.getHeader(childName)}
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base print:text-xs print:text-gray-700">
-            {content.description}
+            {c?.description || content.description}
           </p>
           <div className="mt-3 flex flex-wrap justify-center gap-4 text-xs font-medium text-muted-foreground print:text-gray-800">
             <span>Orang Tua: <strong className="text-foreground print:text-black">{parentName}</strong></span>
             <span>•</span>
-            <span>Jenjang: <strong className="text-foreground print:text-black">{content.shortName} ({content.fullName})</strong></span>
+            <span>Jenjang: <strong className="text-foreground print:text-black">{c?.shortName || content.shortName} ({c?.fullName || content.fullName})</strong></span>
             {data?.created_at && (
               <>
                 <span>•</span>
@@ -127,7 +127,7 @@ function ResultPage() {
             <Section title="1. Ringkasan Assessment"><p>{c.ringkasan}</p></Section>
             <Section title="2. Kelebihan Anak"><List items={c.kelebihan} /></Section>
             <Section title="3. Area yang Perlu Dikembangkan"><List items={c.area_pengembangan} /></Section>
-            <Section title={content.sec4Title}><p>{c.kemampuan_akademik ?? c.kemampuan_belajar}</p></Section>
+            <Section title={c.sec4Title || content.sec4Title}><p>{c.kemampuan_akademik ?? c.kemampuan_belajar}</p></Section>
             <Section title="5. Kemampuan Sosial"><p>{c.kecerdasan_sosial}</p></Section>
             <Section title="6. Kemampuan Emosional"><p>{c.kecerdasan_emosional}</p></Section>
             <Section title="7. Karakter"><p>{c.karakter ?? "Memiliki karakter pembelajar yang jujur, disiplin, dan bertanggung jawab."}</p></Section>
@@ -148,7 +148,7 @@ function ResultPage() {
                 <p>{String(c.treatment ?? "")}</p>
               )}
             </Section>
-            <Section title={content.sec12Title}><p>{c.rekomendasi_akademik ?? c.kemampuan_akademik}</p></Section>
+            <Section title={c?.sec12Title || content.sec12Title}><p>{c.rekomendasi_akademik ?? c.kemampuan_akademik}</p></Section>
             <Section title="13. Kesimpulan"><p className="italic font-medium text-foreground print:text-black">{c.kesimpulan}</p></Section>
 
             <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">

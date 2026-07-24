@@ -12,7 +12,7 @@ const SubmitSchema = z.object({
     birth_date: z.string().optional().default("2020-01-01"),
     school: z.string().trim().max(200).optional().default(""),
     class_name: z.string().trim().max(120).optional().default(""),
-    education_level: z.enum(["TK", "SD", "SMP", "SMA"]).optional().default("TK"),
+    education_level: z.enum(["TK", "SD", "SMP", "SMA", "SMK"]).optional().default("TK"),
   }),
   answers: z.array(z.object({ question_id: z.string().min(1), score: z.number().int().min(1).max(5) })).min(1),
 });
