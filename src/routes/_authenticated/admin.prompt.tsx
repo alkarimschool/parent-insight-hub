@@ -8,35 +8,198 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Save } from "lucide-react";
+import { Save, Bot, Sparkles, Code, CheckCircle2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { testAiPrompt } from "@/lib/assessment.functions";
 
-export const Route = createFileRoute("/_authenticated/admin/prompt")({ component: PromptAdmin });
+export const Route = createFileRoute("/_authenticated/admin/prompt")({
+  component: PromptAdmin,
+});
+
+const PLACEHOLDERS = [
+  { tag: "{{parent_name}}", label: "Nama Orang Tua" },
+  { tag: "{{parent_whatsapp}}", label: "WhatsApp" },
+  { tag: "{{child_name}}", label: "Nama Anak" },
+  { tag: "{{child_school}}", label: "Sekolah" },
+  { tag: "{{answers}}", label: "Daftar Jawaban" },
+];
 
 function PromptAdmin() {
   const qc = useQueryClient();
-  const data = useQuery({
+  const runTest = useServerFn(testAiPrompt);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
+
+  const query = useQuery({
     queryKey: ["admin-prompt"],
-    queryFn: async () => (await supabase.from("ai_prompts").select("*").order("updated_at", { ascending: false }).limit(1).maybeSingle()).data,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ai_prompts")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) return data;
+      // Default fallback if table empty
+      return {
+        id: "default",
+        name: "Default Assessment Prompt",
+        system_prompt:
+          "Anda adalah asisten psikolog anak yang membantu orang tua memahami perkembangan anak usia TK (3-6 tahun). Gunakan bahasa Indonesia yang hangat, positif, membangun, mudah dipahami orang tua, dan tidak menghakimi. Selalu balas dalam format JSON valid.",
+        user_template:
+          "Berikut data anak dan hasil asesmen orang tua:\n\nDATA ORANG TUA:\nNama: {{parent_name}}\nWhatsApp: {{parent_whatsapp}}\n\nDATA ANAK:\nNama: {{child_name}}\nSekolah: {{child_school}}\n\nJAWABAN ASESMEN:\n{{answers}}\n\nBuat laporan analisis komprehensif 13 bagian.",
+        is_active: true,
+      };
+    },
   });
-  const [f, setF] = useState<any>(null);
-  useEffect(() => { if (data.data) setF(data.data); }, [data.data]);
+
+  const [form, setForm] = useState<any>(null);
+  useEffect(() => {
+    if (query.data) setForm(query.data);
+  }, [query.data]);
+
   const save = async () => {
-    if (!f) return;
-    const { error } = await supabase.from("ai_prompts").update({ name: f.name, system_prompt: f.system_prompt, user_template: f.user_template, is_active: f.is_active }).eq("id", f.id);
-    if (error) return toast.error(error.message);
-    toast.success("Tersimpan."); qc.invalidateQueries({ queryKey: ["admin-prompt"] });
+    if (!form) return;
+    try {
+      if (form.id === "default") {
+        const { error } = await supabase.from("ai_prompts").insert({
+          name: form.name,
+          system_prompt: form.system_prompt,
+          user_template: form.user_template,
+          is_active: form.is_active,
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("ai_prompts")
+          .update({
+            name: form.name,
+            system_prompt: form.system_prompt,
+            user_template: form.user_template,
+            is_active: form.is_active,
+          })
+          .eq("id", form.id);
+        if (error) throw error;
+      }
+      toast.success("Prompt AI berhasil disimpan!");
+      qc.invalidateQueries({ queryKey: ["admin-prompt"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Gagal menyimpan prompt.");
+    }
   };
-  if (!f) return <div>Memuat…</div>;
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await runTest({ data: { sample: "test" } });
+      setTestResult(res.sample ?? "Koneksi OK");
+      toast.success("Tes Koneksi AI Berhasil!");
+    } catch (e: any) {
+      toast.error("Gagal tes AI: " + (e?.message ?? "Terjadi kesalahan"));
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const insertTag = (tag: string) => {
+    if (!form) return;
+    setForm({ ...form, user_template: form.user_template + " " + tag });
+  };
+
+  if (query.isLoading || !form) {
+    return <div className="py-12 text-center text-muted-foreground">Memuat konfigurasi Prompt AI…</div>;
+  }
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold">Prompt AI</h1>
-      <p className="text-sm text-muted-foreground">Placeholder: {"{{parent_name}} {{child_name}} {{child_age}} {{answers}}"}</p>
-      <div className="mt-4 grid gap-4 rounded-2xl border border-border/60 bg-card p-5 shadow-soft">
-        <div><Label>Nama</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className="mt-1.5" /></div>
-        <div><Label>System Prompt</Label><Textarea value={f.system_prompt} onChange={(e) => setF({ ...f, system_prompt: e.target.value })} rows={6} className="mt-1.5 font-mono text-xs" /></div>
-        <div><Label>User Template</Label><Textarea value={f.user_template} onChange={(e) => setF({ ...f, user_template: e.target.value })} rows={16} className="mt-1.5 font-mono text-xs" /></div>
-        <label className="flex items-center gap-2 text-sm"><Switch checked={f.is_active} onCheckedChange={(v) => setF({ ...f, is_active: v })} /> Aktif</label>
-        <div><Button onClick={save}><Save className="mr-1 h-4 w-4" /> Simpan</Button></div>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Kelola Prompt AI</h1>
+          <p className="text-sm text-muted-foreground">
+            Sesuaikan System Prompt dan User Template untuk analisis perkembangan anak.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleTest} disabled={testing} className="rounded-full">
+            <Bot className="mr-1.5 h-4 w-4 text-primary" /> {testing ? "Pengujian…" : "Test AI"}
+          </Button>
+          <Button onClick={save} className="rounded-full bg-gradient-hero shadow-soft">
+            <Save className="mr-1.5 h-4 w-4" /> Simpan Prompt
+          </Button>
+        </div>
+      </div>
+
+      {testResult && (
+        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-xs font-mono text-emerald-800 dark:text-emerald-300">
+          <div className="flex items-center gap-1.5 font-bold mb-1">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Hasil Tes AI:
+          </div>
+          {testResult}
+        </div>
+      )}
+
+      <div className="rounded-3xl border border-border/60 bg-card p-6 shadow-soft space-y-6">
+        <div>
+          <Label className="font-semibold">Nama Prompt</Label>
+          <Input
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            className="mt-1.5"
+            placeholder="Default Assessment Prompt"
+          />
+        </div>
+
+        <div>
+          <Label className="font-semibold">System Prompt (Peran & Aturan AI)</Label>
+          <Textarea
+            value={form.system_prompt}
+            onChange={(e) => setForm({ ...form, system_prompt: e.target.value })}
+            rows={5}
+            className="mt-1.5 font-mono text-xs leading-relaxed"
+          />
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <Label className="font-semibold">User Template (Format Data & Jawaban)</Label>
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="text-xs text-muted-foreground mr-1">Sisipkan:</span>
+              {PLACEHOLDERS.map((p) => (
+                <button
+                  key={p.tag}
+                  type="button"
+                  onClick={() => insertTag(p.tag)}
+                  className="inline-flex items-center gap-1 rounded-md border border-border/80 bg-muted/60 px-2 py-0.5 text-[11px] font-mono hover:bg-accent"
+                >
+                  <Code className="h-3 w-3 text-primary" /> {p.tag}
+                </button>
+              ))}
+            </div>
+          </div>
+          <Textarea
+            value={form.user_template}
+            onChange={(e) => setForm({ ...form, user_template: e.target.value })}
+            rows={14}
+            className="font-mono text-xs leading-relaxed"
+          />
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-border/40">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="prompt_active"
+              checked={form.is_active}
+              onCheckedChange={(v) => setForm({ ...form, is_active: v })}
+            />
+            <Label htmlFor="prompt_active" className="cursor-pointer text-sm">
+              Aktifkan Prompt Ini Sebagai Default
+            </Label>
+          </div>
+          <Button onClick={save} className="rounded-full bg-gradient-hero shadow-soft">
+            <Save className="mr-1.5 h-4 w-4" /> Simpan Perubahan
+          </Button>
+        </div>
       </div>
     </div>
   );
