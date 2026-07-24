@@ -19,58 +19,160 @@ function isUUID(str: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
+const LEVEL_PROFILES: Record<EducationLevel, {
+  ringkasan: (name: string, isHigh: boolean) => string;
+  kelebihan: (name: string) => string[];
+  area_pengembangan: (name: string) => string[];
+  kemampuan_akademik: (name: string) => string;
+  kecerdasan_sosial: (name: string) => string;
+  kecerdasan_emosional: (name: string) => string;
+  karakter: (name: string) => string;
+  potensi: (name: string) => string;
+  minat_bakat: (name: string) => string;
+  perhatian_orangtua: (name: string) => string[];
+  treatment: (name: string) => Array<{ kategori: string; aktivitas: string }>;
+  rekomendasi_akademik: (name: string) => string;
+  kesimpulan: (childName: string, parentName: string) => string;
+}> = {
+  TK: {
+    ringkasan: (name, isHigh) => `Berdasarkan asesmen perkembangan anak usia dini (TK / PAUD), ${name} menunjukkan kesiapan tumbuh kembang dan calistung awal yang ${isHigh ? "sangat optimal" : "baik dan berkembang positif"}. Anak aktif, memiliki rasa ingin tahu tinggi, dan siap mengikuti kegiatan sekolah.`,
+    kelebihan: (name) => [
+      `Mampu menyampaikan keinginan dan berkomunikasi verbal dengan jelas.`,
+      `Mengenal huruf dasar, angka, warna, bentuk, dan membilang benda harian.`,
+      `Antusias mencoba permainan baru dan beradaptasi dengan teman seusianya.`
+    ],
+    area_pengembangan: (name) => [
+      `Meningkatkan konsentrasi dan ketekunan saat menyelesaikan permainan (10–15 menit).`,
+      `Melatih kemandirian merapikan mainan dan regulasi emosi saat timbul kekecewaan.`
+    ],
+    kemampuan_akademik: (name) => `${name} memiliki kesiapan akademik awal TK yang baik: telah mengenal huruf alfabet dasar, menyebutkan angka, mengenal warna dan bentuk, serta mampu mengikuti instruksi 2 langkah dari guru/orang tua.`,
+    kecerdasan_sosial: (name) => `${name} mudah bergaul, bersikap ramah dengan teman sebaya, dan mulai memahami konsep berbagi permainan.`,
+    kecerdasan_emosional: (name) => `${name} memiliki rasa percaya diri yang ceria dan mulai belajar menenangkan diri saat merasa lelah atau kecewa.`,
+    karakter: (name) => `Karakter pembelajar usia dini yang jujur, aktif, dan penuh rasa ingin tahu.`,
+    potensi: (name) => `Potensi eksplorasi visual, daya ingat permainan, dan kecerdasan komunikasi sosial.`,
+    minat_bakat: (name) => `Menunjukkan minat tinggi pada buku cerita bergambar, mewarnai, balok susun, dan lagu anak.`,
+    perhatian_orangtua: (name) => [
+      `Berikan stimulasi calistung berbasis permainan gembira tanpa paksaan.`,
+      `Dampingi rutinitas tidur dan membaca dongeng sebelum tidur.`
+    ],
+    treatment: (name) => [
+      { kategori: "Stimulasi Calistung TK", aktivitas: "Bermain flashcard huruf/angka dan membilang benda harian 10–15 menit bersama orang tua." },
+      { kategori: "Kemandirian & Motorik", aktivitas: "Latih anak memakai sepatu, makan sendiri, dan merapikan mainannya." },
+      { kategori: "Sosialisasi & Emosi", aktivitas: "Fasilitasi waktu bermain (playdate) bersama teman seusianya." }
+    ],
+    rekomendasi_akademik: (name) => `Bacakan cerita dongeng interaktif setiap hari, ajak menyebutkan huruf/angka di sekitar lingkungan rumah, serta berikan apresiasi positif atas setiap usaha anak.`,
+    kesimpulan: (c, p) => `Perkembangan dan kesiapan sekolah TK ananda ${c} berjalan sangat baik. Pendampingan penuh kasih dari Ibu/Bapak ${p} akan mengoptimalkan potensi emas usia dininya.`
+  },
+
+  SD: {
+    ringkasan: (name, isHigh) => `Berdasarkan asesmen karakter dan kebiasaan belajar Sekolah Dasar (SD), ${name} menunjukkan performa akademik, literasi, numerasi, dan disiplin yang ${isHigh ? "sangat memuaskan" : "baik dan terus berkembang"}. Anak memiliki fondasi belajar mandiri yang kuat.`,
+    kelebihan: (name) => [
+      `Kelancaran membaca pemahaman cerita dan kerapihan menulis kalimat.`,
+      `Pemahaman operasi matematika dasar (penjumlahan, pengurangan, perkalian/pembagian sederhana).`,
+      `Disiplin dalam waktu belajar dan penyelesaian tugas sekolah (PR).`
+    ],
+    area_pengembangan: (name) => [
+      `Mengurangi distrasi penggunaan gadget/game saat waktu belajar mandiri.`,
+      `Melatih pemecahan soal cerita matematika berjenjang dan daya fokus belajar (20–30 menit).`
+    ],
+    kemampuan_akademik: (name) => `${name} memiliki tingkat literasi dan numerasi SD yang solid: mampu membaca teks cerita dengan intonasi baik, memahami makna bacaan, serta melakukan perhitungan angka matematika dasar secara akurat.`,
+    kecerdasan_sosial: (name) => `${name} mampu bekerja sama dalam tim proyek sekolah, menghargai teman, dan menunjukkan rasa percaya diri saat tampil di depan kelas.`,
+    kecerdasan_emosional: (name) => `${name} mampu mengendalikan emosi saat menghadapi kekalahan atau kesulitan soal latihan.`,
+    karakter: (name) => `Karakter anak SD yang disiplin, bertanggung jawab atas tugas sekolah, dan jujur.`,
+    potensi: (name) => `Potensi penalaran logika matematika dasar, ekspresi tulisan, dan kreativitas seni/sains.`,
+    minat_bakat: (name) => `Terlihat minat pada eksperimen sains sekolah, buku pengetahuan, dan aktivitas olahraga.`,
+    perhatian_orangtua: (name) => [
+      `Terapkan aturan membatasi waktu layar (screen time) gadget di rumah.`,
+      `Dampingi waktu review pelajaran dan apresiasi usaha belajar anak.`
+    ],
+    treatment: (name) => [
+      { kategori: "Penguatan Literasi & Numerasi SD", aktivitas: "Latihan membaca buku cerita pendek dan penyelesaian 5 soal cerita matematika harian." },
+      { kategori: "Manajemen Belajar Rumah", aktivitas: "Buatkan jadwal belajar teratur (30-45 menit) di area rumah yang tenang tanpa TV/gadget." },
+      { kategori: "Pendampingan Karakter", aktivitas: "Diskusikan nilai tanggung jawab, kejujuran, dan kerapihan perlengkapan sekolah." }
+    ],
+    rekomendasi_akademik: (name) => `Fasilitasi buku bacaan ensiklopedia anak, dampingi latihan pemecahan soal cerita matematika, dan koordinasikan perkembangan belajar berkala dengan guru kelas di sekolah.`,
+    kesimpulan: (c, p) => `Pencapaian akademik dan pembentukan karakter SD ananda ${c} berjalan sangat baik. Pembiasaan belajar teratur yang didukung Ibu/Bapak ${p} di rumah akan menjadi kunci kesuksesannya.`
+  },
+
+  SMP: {
+    ringkasan: (name, isHigh) => `Berdasarkan asesmen perkembangan remaja awal dan akademik SMP, ${name} menunjukkan motivasi belajar, pemikiran kritis, dan pergaulan positif yang ${isHigh ? "sangat menonjol" : "baik dan terus berkembang"}. Anak memiliki kesadaran diri yang tinggi dalam belajar.`,
+    kelebihan: (name) => [
+      `Mampu berpikir kritis, menganalisis materi SMP, dan mengajukan argumen logis.`,
+      `Memiliki motivasi dan target nilai akademik pribadi.`,
+      `Mampu memilih pergaulan positif dan menolak tekanan negatif teman sebaya.`
+    ],
+    area_pengembangan: (name) => [
+      `Manajemen waktu seimbang antara belajar, media sosial, dan hobi.`,
+      `Melatih ketahanan diri (resilience) dalam menghadapi persaingan nilai atau tugas kelompok yang rumit.`
+    ],
+    kemampuan_akademik: (name) => `${name} memiliki kemampuan akademik SMP yang memuaskan: mampu memahami konsep pelajaran yang kompleks, menyelesaikan tugas proyek sekolah secara mandiri, serta memiliki inisiatif mempersiapkan ujian.`,
+    kecerdasan_sosial: (name) => `${name} menunjukkan komunikasi yang dewasa dalam kelompok teman sebaya, menghargai perbedaan pendapat, dan aktif dalam kegiatan sekolah.`,
+    kecerdasan_emosional: (name) => `${name} mampu mengelola stres beban pelajaran dan perubahan emosi khas usia remaja awal.`,
+    karakter: (name) => `Karakter remaja yang mandiri, kritis, bertanggung jawab, dan komunikatif dengan orang tua.`,
+    potensi: (name) => `Potensi pemecahan masalah (problem solving), penalaran analitis, dan kepemimpinan organisasi siswa.`,
+    minat_bakat: (name) => `Menunjukkan minat spesifik pada bidang ilmu (IPA/IPS/Bahasa/Teknologi) dan kegiatan ekstrakurikuler.`,
+    perhatian_orangtua: (name) => [
+      `Jaga komunikasi terbuka dua arah tanpa menghakimi pilihan dan emosi remaja.`,
+      `Dukung eksplorasi minat calon Sekolah Menengah (SMA/SMK).`
+    ],
+    treatment: (name) => [
+      { kategori: "Pengembangan Berpikir Kritis SMP", aktivitas: "Latihan pemetaan konsep (mind mapping) dan diskusi isu-isu sains/sosial terkini bersama keluarga." },
+      { kategori: "Manajemen Waktu Remaja", aktivitas: "Dampingi penyusunan skala prioritas antara tugas sekolah, ekstrakurikuler, dan media sosial." },
+      { kategori: "Eksplorasi Masa Depan", aktivitas: "Diskusikan pemetaan minat bakat untuk persiapan pemilihan jurusan SMA/SMK." }
+    ],
+    rekomendasi_akademik: (name) => `Dorong partisipasi dalam kompetisi akademik/organisasi sekolah, berikan akses sumber belajar digital berkualitas, dan bangun budaya diskusi analisis kritis di rumah.`,
+    kesimpulan: (c, p) => `Perkembangan berpikir kritis dan kesiapan akademik SMP ananda ${c} sangat positif. Kemitraan komunikatif dari Ibu/Bapak ${p} akan membimbingnya menjadi remaja yang berprestasi.`
+  },
+
+  SMA: {
+    ringkasan: (name, isHigh) => `Berdasarkan asesmen kesiapan perguruan tinggi, karier, dan pemikiran analitis SMA/SMK, ${name} menunjukkan kemandirian belajar, riset, dan kepemimpinan yang ${isHigh ? "sangat matang & unggul" : "baik dan siap dikembangkan"}. Anak sangat siap melangkah ke jenjang masa depan.`,
+    kelebihan: (name) => [
+      `Pemikiran analitis tingkat tinggi, kemampuan riset/studi literatur mandiri, dan penyusunan argumen berbasis data.`,
+      `Public speaking dan kemampuan presentasi yang percaya diri dan terstruktur.`,
+      `Kesiapan matang dan strategi pemilihan Perguruan Tinggi / Kuliah serta arah profesi masa depan.`
+    ],
+    area_pengembangan: (name) => [
+      `Pengaturan waktu prioritas antara persiapan ujian seleksi PTN/PTS, organisasi, dan waktu istirahat yang cukup.`,
+      `Mempertajam keterampilan jaringan (networking) dan manajemen konflik dalam tim.`
+    ],
+    kemampuan_akademik: (name) => `${name} memiliki prestasi dan kemampuan akademik SMA tingkat lanjut yang unggul: menguasai materi abstrak, mampu melakukan analisis kritis data, serta memiliki konsistensi belajar otonom yang tinggi.`,
+    kecerdasan_sosial: (name) => `${name} menunjukkan kepemimpinan yang dewasa, empati sosial, dan kemampuan berkolaborasi dalam proyek profesional.`,
+    kecerdasan_emosional: (name) => `${name} memiliki daya tahan (resilience) dan tingkat kedewasaan emosi yang stabil dalam menghadapi tekanan persaingan tinggi.`,
+    karakter: (name) => `Karakter dewasa yang mandiri, berintegritas tinggi, dan bertanggung jawab penuh atas pilihan karier pribadinya.`,
+    potensi: (name) => `Potensi kepemimpinan strategis, analisis riset ilmiah, public speaking, dan pemecahan masalah kompleks.`,
+    minat_bakat: (name) => `Terorientasi jelas pada jurusan kuliah impian (Teknologi/Sains/Sosial/Bisnis/Seni) dan profesi masa depan.`,
+    perhatian_orangtua: (name) => [
+      `Dukung penuh kemandirian anak dalam menentukan pilihan jurusan kuliah dan karier.`,
+      `Fasilitasi bimbingan tryout dan persiapan administrasi perguruan tinggi.`
+    ],
+    treatment: (name) => [
+      { kategori: "Persiapan Perguruan Tinggi (SMA)", aktivitas: "Fasilitasi tryout ujian seleksi masuk kuliah (SNBT/Mandiri) dan konseling jurusan berkala." },
+      { kategori: "Riset & Pengembangan Diri", aktivitas: "Dorong penyusunan karya tulis ilmiah, proyek portofolio, dan pelatihan kepemimpinan/bahasa." },
+      { kategori: "Kemandirian & Masa Depan", aktivitas: "Beri ruang otonomi penuh dalam pengambilan keputusan hidup dan pengelolaan keuangan pribadi." }
+    ],
+    rekomendasi_akademik: (name) => `Fasilitasi latihan soal analitis tingkat lanjut, ikuti tryout PTN/PTS secara konsisten, dan tingkatkan keterampilan komunikasi publik serta riset literatur mandiri.`,
+    kesimpulan: (c, p) => `Kedewasaan dan kesiapan akademik ananda ${c} dalam menghadapi Perguruan Tinggi & Dunia Karier sudah sangat optimal. Dukungan dan doa dari Ibu/Bapak ${p} akan mengantarkannya mencapai cita-cita besarnya.`
+  }
+};
+
 function generateFallbackResult(childName: string, parentName: string, avgScore: number, level: EducationLevel = "TK") {
   const isHigh = avgScore >= 3.8;
-
-  const academicTexts: Record<EducationLevel, string> = {
-    TK: `${childName} menunjukkan tahap perkembangan calistung awal yang positif, mengenal huruf dasar, angka, warna, bentuk, serta daya ingat yang baik untuk usia TK.`,
-    SD: `${childName} memiliki kemampuan literasi dan numerasi yang berkembang baik, mampu membaca, memahami cerita, serta menyelesaikan soal matematika dasar Sekolah Dasar.`,
-    SMP: `${childName} menunjukkan pemikiran kritis awal, mampu menganalisis materi pelajaran SMP, serta menyelesaikan tugas proyek dan pemecahan masalah dengan baik.`,
-    SMA: `${childName} memiliki kesiapan akademik tingkat lanjut yang solid, pemikiran analitis, inisiatif riset/studi mandiri, serta wawasan kesiapan kuliah dan karier.`,
-  };
-
-  const academicDevTexts: Record<EducationLevel, string> = {
-    TK: `Berikan stimulasi calistung berbasis permainan interaktif (flashcard, membaca dongeng bersama, dan membilang benda harian 10-15 menit).`,
-    SD: `Dampingi latihan membaca pemahaman cerita pendek, soal cerita numerasi, dan buatkan jadwal belajar mandiri tanpa distraction gadget.`,
-    SMP: `Dorong anak melakukan pemetaan konsep (mind mapping), diskusi berpikir kritis tentang isu hangat, dan penyusunan target nilai akademik pribadi.`,
-    SMA: `Fasilitasi tryout ujian masuk perguruan tinggi, eksplorasi jurusan kuliah/karier, latihan public speaking, serta riset literatur mandiri.`,
-  };
+  const profile = LEVEL_PROFILES[level] || LEVEL_PROFILES.TK;
 
   return {
-    ringkasan: `Berdasarkan hasil asesmen perkembangan jenjang ${level}, ${childName} menunjukkan performa tumbuh kembang yang ${isHigh ? "sangat optimal" : "baik dan terus berkembang"}. Anak aktif, memiliki potensi positif, dan siap menghadapi tantangan belajar.`,
-    kelebihan: [
-      `Kemampuan komunikasi dan pemahaman materi yang baik sesuai jenjang ${level}.`,
-      `Minat eksplorasi tinggi dalam aktivitas belajar dan pengembangan diri.`,
-      `Kemandirian dan tanggung jawab yang positif.`
-    ],
-    area_pengembangan: [
-      `Meningkatkan konsistensi manajemen waktu dan daya tahan fokus belajar.`,
-      `Melatih regulasi emosi saat menghadapi situasi kompetitif atau tekanan tinggi.`
-    ],
-    kemampuan_akademik: academicTexts[level],
-    kecerdasan_sosial: `${childName} menunjukkan interaksi sosial yang sehat, mampu bekerja sama dalam tim, dan beradaptasi baik di lingkungan sekolah.`,
-    kecerdasan_emosional: `Anak memiliki tingkat percaya diri yang positif serta mulai memahami kontrol emosi mandiri.`,
-    kemampuan_komunikasi: `Anak dapat menyampaikan pemikiran, pendapat, atau ide dengan jelas dan percaya diri.`,
-    kemandirian: `Tingkat kemandirian anak sangat baik dalam mengelola rutinitas dan tugas harian jenjang ${level}.`,
-    kemampuan_belajar: `Anak memiliki antusiasme dan ketekunan yang baik ketika mempelajari konsep baru.`,
-    karakter: `Memiliki karakter pembelajar yang jujur, disiplin, dan bertanggung jawab.`,
-    potensi: `Potensi dominan terlihat pada bidang akademik analitis, kepemimpinan, dan komunikasi sosial.`,
-    minat_bakat: `Menunjukkan ketertarikan kuat pada pengembangan ilmu pengetahuan, seni kreatif, dan pemecahan masalah.`,
-    area_stimulasi: [
-      `Latihan pemecahan masalah (problem solving) secara bertahap.`,
-      `Aktivitas diskusi dan refleksi mandiri bersama orang tua di rumah.`
-    ],
-    perhatian_orangtua: [
-      `Berikan apresiasi spesifik atas usaha belajar anak, bukan hanya hasil akhir.`,
-      `Dukung minat bakat dan berikan ruang ekspresi positif bagi anak.`
-    ],
-    treatment: [
-      { kategori: `Pengembangan Akademik ${level}`, aktivitas: academicDevTexts[level] },
-      { kategori: "Pendampingan Karakter", aktivitas: "Diskusikan nilai-nilai kejujuran, tanggung jawab, dan empati sosial." },
-      { kategori: "Rutinitas Rumah", aktivitas: "Bangun komunikasi terbuka harian dan ruang evaluasi belajar yang nyaman." }
-    ],
-    rekomendasi_akademik: academicDevTexts[level],
-    kesimpulan: `Perkembangan dan kemampuan akademik jenjang ${level} ${childName} berjalan sangat baik. Apresiasi dan pendampingan konsisten dari Ibu/Bapak ${parentName} di rumah akan semakin memperkuat kesuksesannya.`
+    ringkasan: profile.ringkasan(childName, isHigh),
+    kelebihan: profile.kelebihan(childName),
+    area_pengembangan: profile.area_pengembangan(childName),
+    kemampuan_akademik: profile.kemampuan_akademik(childName),
+    kecerdasan_sosial: profile.kecerdasan_sosial(childName),
+    kecerdasan_emosional: profile.kecerdasan_emosional(childName),
+    karakter: profile.karakter(childName),
+    potensi: profile.potensi(childName),
+    minat_bakat: profile.minat_bakat(childName),
+    perhatian_orangtua: profile.perhatian_orangtua(childName),
+    treatment: profile.treatment(childName),
+    rekomendasi_akademik: profile.rekomendasi_akademik(childName),
+    kesimpulan: profile.kesimpulan(childName, parentName)
   };
 }
 
