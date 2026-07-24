@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { ExternalLink, Edit3, Trash2, Save, X, Search, GraduationCap, MessageSquare } from "lucide-react";
+import { ExternalLink, Edit3, Trash2, Save, X, Search, GraduationCap, MessageSquare, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { updateParentChildFn, getAdminParentsFn, deleteAssessmentFn } from "@/lib/admin.functions";
@@ -33,7 +33,9 @@ function ParentsList() {
 
   const [q, setQ] = useState("");
   const [editingRow, setEditingRow] = useState<any>(null);
+  const [deletingRow, setDeletingRow] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const list = useQuery({
     queryKey: ["admin-parents-list-rpc"],
@@ -82,7 +84,7 @@ function ParentsList() {
           education_level: editingRow.education_level,
         },
       });
-      toast.success("Data berhasil diperbarui di Supabase.");
+      toast.success("Data berhasil diperbarui.");
       setEditingRow(null);
       qc.invalidateQueries({ queryKey: ["admin-parents-list-rpc"] });
     } catch (err: any) {
@@ -92,14 +94,22 @@ function ParentsList() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Hapus data asesmen ini dari database Supabase?")) return;
+  const handleConfirmDelete = async () => {
+    if (!deletingRow) return;
+    setDeleting(true);
     try {
-      await deleteAssessment({ data: { id } });
-      toast.success("Data asesmen berhasil dihapus.");
+      await deleteAssessment({ data: { id: deletingRow.id } });
+      toast.success("✅ Data berhasil dihapus.");
+      setDeletingRow(null);
+      // Invalidate queries across Admin Dashboard to immediately reflect decreased count
       qc.invalidateQueries({ queryKey: ["admin-parents-list-rpc"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats-multi-level"] });
+      qc.invalidateQueries({ queryKey: ["admin-recent-list"] });
     } catch (e: any) {
-      toast.error(e?.message ?? "Gagal menghapus data.");
+      console.error("Error deleting assessment record:", e);
+      toast.error("Gagal menghapus data. Silakan coba lagi.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -168,7 +178,7 @@ function ParentsList() {
                     <td className="p-3.5 font-mono text-muted-foreground">{r.parents?.whatsapp ?? "-"}</td>
                     <td className="p-3.5">
                       <div className="flex items-center gap-2">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${r.status === "analyzed" ? "bg-emerald-500/10 text-emerald-600" : "bg-amber500/10 text-amber-600"}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${r.status === "analyzed" ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>
                           {r.status === "analyzed" ? "Selesai Analisis" : "Diproses"}
                         </span>
                       </div>
@@ -200,7 +210,7 @@ function ParentsList() {
                         </a>
 
                         {/* DELETE BUTTON */}
-                        <Button size="sm" variant="destructive" onClick={() => handleDelete(r.id)} className="rounded-full text-[11px] h-7 px-2">
+                        <Button size="sm" variant="destructive" onClick={() => setDeletingRow(r)} className="rounded-full text-[11px] h-7 px-2">
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -281,6 +291,56 @@ function ParentsList() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION DIALOG MODAL */}
+      {deletingRow && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl border border-destructive/30 bg-card p-6 shadow-elevated space-y-4">
+            <div className="flex items-start gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-destructive/10 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="font-bold text-foreground text-base">Konfirmasi Hapus</h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  Apakah Anda yakin ingin menghapus data ini? Data yang dihapus tidak dapat dikembalikan.
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border/60 bg-muted/40 p-3 text-xs space-y-1">
+              <div className="flex justify-between"><span className="text-muted-foreground">Nama Anak:</span> <span className="font-bold text-foreground">{deletingRow.children?.name || "-"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Jenjang:</span> <span className="font-bold text-primary">{deletingRow.education_level || "TK"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">WhatsApp:</span> <span className="font-mono text-muted-foreground">{deletingRow.parents?.whatsapp || "-"}</span></div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDeletingRow(null)}
+                disabled={deleting}
+                className="rounded-full text-xs"
+              >
+                Batal
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+                className="rounded-full text-xs shadow-soft"
+              >
+                {deleting ? (
+                  <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Menghapus…</>
+                ) : (
+                  <><Trash2 className="h-3.5 w-3.5 mr-1" /> Hapus</>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       )}

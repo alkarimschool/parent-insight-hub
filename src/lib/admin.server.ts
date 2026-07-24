@@ -264,13 +264,86 @@ export async function getAdminParentsListServer() {
 }
 
 export async function deleteAssessmentServer(id: string) {
-  if (!id) return { ok: false };
+  if (!id) throw new Error("ID Assessment tidak valid.");
+
+  // 1. Fetch details before deletion
+  const { data: assessment } = await supabaseAdmin
+    .from("assessments")
+    .select("id, parent_id, child_id, education_level, parents(id, name, whatsapp), children(id, name)")
+    .eq("id", id)
+    .maybeSingle();
+
+  const childId = assessment?.child_id;
+  const parentId = assessment?.parent_id;
+  const childName = (assessment as any)?.children?.name || "Anak";
+  const parentName = (assessment as any)?.parents?.name || "Orang Tua";
+  const level = assessment?.education_level || "TK";
+
+  // 2. Cascade Delete in order to prevent foreign key errors
   try {
     await supabaseAdmin.from("ai_results").delete().eq("assessment_id", id);
-    await supabaseAdmin.from("assessment_answers").delete().eq("assessment_id", id);
-  } catch {}
+  } catch (e) {
+    console.warn("ai_results delete warning:", e);
+  }
 
-  const { error } = await supabaseAdmin.from("assessments").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-  return { ok: true };
+  try {
+    await supabaseAdmin.from("assessment_answers").delete().eq("assessment_id", id);
+  } catch (e) {
+    console.warn("assessment_answers delete warning:", e);
+  }
+
+  const { error: deleteErr } = await supabaseAdmin.from("assessments").delete().eq("id", id);
+  if (deleteErr) {
+    console.error("Failed to delete assessment record:", deleteErr);
+    throw new Error("Gagal menghapus data. Silakan coba lagi. (" + deleteErr.message + ")");
+  }
+
+  // 3. Clean up orphaned child and parent records if no other assessments exist
+  if (childId) {
+    try {
+      const { count } = await supabaseAdmin
+        .from("assessments")
+        .select("*", { count: "exact", head: true })
+        .eq("child_id", childId);
+
+      if (count === 0) {
+        await supabaseAdmin.from("children").delete().eq("id", childId);
+      }
+    } catch (e) {
+      console.warn("Child cleanup skipped:", e);
+    }
+  }
+
+  if (parentId) {
+    try {
+      const { count } = await supabaseAdmin
+        .from("children")
+        .select("*", { count: "exact", head: true })
+        .eq("parent_id", parentId);
+
+      if (count === 0) {
+        await supabaseAdmin.from("parents").delete().eq("id", parentId);
+      }
+    } catch (e) {
+      console.warn("Parent cleanup skipped:", e);
+    }
+  }
+
+  // 4. Record Activity Log
+  try {
+    await supabaseAdmin.from("activity_logs").insert({
+      action: "DELETE DATA",
+      details: {
+        assessment_id: id,
+        parent_name: parentName,
+        child_name: childName,
+        education_level: level,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (e) {
+    console.warn("Could not insert activity_logs record:", e);
+  }
+
+  return { ok: true, id };
 }
