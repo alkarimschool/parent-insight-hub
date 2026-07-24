@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Bot, MessageSquare, Save, Zap, CheckCircle2 } from "lucide-react";
+import { Bot, MessageSquare, Save, Zap } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { testAiPrompt } from "@/lib/assessment.functions";
+import { saveAiSettingsFn, saveWaSettingsFn } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/settings")({
   component: SettingsAdmin,
@@ -19,9 +20,13 @@ export const Route = createFileRoute("/_authenticated/admin/settings")({
 function SettingsAdmin() {
   const qc = useQueryClient();
   const runTestAi = useServerFn(testAiPrompt);
+  const saveAiServer = useServerFn(saveAiSettingsFn);
+  const saveWaServer = useServerFn(saveWaSettingsFn);
 
   const [testingAi, setTestingAi] = useState(false);
   const [testingWa, setTestingWa] = useState(false);
+  const [savingAi, setSavingAi] = useState(false);
+  const [savingWa, setSavingWa] = useState(false);
 
   // AI settings query
   const aiQuery = useQuery({
@@ -81,63 +86,29 @@ function SettingsAdmin() {
 
   const saveAi = async () => {
     if (!aiForm) return;
+    setSavingAi(true);
     try {
-      if (aiForm.id === "default") {
-        const { error } = await supabase.from("ai_settings").insert({
-          model: aiForm.model,
-          temperature: Number(aiForm.temperature),
-          max_tokens: Number(aiForm.max_tokens),
-          is_active: aiForm.is_active,
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("ai_settings")
-          .update({
-            model: aiForm.model,
-            temperature: Number(aiForm.temperature),
-            max_tokens: Number(aiForm.max_tokens),
-            is_active: aiForm.is_active,
-          })
-          .eq("id", aiForm.id);
-        if (error) throw error;
-      }
+      await saveAiServer({ data: aiForm });
       toast.success("Pengaturan AI berhasil disimpan!");
       qc.invalidateQueries({ queryKey: ["admin-ai-settings"] });
     } catch (e: any) {
       toast.error("Gagal menyimpan AI settings: " + (e?.message ?? "Error"));
+    } finally {
+      setSavingAi(false);
     }
   };
 
   const saveWa = async () => {
     if (!waForm) return;
+    setSavingWa(true);
     try {
-      if (waForm.id === "default") {
-        const { error } = await supabase.from("whatsapp_settings").insert({
-          api_url: waForm.api_url,
-          api_token: waForm.api_token,
-          sender: waForm.sender,
-          template: waForm.template,
-          is_active: waForm.is_active,
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("whatsapp_settings")
-          .update({
-            api_url: waForm.api_url,
-            api_token: waForm.api_token,
-            sender: waForm.sender,
-            template: waForm.template,
-            is_active: waForm.is_active,
-          })
-          .eq("id", waForm.id);
-        if (error) throw error;
-      }
+      await saveWaServer({ data: waForm });
       toast.success("Pengaturan WhatsApp berhasil disimpan!");
       qc.invalidateQueries({ queryKey: ["admin-wa-settings"] });
     } catch (e: any) {
       toast.error("Gagal menyimpan WA settings: " + (e?.message ?? "Error"));
+    } finally {
+      setSavingWa(false);
     }
   };
 
@@ -262,8 +233,8 @@ function SettingsAdmin() {
           <Button variant="outline" type="button" onClick={handleTestAi} disabled={testingAi} className="rounded-full">
             <Zap className="mr-1.5 h-4 w-4 text-amber-500" /> {testingAi ? "Menguji…" : "Test AI Connection"}
           </Button>
-          <Button type="button" onClick={saveAi} className="rounded-full bg-gradient-hero shadow-soft">
-            <Save className="mr-1.5 h-4 w-4" /> Simpan Pengaturan AI
+          <Button type="button" onClick={saveAi} disabled={savingAi} className="rounded-full bg-gradient-hero shadow-soft">
+            <Save className="mr-1.5 h-4 w-4" /> {savingAi ? "Menyimpan…" : "Simpan Pengaturan AI"}
           </Button>
         </div>
       </div>
@@ -341,8 +312,8 @@ function SettingsAdmin() {
           <Button variant="outline" type="button" onClick={handleTestWa} disabled={testingWa} className="rounded-full">
             <MessageSquare className="mr-1.5 h-4 w-4 text-emerald-600" /> {testingWa ? "Menguji…" : "Test WhatsApp"}
           </Button>
-          <Button type="button" onClick={saveWa} className="rounded-full bg-gradient-hero shadow-soft">
-            <Save className="mr-1.5 h-4 w-4" /> Simpan Pengaturan WA
+          <Button type="button" onClick={saveWa} disabled={savingWa} className="rounded-full bg-gradient-hero shadow-soft">
+            <Save className="mr-1.5 h-4 w-4" /> {savingWa ? "Menyimpan…" : "Simpan Pengaturan WA"}
           </Button>
         </div>
       </div>

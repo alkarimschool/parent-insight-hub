@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { fetchHomepage, fetchWebsite, HomepageData, WebsiteData } from "@/lib/settings";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Save, Globe, Home, Plus, Trash2, HelpCircle, Sparkles, Layers } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { saveWebsiteSettingsFn, saveHomepageSettingsFn } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/website")({
   component: WebsiteAdmin,
@@ -17,6 +18,11 @@ export const Route = createFileRoute("/_authenticated/admin/website")({
 
 function WebsiteAdmin() {
   const qc = useQueryClient();
+  const saveWebFn = useServerFn(saveWebsiteSettingsFn);
+  const saveHomeFn = useServerFn(saveHomepageSettingsFn);
+
+  const [savingWeb, setSavingWeb] = useState(false);
+  const [savingHome, setSavingHome] = useState(false);
 
   const websiteQuery = useQuery({ queryKey: ["admin-website-edit"], queryFn: fetchWebsite });
   const homepageQuery = useQuery({ queryKey: ["admin-homepage-edit"], queryFn: fetchHomepage });
@@ -34,31 +40,31 @@ function WebsiteAdmin() {
 
   const saveWebsite = async () => {
     if (!web) return;
+    setSavingWeb(true);
     try {
-      const { error } = await supabase
-        .from("website_settings")
-        .upsert({ id: 1, data: web as any });
-      if (error) throw error;
+      await saveWebFn({ data: web });
       toast.success("Pengaturan website umum berhasil disimpan!");
       qc.invalidateQueries({ queryKey: ["website"] });
       qc.invalidateQueries({ queryKey: ["admin-website-edit"] });
     } catch (e: any) {
       toast.error("Gagal menyimpan website settings: " + (e?.message ?? "Error"));
+    } finally {
+      setSavingWeb(false);
     }
   };
 
   const saveHomepage = async () => {
     if (!home) return;
+    setSavingHome(true);
     try {
-      const { error } = await supabase
-        .from("homepage_settings")
-        .upsert({ id: 1, data: home as any });
-      if (error) throw error;
+      await saveHomeFn({ data: home });
       toast.success("Konten Homepage berhasil disimpan!");
       qc.invalidateQueries({ queryKey: ["homepage"] });
       qc.invalidateQueries({ queryKey: ["admin-homepage-edit"] });
     } catch (e: any) {
       toast.error("Gagal menyimpan homepage settings: " + (e?.message ?? "Error"));
+    } finally {
+      setSavingHome(false);
     }
   };
 
@@ -92,8 +98,8 @@ function WebsiteAdmin() {
               <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
                 <Globe className="h-5 w-5 text-primary" /> Identitas & Kontak Website
               </h2>
-              <Button onClick={saveWebsite} className="rounded-full bg-gradient-hero shadow-soft">
-                <Save className="mr-1.5 h-4 w-4" /> Simpan Identitas
+              <Button onClick={saveWebsite} disabled={savingWeb} className="rounded-full bg-gradient-hero shadow-soft">
+                <Save className="mr-1.5 h-4 w-4" /> {savingWeb ? "Menyimpan…" : "Simpan Identitas"}
               </Button>
             </div>
 
@@ -179,8 +185,8 @@ function WebsiteAdmin() {
             </div>
 
             <div className="flex justify-end pt-4 border-t border-border/40">
-              <Button onClick={saveWebsite} className="rounded-full bg-gradient-hero shadow-soft">
-                <Save className="mr-1.5 h-4 w-4" /> Simpan Pengaturan Website
+              <Button onClick={saveWebsite} disabled={savingWeb} className="rounded-full bg-gradient-hero shadow-soft">
+                <Save className="mr-1.5 h-4 w-4" /> {savingWeb ? "Menyimpan…" : "Simpan Pengaturan Website"}
               </Button>
             </div>
           </div>
@@ -193,8 +199,8 @@ function WebsiteAdmin() {
               <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
                 <Home className="h-5 w-5 text-primary" /> Konten Hero & Seksi Homepage
               </h2>
-              <Button onClick={saveHomepage} className="rounded-full bg-gradient-hero shadow-soft">
-                <Save className="mr-1.5 h-4 w-4" /> Simpan Homepage
+              <Button onClick={saveHomepage} disabled={savingHome} className="rounded-full bg-gradient-hero shadow-soft">
+                <Save className="mr-1.5 h-4 w-4" /> {savingHome ? "Menyimpan…" : "Simpan Homepage"}
               </Button>
             </div>
 
@@ -308,8 +314,8 @@ function WebsiteAdmin() {
             </div>
 
             <div className="flex justify-end pt-4 border-t border-border/40">
-              <Button onClick={saveHomepage} className="rounded-full bg-gradient-hero shadow-soft">
-                <Save className="mr-1.5 h-4 w-4" /> Simpan Seluruh Homepage
+              <Button onClick={saveHomepage} disabled={savingHome} className="rounded-full bg-gradient-hero shadow-soft">
+                <Save className="mr-1.5 h-4 w-4" /> {savingHome ? "Menyimpan…" : "Simpan Seluruh Homepage"}
               </Button>
             </div>
           </div>

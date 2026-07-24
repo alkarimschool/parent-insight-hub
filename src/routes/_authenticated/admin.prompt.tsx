@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Save, Bot, Sparkles, Code, CheckCircle2 } from "lucide-react";
+import { Save, Bot, Code, CheckCircle2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { testAiPrompt } from "@/lib/assessment.functions";
+import { savePromptFn } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/prompt")({
   component: PromptAdmin,
@@ -27,7 +28,10 @@ const PLACEHOLDERS = [
 function PromptAdmin() {
   const qc = useQueryClient();
   const runTest = useServerFn(testAiPrompt);
+  const savePromptServer = useServerFn(savePromptFn);
+
   const [testing, setTesting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
 
   const query = useQuery({
@@ -40,7 +44,6 @@ function PromptAdmin() {
         .limit(1)
         .maybeSingle();
       if (data) return data;
-      // Default fallback if table empty
       return {
         id: "default",
         name: "Default Assessment Prompt",
@@ -60,31 +63,15 @@ function PromptAdmin() {
 
   const save = async () => {
     if (!form) return;
+    setSaving(true);
     try {
-      if (form.id === "default") {
-        const { error } = await supabase.from("ai_prompts").insert({
-          name: form.name,
-          system_prompt: form.system_prompt,
-          user_template: form.user_template,
-          is_active: form.is_active,
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("ai_prompts")
-          .update({
-            name: form.name,
-            system_prompt: form.system_prompt,
-            user_template: form.user_template,
-            is_active: form.is_active,
-          })
-          .eq("id", form.id);
-        if (error) throw error;
-      }
+      await savePromptServer({ data: form });
       toast.success("Prompt AI berhasil disimpan!");
       qc.invalidateQueries({ queryKey: ["admin-prompt"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Gagal menyimpan prompt.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -124,8 +111,8 @@ function PromptAdmin() {
           <Button variant="outline" onClick={handleTest} disabled={testing} className="rounded-full">
             <Bot className="mr-1.5 h-4 w-4 text-primary" /> {testing ? "Pengujian…" : "Test AI"}
           </Button>
-          <Button onClick={save} className="rounded-full bg-gradient-hero shadow-soft">
-            <Save className="mr-1.5 h-4 w-4" /> Simpan Prompt
+          <Button onClick={save} disabled={saving} className="rounded-full bg-gradient-hero shadow-soft">
+            <Save className="mr-1.5 h-4 w-4" /> {saving ? "Menyimpan…" : "Simpan Prompt"}
           </Button>
         </div>
       </div>
@@ -196,8 +183,8 @@ function PromptAdmin() {
               Aktifkan Prompt Ini Sebagai Default
             </Label>
           </div>
-          <Button onClick={save} className="rounded-full bg-gradient-hero shadow-soft">
-            <Save className="mr-1.5 h-4 w-4" /> Simpan Perubahan
+          <Button onClick={save} disabled={saving} className="rounded-full bg-gradient-hero shadow-soft">
+            <Save className="mr-1.5 h-4 w-4" /> {saving ? "Menyimpan…" : "Simpan Perubahan"}
           </Button>
         </div>
       </div>
