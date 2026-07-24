@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AssessmentRouteImport } from './routes/assessment'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AssessmentQuestionsRouteImport } from './routes/assessment.questions'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -26,6 +27,10 @@ const AssessmentRoute = AssessmentRouteImport.update({
   path: '/assessment',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,9 +42,9 @@ const AssessmentQuestionsRoute = AssessmentQuestionsRouteImport.update({
   getParentRoute: () => AssessmentRoute,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/_authenticated/admin',
+  id: '/admin',
   path: '/admin',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AssessmentResultIdRoute = AssessmentResultIdRouteImport.update({
   id: '/result/$id',
@@ -66,6 +71,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/assessment': typeof AssessmentRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
@@ -92,6 +98,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/assessment'
     | '/auth'
     | '/_authenticated/admin'
@@ -101,9 +108,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AssessmentRoute: typeof AssessmentRouteWithChildren
   AuthRoute: typeof AuthRoute
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -120,6 +127,13 @@ declare module '@tanstack/react-router' {
       path: '/assessment'
       fullPath: '/assessment'
       preLoaderRoute: typeof AssessmentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -141,7 +155,7 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/assessment/result/$id': {
       id: '/assessment/result/$id'
@@ -152,6 +166,17 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface AssessmentRouteChildren {
   AssessmentQuestionsRoute: typeof AssessmentQuestionsRoute
@@ -169,9 +194,9 @@ const AssessmentRouteWithChildren = AssessmentRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AssessmentRoute: AssessmentRouteWithChildren,
   AuthRoute: AuthRoute,
-  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
