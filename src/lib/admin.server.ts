@@ -224,21 +224,25 @@ export async function updateParentChildAssessmentServer(data: {
 }
 
 export async function getAdminParentsListServer() {
-  const [{ data: assessments, error: aErr }, { data: parents, error: pErr }] = await Promise.all([
-    supabaseAdmin
-      .from("assessments")
-      .select("id, status, education_level, created_at, parent_id, child_id, parents(id, name, whatsapp), children(id, name, birth_date, school)")
-      .order("created_at", { ascending: false })
-      .limit(500),
-    supabaseAdmin
-      .from("parents")
-      .select("id, name, whatsapp, created_at, children(id, name, birth_date, school), assessments(id, status, education_level, created_at, child_id)")
-      .order("created_at", { ascending: false })
-      .limit(500)
+  const [{ data: parents, error: pErr }, { data: children, error: cErr }, { data: assessments, error: aErr }] = await Promise.all([
+    supabaseAdmin.from("parents").select("*").order("created_at", { ascending: false }).limit(500),
+    supabaseAdmin.from("children").select("*").order("created_at", { ascending: false }).limit(500),
+    supabaseAdmin.from("assessments").select("*").order("created_at", { ascending: false }).limit(500),
   ]);
 
-  if (aErr) console.error("getAdminParentsListServer assessments error:", aErr.message);
   if (pErr) console.error("getAdminParentsListServer parents error:", pErr.message);
+  if (cErr) console.error("getAdminParentsListServer children error:", cErr.message);
+  if (aErr) console.error("getAdminParentsListServer assessments error:", aErr.message);
+
+  const parentMap = new Map<string, any>();
+  if (parents && Array.isArray(parents)) {
+    parents.forEach((p) => parentMap.set(p.id, p));
+  }
+
+  const childMap = new Map<string, any>();
+  if (children && Array.isArray(children)) {
+    children.forEach((c) => childMap.set(c.id, c));
+  }
 
   const resultList: any[] = [];
   const processedAssessmentIds = new Set<string>();
@@ -249,27 +253,8 @@ export async function getAdminParentsListServer() {
       if (a.id) processedAssessmentIds.add(a.id);
       if (a.parent_id) processedParentIds.add(a.parent_id);
 
-      let parentObj = Array.isArray(a.parents) ? a.parents[0] : a.parents;
-      let childObj = Array.isArray(a.children) ? a.children[0] : a.children;
-
-      if (!parentObj && a.parent_id && parents) {
-        const foundP = parents.find((p: any) => p.id === a.parent_id);
-        if (foundP) {
-          parentObj = { id: foundP.id, name: foundP.name, whatsapp: foundP.whatsapp };
-        }
-      }
-
-      if (!childObj && a.child_id && parents) {
-        for (const p of parents) {
-          if (p.children && Array.isArray(p.children)) {
-            const foundC = p.children.find((c: any) => c.id === a.child_id);
-            if (foundC) {
-              childObj = foundC;
-              break;
-            }
-          }
-        }
-      }
+      const pObj = parentMap.get(a.parent_id);
+      const cObj = childMap.get(a.child_id);
 
       resultList.push({
         id: a.id,
@@ -278,34 +263,16 @@ export async function getAdminParentsListServer() {
         created_at: a.created_at || new Date().toISOString(),
         parent_id: a.parent_id,
         child_id: a.child_id,
-        parents: parentObj || { id: a.parent_id, name: "Orang Tua", whatsapp: "-" },
-        children: childObj || { id: a.child_id, name: "Anak", school: "" },
+        parents: pObj ? { id: pObj.id, name: pObj.name, whatsapp: pObj.whatsapp } : { id: a.parent_id, name: "Orang Tua", whatsapp: "-" },
+        children: cObj ? { id: cObj.id, name: cObj.name, school: cObj.school || "", birth_date: cObj.birth_date } : { id: a.child_id, name: "Anak", school: "" },
       });
     }
   }
 
   if (parents && Array.isArray(parents)) {
     for (const p of parents) {
-      const pAssessments = p.assessments as any[];
-      if (pAssessments && pAssessments.length > 0) {
-        for (const pa of pAssessments) {
-          if (!processedAssessmentIds.has(pa.id)) {
-            processedAssessmentIds.add(pa.id);
-            const foundC = Array.isArray(p.children) ? p.children[0] : null;
-            resultList.push({
-              id: pa.id,
-              status: pa.status || "analyzed",
-              education_level: pa.education_level || "TK",
-              created_at: pa.created_at || p.created_at,
-              parent_id: p.id,
-              child_id: pa.child_id || foundC?.id,
-              parents: { id: p.id, name: p.name, whatsapp: p.whatsapp },
-              children: foundC || { name: "Anak", school: "" },
-            });
-          }
-        }
-      } else if (!processedParentIds.has(p.id)) {
-        const foundC = Array.isArray(p.children) ? p.children[0] : null;
+      if (!processedParentIds.has(p.id)) {
+        const foundC = children?.find((c) => c.parent_id === p.id);
         resultList.push({
           id: p.id,
           status: "pending",
@@ -314,7 +281,7 @@ export async function getAdminParentsListServer() {
           parent_id: p.id,
           child_id: foundC?.id,
           parents: { id: p.id, name: p.name, whatsapp: p.whatsapp },
-          children: foundC || { name: "Anak", school: "" },
+          children: foundC ? { id: foundC.id, name: foundC.name, school: foundC.school || "" } : { name: "Anak", school: "" },
         });
       }
     }
@@ -364,22 +331,25 @@ export async function getAdminStatsServer() {
 }
 
 export async function getAdminRecentListServer(level?: string) {
-  let q = supabaseAdmin
-    .from("assessments")
-    .select("id, education_level, status, created_at, parent_id, child_id, parents(id, name, whatsapp), children(id, name, school)")
-    .order("created_at", { ascending: false })
-    .limit(10);
+  const [{ data: assessments }, { data: parents }, { data: children }] = await Promise.all([
+    supabaseAdmin.from("assessments").select("*").order("created_at", { ascending: false }).limit(20),
+    supabaseAdmin.from("parents").select("id, name, whatsapp"),
+    supabaseAdmin.from("children").select("id, name, school"),
+  ]);
 
+  const pMap = new Map((parents ?? []).map((p) => [p.id, p]));
+  const cMap = new Map((children ?? []).map((c) => [c.id, c]));
+
+  let filtered = assessments ?? [];
   if (level && level !== "ALL") {
-    q = q.eq("education_level", level);
+    filtered = filtered.filter((a) => a.education_level === level);
   }
 
-  const { data, error } = await q;
-  if (error) {
-    console.error("getAdminRecentListServer error:", error.message);
-    return [];
-  }
-  return data ?? [];
+  return filtered.slice(0, 10).map((a) => ({
+    ...a,
+    parents: pMap.get(a.parent_id) || { id: a.parent_id, name: "Orang Tua", whatsapp: "-" },
+    children: cMap.get(a.child_id) || { id: a.child_id, name: "Anak", school: "" },
+  }));
 }
 
 /**
