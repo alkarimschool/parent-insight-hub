@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AssessmentRouteImport } from './routes/assessment'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AssessmentQuestionsRouteImport } from './routes/assessment.questions'
 import { Route as AssessmentResultIdRouteImport } from './routes/assessment.result.$id'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AssessmentRoute = AssessmentRouteImport.update({
   id: '/assessment',
   path: '/assessment',
@@ -38,12 +44,14 @@ const AssessmentResultIdRoute = AssessmentResultIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/assessment': typeof AssessmentRouteWithChildren
+  '/auth': typeof AuthRoute
   '/assessment/questions': typeof AssessmentQuestionsRoute
   '/assessment/result/$id': typeof AssessmentResultIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/assessment': typeof AssessmentRouteWithChildren
+  '/auth': typeof AuthRoute
   '/assessment/questions': typeof AssessmentQuestionsRoute
   '/assessment/result/$id': typeof AssessmentResultIdRoute
 }
@@ -51,6 +59,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/assessment': typeof AssessmentRouteWithChildren
+  '/auth': typeof AuthRoute
   '/assessment/questions': typeof AssessmentQuestionsRoute
   '/assessment/result/$id': typeof AssessmentResultIdRoute
 }
@@ -59,14 +68,21 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/assessment'
+    | '/auth'
     | '/assessment/questions'
     | '/assessment/result/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/assessment' | '/assessment/questions' | '/assessment/result/$id'
+  to:
+    | '/'
+    | '/assessment'
+    | '/auth'
+    | '/assessment/questions'
+    | '/assessment/result/$id'
   id:
     | '__root__'
     | '/'
     | '/assessment'
+    | '/auth'
     | '/assessment/questions'
     | '/assessment/result/$id'
   fileRoutesById: FileRoutesById
@@ -74,10 +90,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AssessmentRoute: typeof AssessmentRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/assessment': {
       id: '/assessment'
       path: '/assessment'
@@ -126,6 +150,7 @@ const AssessmentRouteWithChildren = AssessmentRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AssessmentRoute: AssessmentRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
