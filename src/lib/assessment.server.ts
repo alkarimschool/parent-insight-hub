@@ -77,13 +77,32 @@ function generateFallbackResult(childName: string, parentName: string, avgScore:
 export async function submitAndAnalyze(data: SubmitInput) {
   const level: EducationLevel = data.child.education_level || "TK";
 
-  // 1. Insert parent
-  const { data: parent, error: pErr } = await supabaseAdmin
+  // 1. Save / Upsert Parent in Supabase
+  let parent: any = null;
+  const { data: pInserted, error: pErr } = await supabaseAdmin
     .from("parents")
     .insert({ name: data.parent.name, whatsapp: data.parent.whatsapp })
     .select()
     .single();
-  if (pErr || !parent) throw new Error("Gagal menyimpan data orang tua: " + pErr?.message);
+
+  if (pErr) {
+    // If parent already exists or insert fails, query existing parent by whatsapp
+    const { data: pExisting } = await supabaseAdmin
+      .from("parents")
+      .select("*")
+      .eq("whatsapp", data.parent.whatsapp)
+      .maybeSingle();
+
+    if (pExisting) {
+      parent = pExisting;
+      // Update name if changed
+      await supabaseAdmin.from("parents").update({ name: data.parent.name }).eq("id", parent.id);
+    } else {
+      throw new Error("Gagal menyimpan data orang tua di Supabase: " + pErr.message);
+    }
+  } else {
+    parent = pInserted;
+  }
 
   // 2. Insert child
   const { data: child, error: cErr } = await supabaseAdmin
@@ -98,7 +117,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     })
     .select()
     .single();
-  if (cErr || !child) throw new Error("Gagal menyimpan data anak: " + cErr?.message);
+  if (cErr || !child) throw new Error("Gagal menyimpan data anak di Supabase: " + cErr?.message);
 
   // 3. Insert assessment (with schema fallback if education_level column is missing)
   let assessment: any = null;
@@ -125,7 +144,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
       .select()
       .single();
 
-    if (aRetryErr || !aRetry) throw new Error("Gagal membuat assessment: " + (aRetryErr?.message || aErr.message));
+    if (aRetryErr || !aRetry) throw new Error("Gagal membuat assessment di Supabase: " + (aRetryErr?.message || aErr.message));
     assessment = aRetry;
   } else {
     assessment = aData;
