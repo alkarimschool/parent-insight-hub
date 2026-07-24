@@ -252,29 +252,29 @@ CREATE POLICY "admin insert logs" ON public.activity_logs FOR INSERT TO authenti
 
 -- ============ SEED DATA ============
 INSERT INTO public.question_categories (name, slug, order_index) VALUES
-  ('Komunikasi & Bahasa', 'komunikasi', 1),
-  ('Sosial & Emosional', 'sosial', 2),
+  ('Komunikasi', 'komunikasi', 1),
+  ('Sosial dan Emosional', 'sosial', 2),
   ('Kemandirian', 'kemandirian', 3),
-  ('Belajar & Konsentrasi', 'belajar', 4),
-  ('Perilaku & Potensi', 'perilaku', 5);
+  ('Belajar dan Konsentrasi', 'belajar', 4),
+  ('Perilaku dan Potensi', 'perilaku', 5);
 
 INSERT INTO public.questions (category_id, text, order_index)
 SELECT c.id, q.text, q.ord FROM (VALUES
-  ('komunikasi', 'Anak mampu menyampaikan keinginan atau perasaannya dengan kalimat yang mudah dipahami.', 1),
-  ('komunikasi', 'Anak memahami instruksi sederhana yang diberikan oleh orang tua atau guru.', 2),
-  ('komunikasi', 'Anak berani bertanya atau bercerita tentang pengalaman yang dialaminya.', 3),
-  ('sosial', 'Anak dapat bermain bersama teman tanpa sering terjadi konflik.', 4),
-  ('sosial', 'Anak mampu mengendalikan emosinya ketika keinginannya tidak terpenuhi.', 5),
-  ('sosial', 'Anak menunjukkan rasa peduli atau empati kepada orang lain.', 6),
-  ('kemandirian', 'Anak mampu melakukan aktivitas sehari-hari tanpa banyak bantuan.', 7),
-  ('kemandirian', 'Anak bertanggung jawab terhadap barang-barangnya.', 8),
-  ('kemandirian', 'Anak berani mencoba hal-hal baru.', 9),
-  ('belajar', 'Anak mampu berkonsentrasi mengikuti kegiatan selama 10–15 menit.', 10),
-  ('belajar', 'Anak memiliki rasa ingin tahu yang tinggi.', 11),
-  ('belajar', 'Anak tetap berusaha menyelesaikan tugas walaupun mengalami kesulitan.', 12),
-  ('perilaku', 'Anak mampu mengikuti aturan di rumah maupun di sekolah.', 13),
-  ('perilaku', 'Anak menunjukkan minat atau bakat tertentu secara konsisten.', 14),
-  ('perilaku', 'Secara umum perkembangan anak sesuai dengan usianya.', 15)
+  ('komunikasi', 'Apakah anak mampu menyampaikan keinginan, pendapat, atau perasaannya dengan jelas kepada orang lain?', 1),
+  ('komunikasi', 'Ketika diberikan arahan sederhana, apakah anak dapat memahami dan melakukannya dengan baik?', 2),
+  ('komunikasi', 'Apakah anak berani bertanya, menjawab pertanyaan, atau bercerita kepada orang lain?', 3),
+  ('sosial', 'Apakah anak mudah bermain dan bergaul dengan teman-teman seusianya?', 4),
+  ('sosial', 'Saat menghadapi kekecewaan, apakah anak mampu mengendalikan emosinya tanpa marah atau menangis berlebihan?', 5),
+  ('sosial', 'Apakah anak menunjukkan rasa peduli, seperti membantu atau menghibur orang lain yang sedang sedih atau kesulitan?', 6),
+  ('kemandirian', 'Apakah anak mampu melakukan kegiatan sehari-hari seperti makan, memakai pakaian, atau merapikan mainan secara mandiri?', 7),
+  ('kemandirian', 'Apakah anak terbiasa menjaga dan merapikan barang-barang miliknya setelah digunakan?', 8),
+  ('kemandirian', 'Apakah anak berani mencoba aktivitas atau pengalaman baru tanpa harus selalu didampingi orang tua?', 9),
+  ('belajar', 'Apakah anak mampu berkonsentrasi mengikuti kegiatan atau bermain selama sekitar 10–15 menit?', 10),
+  ('belajar', 'Apakah anak sering menunjukkan rasa ingin tahu dengan bertanya atau mencoba hal-hal baru?', 11),
+  ('belajar', 'Apakah anak tetap berusaha menyelesaikan tugas atau permainan meskipun mengalami kesulitan?', 12),
+  ('perilaku', 'Apakah anak mampu mengikuti aturan yang berlaku di rumah maupun di sekolah tanpa harus selalu diingatkan?', 13),
+  ('perilaku', 'Apakah anak sering menunjukkan ketertarikan yang kuat terhadap aktivitas tertentu, seperti menggambar, bernyanyi, menari, berhitung, olahraga, atau kegiatan kreatif lainnya?', 14),
+  ('perilaku', 'Menurut Anda, apakah perkembangan anak saat ini sudah sesuai dengan usianya?', 15)
 ) AS q(slug, text, ord)
 JOIN public.question_categories c ON c.slug = q.slug;
 

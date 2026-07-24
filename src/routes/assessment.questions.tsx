@@ -27,6 +27,14 @@ const SCALE = [
   { v: 1, label: "Tidak Pernah" },
 ];
 
+const SCALE_Q15 = [
+  { v: 5, label: "Sangat Sesuai" },
+  { v: 4, label: "Sesuai" },
+  { v: 3, label: "Cukup Sesuai" },
+  { v: 2, label: "Kurang Sesuai" },
+  { v: 1, label: "Belum Sesuai" },
+];
+
 function QuestionsPage() {
   const navigate = useNavigate();
   const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite });
@@ -124,7 +132,7 @@ function QuestionsPage() {
           <div className="text-xs font-semibold uppercase tracking-wider text-primary">Pertanyaan {idx + 1}</div>
           <h2 className="mt-2 text-xl font-semibold leading-relaxed text-foreground sm:text-2xl">{current.text}</h2>
           <div className="mt-8 grid gap-3">
-            {SCALE.map((s) => {
+            {(current.order_index === 15 || idx === 14 ? SCALE_Q15 : SCALE).map((s) => {
               const selected = answers[current.id] === s.v;
               return (
                 <button
