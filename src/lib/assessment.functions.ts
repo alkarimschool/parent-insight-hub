@@ -24,6 +24,13 @@ export const submitAssessment = createServerFn({ method: "POST" })
     return submitAndAnalyze(data as any);
   });
 
+export const getAssessmentResultFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const { getAssessmentResultServer } = await import("./assessment.server");
+    return getAssessmentResultServer(data.id);
+  });
+
 export const testAiPrompt = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ sample: z.string().optional() }).parse(d))
   .handler(async () => {

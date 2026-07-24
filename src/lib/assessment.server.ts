@@ -86,7 +86,6 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .single();
 
   if (pErr) {
-    // If parent already exists or insert fails, query existing parent by whatsapp
     const { data: pExisting } = await supabaseAdmin
       .from("parents")
       .select("*")
@@ -95,7 +94,6 @@ export async function submitAndAnalyze(data: SubmitInput) {
 
     if (pExisting) {
       parent = pExisting;
-      // Update name if changed
       await supabaseAdmin.from("parents").update({ name: data.parent.name }).eq("id", parent.id);
     } else {
       throw new Error("Gagal menyimpan data orang tua di Supabase: " + pErr.message);
@@ -119,7 +117,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .single();
   if (cErr || !child) throw new Error("Gagal menyimpan data anak di Supabase: " + cErr?.message);
 
-  // 3. Insert assessment (with schema fallback if education_level column is missing)
+  // 3. Insert assessment
   let assessment: any = null;
   const { data: aData, error: aErr } = await supabaseAdmin
     .from("assessments")
@@ -133,7 +131,6 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .single();
 
   if (aErr) {
-    // Retry without education_level if column doesn't exist on remote schema yet
     const { data: aRetry, error: aRetryErr } = await supabaseAdmin
       .from("assessments")
       .insert({
@@ -318,6 +315,54 @@ export async function submitAndAnalyze(data: SubmitInput) {
   }
 
   return { assessment_id: assessment.id, status: "analyzed" as const };
+}
+
+export async function getAssessmentResultServer(assessmentId: string) {
+  if (!assessmentId) return null;
+
+  // 1. Fetch AI result by assessment_id
+  const { data: aiRes } = await supabaseAdmin
+    .from("ai_results")
+    .select("*")
+    .eq("assessment_id", assessmentId)
+    .maybeSingle();
+
+  // 2. Fetch assessment details
+  const { data: assessment } = await supabaseAdmin
+    .from("assessments")
+    .select("*")
+    .eq("id", assessmentId)
+    .maybeSingle();
+
+  if (!assessment) return null;
+
+  // 3. Fetch child and parent details
+  const [{ data: child }, { data: parent }] = await Promise.all([
+    assessment.child_id
+      ? supabaseAdmin.from("children").select("*").eq("id", assessment.child_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    assessment.parent_id
+      ? supabaseAdmin.from("parents").select("*").eq("id", assessment.parent_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const level: EducationLevel = (assessment.education_level as EducationLevel) || "TK";
+
+  // 4. Ensure complete 13-section level analysis content
+  let content = aiRes?.content;
+  if (!content || typeof content !== "object" || !content.ringkasan) {
+    content = generateFallbackResult(child?.name || "Anak", parent?.name || "Orang Tua", 4.0, level);
+  }
+
+  return {
+    assessment_id: assessmentId,
+    status: assessment.status || "analyzed",
+    education_level: level,
+    child_name: child?.name || "Anak",
+    parent_name: parent?.name || "Orang Tua",
+    created_at: assessment.created_at || new Date().toISOString(),
+    content,
+  };
 }
 
 export async function runTestPrompt() {
