@@ -336,6 +336,7 @@ export async function getAdminStatsServer() {
     { count: sdCount },
     { count: smpCount },
     { count: smaCount },
+    { count: smkCount },
     { count: parents }
   ] = await Promise.all([
     supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }),
@@ -345,6 +346,7 @@ export async function getAdminStatsServer() {
     supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "SD"),
     supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "SMP"),
     supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "SMA"),
+    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "SMK"),
     supabaseAdmin.from("parents").select("*", { count: "exact", head: true }),
   ]);
 
@@ -356,6 +358,7 @@ export async function getAdminStatsServer() {
     sd: sdCount ?? 0,
     smp: smpCount ?? 0,
     sma: smaCount ?? 0,
+    smk: smkCount ?? 0,
     parents: parents ?? 0,
   };
 }

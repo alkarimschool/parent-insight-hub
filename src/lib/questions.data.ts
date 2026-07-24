@@ -1,4 +1,4 @@
-export type EducationLevel = "TK" | "SD" | "SMP" | "SMA";
+export type EducationLevel = "TK" | "SD" | "SMP" | "SMA" | "SMK";
 
 export interface QuestionData {
   id: string;
@@ -80,4 +80,23 @@ export const LEVEL_QUESTIONS: Record<EducationLevel, QuestionData[]> = {
     { id: "sma-q14", education_level: "SMA", category_name: "Motivasi & Resiliensi", text: "Apakah anak memiliki daya tahan (*resilience*) yang tinggi saat menghadapi tekanan, persaingan, atau kegagalan?", order_index: 14 },
     { id: "sma-q15", education_level: "SMA", category_name: "Evaluasi Perkembangan SMA", text: "Menurut Anda, apakah kesiapan akademik dan kedewasaan anak saat ini sudah optimal untuk melangkah ke jenjang kuliah/karier?", order_index: 15 },
   ],
+
+  SMK: [
+    { id: "smk-q1", education_level: "SMK", category_name: "Kompetensi Keahlian", text: "Apakah anak memiliki penguasaan teori dan keterampilan praktis kejuruan yang kuat di bidang pilihannya?", order_index: 1 },
+    { id: "smk-q2", education_level: "SMK", category_name: "Kesiapan Kerja & Magang (PKL)", text: "Apakah anak siap mengikuti Praktik Kerja Lapangan (PKL) dan mampu beradaptasi dengan budaya dunia kerja/industri?", order_index: 2 },
+    { id: "smk-q3", education_level: "SMK", category_name: "Problem Solving Vokasional", text: "Apakah anak mampu memecahkan masalah teknis/praktis dalam proyek kejuruan secara mandiri dan sistematis?", order_index: 3 },
+    { id: "smk-q4", education_level: "SMK", category_name: "Disiplin & Etika Kerja", text: "Apakah anak terbiasa disiplin terhadap waktu, instruksi kerja, serta menerapkan Keselamatan dan Kesehatan Kerja (K3)?", order_index: 4 },
+    { id: "smk-q5", education_level: "SMK", category_name: "Portofolio & Karya Kejuruan", text: "Apakah anak aktif membuat produk, proyek praktis, atau portofolio karya sesuai bidang keahliannya?", order_index: 5 },
+    { id: "smk-q6", education_level: "SMK", category_name: "Kerja Sama Tim & Industri", text: "Apakah anak mampu bekerja sama dengan baik dalam tim proyek industri dan berkomunikasi secara profesional?", order_index: 6 },
+    { id: "smk-q7", education_level: "SMK", category_name: "Kreativitas & Inovasi", text: "Apakah anak mampu mengusulkan inovasi atau solusi kreatif dalam pengerjaan produk/jasa kejuruan?", order_index: 7 },
+    { id: "smk-q8", education_level: "SMK", category_name: "Minat Wirausaha", text: "Apakah anak tertarik dan memiliki potensi dasar untuk mengembangkan usaha mandiri di bidang keahliannya?", order_index: 8 },
+    { id: "smk-q9", education_level: "SMK", category_name: "Manajemen Waktu & Tenggat Proyek", text: "Apakah anak mampu mengelola waktu pengerjaan tugas/proyek kejuruan sesuai tenggat waktu yang ditentukan?", order_index: 9 },
+    { id: "smk-q10", education_level: "SMK", category_name: "Sertifikasi & Uji Kompetensi", text: "Apakah anak bersemangat mengikuti uji kompetensi dan sertifikasi keahlian industri?", order_index: 10 },
+    { id: "smk-q11", education_level: "SMK", category_name: "Literasi Digital & Teknologi Vokasi", text: "Apakah anak menguasai penggunaan perangkat lunak atau teknologi pendukung bidang keahliannya?", order_index: 11 },
+    { id: "smk-q12", education_level: "SMK", category_name: "Kemampuan Berbahasa Inggris Teknis", text: "Apakah anak berusaha menguasai istilah teknis/bahasa Inggris yang dibutuhkan dalam bidang keahliannya?", order_index: 12 },
+    { id: "smk-q13", education_level: "SMK", category_name: "Ketahanan Kerja (Work Resilience)", text: "Apakah anak memiliki daya tahan fisik dan mental yang kuat saat menghadapi tantangan pengerjaan proyek kejuruan?", order_index: 13 },
+    { id: "smk-q14", education_level: "SMK", category_name: "Kesiapan Karir Masa Depan", text: "Apakah anak sudah memiliki target karir jelas (bekerja di industri, wirausaha, atau kuliah vokasi)?", order_index: 14 },
+    { id: "smk-q15", education_level: "SMK", category_name: "Evaluasi Perkembangan SMK", text: "Menurut Anda, apakah kompetensi dan kesiapan dunia kerja anak saat ini sudah sesuai dengan tingkatannya di SMK?", order_index: 15 },
+  ],
 };
+

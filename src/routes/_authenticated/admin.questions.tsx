@@ -48,6 +48,7 @@ function QuestionsAdmin() {
           ...LEVEL_QUESTIONS.SD,
           ...LEVEL_QUESTIONS.SMP,
           ...LEVEL_QUESTIONS.SMA,
+          ...LEVEL_QUESTIONS.SMK,
         ];
       } else {
         defaults = LEVEL_QUESTIONS[level] || LEVEL_QUESTIONS.TK;
@@ -129,11 +130,11 @@ function QuestionsAdmin() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Kelola Pertanyaan Assessment</h1>
-          <p className="text-sm text-muted-foreground">Filter dan kelola pertanyaan berdasarkan jenjang pendidikan (TK, SD, SMP, SMA).</p>
+          <p className="text-sm text-muted-foreground">Filter dan kelola pertanyaan berdasarkan jenjang pendidikan (TK, SD, SMP, SMA, SMK).</p>
         </div>
         {/* LEVEL FILTER TABS */}
         <div className="flex items-center gap-1.5 rounded-full border border-border/60 bg-card p-1 shadow-soft">
-          {["TK", "SD", "SMP", "SMA", "ALL"].map((lvl) => (
+          {["TK", "SD", "SMP", "SMA", "SMK", "ALL"].map((lvl) => (
             <button
               key={lvl}
               type="button"
@@ -167,6 +168,7 @@ function QuestionsAdmin() {
               <option value="SD">Jenjang SD</option>
               <option value="SMP">Jenjang SMP</option>
               <option value="SMA">Jenjang SMA</option>
+              <option value="SMK">Jenjang SMK</option>
             </select>
           )}
           <Button onClick={add} className="rounded-full bg-gradient-hero shadow-soft">

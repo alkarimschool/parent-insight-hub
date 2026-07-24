@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { callLovableAiJson } from "./ai.server";
 import { EducationLevel } from "./questions.data";
+import { getAssessmentContent } from "./assessment-content";
 
 interface SubmitInput {
   parent: { name: string; whatsapp: string };
@@ -152,14 +153,45 @@ const LEVEL_PROFILES: Record<EducationLevel, {
     ],
     rekomendasi_akademik: (name) => `Fasilitasi latihan soal analitis tingkat lanjut, ikuti tryout PTN/PTS secara konsisten, dan tingkatkan keterampilan komunikasi publik serta riset literatur mandiri.`,
     kesimpulan: (c, p) => `Kedewasaan dan kesiapan akademik ananda ${c} dalam menghadapi Perguruan Tinggi & Dunia Karier sudah sangat optimal. Dukungan dan doa dari Ibu/Bapak ${p} akan mengantarkannya mencapai cita-cita besarnya.`
+  },
+
+  SMK: {
+    ringkasan: (name, isHigh) => `Berdasarkan asesmen kesiapan vokasional dan keahlian Sekolah Menengah Kejuruan (SMK), ${name} menunjukkan kesiapan kerja, kompetensi praktis, dan disiplin industri yang ${isHigh ? "sangat matang & siap kerja/wirausaha" : "baik dan berkembang positif"}. Anak memiliki fondasi keterampilan kejuruan yang solid.`,
+    kelebihan: (name) => [
+      `Menguasai teori dan keterampilan praktis kejuruan di bidang pilihannya.`,
+      `Kesiapan tinggi dalam mengikuti Praktik Kerja Lapangan (PKL) dan budaya kerja industri.`,
+      `Disiplin, berorientasi hasil, dan tanggap menyelesaikan proyek teknis.`
+    ],
+    area_pengembangan: (name) => [
+      `Meningkatkan penguasaan literasi digital dan istilah teknis bahasa Inggris industri.`,
+      `Melatih komunikasi profesional dan kerja sama tim lintas keahlian.`
+    ],
+    kemampuan_akademik: (name) => `${name} memiliki penguasaan kompetensi keahlian SMK yang baik: mampu menerapkan konsep teknis dalam praktik langsung serta mengoperasikan perangkat kejuruan secara terstruktur.`,
+    kecerdasan_sosial: (name) => `${name} mampu bekerja sama dengan baik dalam tim proyek industri dan menghargai etika komunikasi kerja.`,
+    kecerdasan_emosional: (name) => `${name} memiliki ketahanan kerja (work resilience) dan tanggung jawab tinggi saat menghadapi tenggat waktu pengerjaan proyek kejuruan.`,
+    karakter: (name) => `Karakter vokasional yang disiplin, jujur, cekatan, dan berintegritas tinggi.`,
+    potensi: (name) => `Potensi keahlian praktis vokasional, inovasi produk kejuruan, wirausaha mandiri, dan kepemimpinan teknis.`,
+    minat_bakat: (name) => `Terorientasi jelas pada bidang keahlian pilihan serta kesiapan kerja industri maupun studi lanjut vokasi.`,
+    perhatian_orangtua: (name) => [
+      `Dukung anak dalam penyusunan portofolio karya dan persiapan sertifikasi keahlian.`,
+      `Fasilitasi bimbingan PKL dan konsultasi arah karir vokasi.`
+    ],
+    treatment: (name) => [
+      { kategori: "Pengembangan Kompetensi SMK", aktivitas: "Fasilitasi pembuatan portofolio proyek kejuruan dan persiapan uji kompetensi industri." },
+      { kategori: "Keterampilan Wirausaha & Industri", aktivitas: "Latih perencanaan proyek bisnis kejuruan dan simulasi wawancara kerja profesional." },
+      { kategori: "Pengembangan Diri & Bahasa", aktivitas: "Tingkatkan penguasaan istilah teknis berbahasa Inggris dan perangkat lunak industri." }
+    ],
+    rekomendasi_akademik: (name) => `Pertajam keterampilan praktis kejuruan, selesaikan sertifikasi kompetensi industri, dan susun portofolio karya terbaik untuk persiapan melangkah ke dunia kerja atau kuliah vokasi.`,
+    kesimpulan: (c, p) => `Kompetensi keahlian dan kesiapan dunia kerja SMK ananda ${c} berjalan sangat optimal. Pendampingan dan dorongan dari Ibu/Bapak ${p} di rumah akan mengantarkannya meraih kesuksesan karir.`
   }
 };
 
 export const LEVEL_TITLES_MAP: Record<EducationLevel, string> = {
-  TK: "Assessment Perkembangan Anak Usia Dini",
-  SD: "Assessment Karakter dan Potensi Siswa Sekolah Dasar",
-  SMP: "Assessment Karakter dan Perkembangan Remaja Awal",
-  SMA: "Assessment Minat, Bakat, dan Kesiapan Masa Depan",
+  TK: getAssessmentContent("TK").title,
+  SD: getAssessmentContent("SD").title,
+  SMP: getAssessmentContent("SMP").title,
+  SMA: getAssessmentContent("SMA").title,
+  SMK: getAssessmentContent("SMK").title,
 };
 
 function generateFallbackResult(childName: string, parentName: string, avgScore: number, level: EducationLevel = "TK") {
@@ -413,14 +445,16 @@ export async function submitAndAnalyze(data: SubmitInput) {
       TK: "Anda adalah psikolog anak dan konsultan pendidikan usia dini (TK / PAUD). Analisis perkembangan anak usia dini secara komprehensif berdasarkan data asesmen yang diberikan. Fokus pada: perkembangan motorik, bahasa, sosial, emosi, akademik awal (calistung), kemandirian, dan kesiapan sekolah. JANGAN menggunakan istilah atau format untuk jenjang SD, SMP, atau SMA. Balas HANYA dalam format JSON valid.",
       SD: "Anda adalah psikolog pendidikan dan konsultan akademik Sekolah Dasar (SD). Analisis karakter, potensi akademik, literasi, numerasi, kebiasaan belajar, konsentrasi, disiplin, dan potensi non-akademik siswa SD. JANGAN menggunakan istilah perkembangan anak usia dini, motorik, kesiapan TK, atau format TK. Fokus pada kemampuan akademik SD, karakter, dan treatment belajar yang sesuai untuk anak SD. Balas HANYA dalam format JSON valid.",
       SMP: "Anda adalah psikolog remaja dan konsultan pendidikan Sekolah Menengah Pertama (SMP). Analisis prestasi akademik, motivasi belajar, berpikir kritis, pergaulan dan pengaruh teman, pengendalian emosi, kepemimpinan, potensi, minat, dan rekomendasi pengembangan remaja awal. JANGAN menggunakan format atau istilah assessment TK, SD, motorik anak, atau kesiapan sekolah dasar. Fokus pada dinamika remaja awal usia 12-15 tahun. Balas HANYA dalam format JSON valid.",
-      SMA: "Anda adalah konsultan pendidikan tinggi, psikolog karier, dan mentor pengembangan diri untuk siswa SMA/SMK. Analisis prestasi akademik, minat karier, minat kuliah, bakat dominan, public speaking, leadership, problem solving, pengembangan diri, kesiapan dunia kerja, dan rekomendasi jurusan kuliah. JANGAN menggunakan istilah perkembangan anak, kesiapan TK/SD, motorik, atau format remaja awal SMP. Fokus pada kesiapan masa depan, perguruan tinggi, dan karier siswa SMA/SMK. Balas HANYA dalam format JSON valid."
+      SMA: "Anda adalah konsultan pendidikan tinggi, psikolog karier, dan mentor pengembangan diri untuk siswa SMA. Analisis prestasi akademik, minat karier, minat kuliah, bakat dominan, public speaking, leadership, problem solving, pengembangan diri, kesiapan dunia kerja, dan rekomendasi jurusan kuliah. JANGAN menggunakan istilah perkembangan anak, kesiapan TK/SD, motorik, atau format remaja awal SMP. Fokus pada kesiapan masa depan, perguruan tinggi, dan karier siswa SMA. Balas HANYA dalam format JSON valid.",
+      SMK: "Anda adalah konsultan pendidikan vokasi, konsultan industri, dan mentor kesiapan kerja untuk siswa Sekolah Menengah Kejuruan (SMK). Analisis kompetensi keahlian praktis, kesiapan magang/PKL, etika kerja, disiplin industri, problem solving teknis, wirausaha, kesiapan dunia kerja, dan rekomendasi pengembangan karir vokasi. JANGAN menggunakan istilah atau format TK, SD, atau akademik umum SMA. Fokus pada kompetensi keahlian dan kesiapan industri siswa SMK. Balas HANYA dalam format JSON valid."
     };
 
     const defaultUserTemplates: Record<EducationLevel, string> = {
       TK: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: TK / PAUD\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis perkembangan anak usia dini yang komprehensif.",
       SD: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: Sekolah Dasar (SD)\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis karakter dan potensi akademik siswa SD yang komprehensif. Sertakan analisis literasi, numerasi, kebiasaan belajar, disiplin, karakter, dan rekomendasi treatment belajar SD.",
       SMP: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: Sekolah Menengah Pertama (SMP)\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis perkembangan remaja awal dan akademik SMP yang komprehensif. Sertakan analisis motivasi, berpikir kritis, pergaulan, pengendalian emosi, kepemimpinan, dan rekomendasi pengembangan untuk remaja SMP.",
-      SMA: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: SMA / SMK\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis minat, bakat, dan kesiapan masa depan siswa SMA/SMK yang komprehensif. Sertakan analisis minat karier, minat kuliah, bakat dominan, kesiapan dunia kerja, dan rekomendasi jurusan kuliah."
+      SMA: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: Sekolah Menengah Atas (SMA)\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis minat, bakat, dan kesiapan perguruan tinggi/karier siswa SMA yang komprehensif. Sertakan analisis minat karier, minat kuliah, bakat dominan, dan rekomendasi jurusan kuliah.",
+      SMK: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: Sekolah Menengah Kejuruan (SMK)\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis kompetensi keahlian, minat, dan kesiapan dunia kerja/vokasi siswa SMK yang komprehensif. Sertakan analisis keahlian praktis, kesiapan PKL, etika kerja, dan rekomendasi pengembangan kompetensi industri."
     };
 
     activePrompt = {

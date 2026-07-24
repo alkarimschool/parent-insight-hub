@@ -2,14 +2,15 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { fetchWebsite } from "@/lib/settings";
 import { PublicNav, PublicFooter } from "@/components/site/PublicNav";
-import { Baby, BookOpen, GraduationCap, School, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
+import { Baby, BookOpen, GraduationCap, School, Wrench, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
 import { EducationLevel } from "@/lib/questions.data";
+import { getAssessmentContent } from "@/lib/assessment-content";
 
 export const Route = createFileRoute("/assessment/level")({
   head: () => ({
     meta: [
       { title: "Pilih Jenjang Pendidikan — Parent Awareness Assessment" },
-      { name: "description", content: "Pilih jenjang pendidikan anak (TK/PAUD, SD, SMP, SMA) untuk memulai asesmen khusus berbasis AI." },
+      { name: "description", content: "Pilih jenjang pendidikan anak (TK/PAUD, SD, SMP, SMA, SMK) untuk memulai asesmen khusus berbasis AI." },
     ],
   }),
   component: SelectLevelPage,
@@ -26,39 +27,48 @@ const LEVELS: Array<{
 }> = [
   {
     key: "TK",
-    title: "TK / PAUD",
+    title: getAssessmentContent("TK").fullName,
     badge: "Usia 3–6 Tahun",
-    desc: "Assessment perkembangan anak usia dini untuk mengetahui potensi, kesiapan sekolah, calistung awal, sosial, dan emosional.",
+    desc: getAssessmentContent("TK").description,
     icon: Baby,
     color: "from-cyan-500/20 to-blue-500/10 border-cyan-500/30 text-cyan-600 dark:text-cyan-400",
     features: ["Calistung & Angka Awal", "Kesiapan Sekolah", "Kemampuan Motorik & Emosi"],
   },
   {
     key: "SD",
-    title: "Sekolah Dasar (SD)",
+    title: getAssessmentContent("SD").fullName,
     badge: "Usia 7–12 Tahun",
-    desc: "Assessment karakter, kebiasaan belajar, kemampuan akademik (literasi & numerasi), konsentrasi, gadget, dan emosi.",
+    desc: getAssessmentContent("SD").description,
     icon: BookOpen,
     color: "from-blue-500/20 to-indigo-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400",
     features: ["Literasi & Numerasi SD", "Kebiasaan & Fokus Belajar", "Disiplin & Kontrol Gadget"],
   },
   {
     key: "SMP",
-    title: "Sekolah Menengah (SMP)",
+    title: getAssessmentContent("SMP").fullName,
     badge: "Usia 13–15 Tahun",
-    desc: "Assessment perkembangan remaja awal, berpikir kritis, motivasi akademik, pergaulan, media sosial, dan kesiapan masa depan.",
+    desc: getAssessmentContent("SMP").description,
     icon: School,
     color: "from-indigo-500/20 to-sky-500/10 border-indigo-500/30 text-indigo-600 dark:text-indigo-400",
     features: ["Berpikir Kritis & Problem Solving", "Pergaulan & Media Sosial", "Motivasi & Target Belajar"],
   },
   {
     key: "SMA",
-    title: "SMA / SMK",
+    title: getAssessmentContent("SMA").fullName,
     badge: "Usia 16–18 Tahun",
-    desc: "Assessment kemampuan akademik analitis, riset, minat bakat, kesiapan kuliah, kesiapan karier, dan kepemimpinan.",
+    desc: getAssessmentContent("SMA").description,
     icon: GraduationCap,
     color: "from-sky-500/20 to-emerald-500/10 border-sky-500/30 text-sky-600 dark:text-sky-400",
     features: ["Kesiapan Kuliah & Karier", "Pemikiran Analitis & Riset", "Public Speaking & Kepemimpinan"],
+  },
+  {
+    key: "SMK",
+    title: getAssessmentContent("SMK").fullName,
+    badge: "Usia 16–18 Tahun",
+    desc: getAssessmentContent("SMK").description,
+    icon: Wrench,
+    color: "from-amber-500/20 to-orange-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400",
+    features: ["Kompetensi Keahlian Praktis", "Kesiapan PKL & Dunia Kerja", "Disiplin Industri & Wirausaha"],
   },
 ];
 

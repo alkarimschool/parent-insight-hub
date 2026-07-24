@@ -35,7 +35,7 @@ function AboutPage() {
             Mendampingi Tumbuh Kembang Anak Usia Emas
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Parent Awareness Assessment dirancang khusus untuk orang tua anak usia TK (3–6 tahun) untuk memahami kecerdasan sosial, emosional, komunikasi, kemandirian, dan gaya belajar anak melalui teknologi AI yang mudah dipahami.
+            Parent Awareness Assessment dirancang khusus untuk mendampingi orang tua peserta didik berbagai jenjang (TK, SD, SMP, SMA, SMK) dalam memahami potensi akademik, karakter, kecerdasan emosional, dan kesiapan masa depan anak melalui teknologi AI yang mudah dipahami.
           </p>
         </div>
       </section>
@@ -85,7 +85,7 @@ function AboutPage() {
               "Mengenali area perkembangan yang memerlukan stimulasi ekstra.",
               "Mendapatkan panduan treatment dan kegiatan bermain di rumah.",
               "Meningkatkan rasa percaya diri orang tua dalam pendampingan.",
-              "Mendukung persiapan kesiapan sekolah anak usia TK/PAUD.",
+              "Mendukung persiapan kesiapan sekolah, akademik, dan strategi belajar anak sesuai jenjang pendidikannya.",
               "Dapat diakses kapan saja secara instan melalui perangkat Anda."
             ].map((m, i) => (
               <div key={i} className="flex items-start gap-3 rounded-2xl bg-muted/30 p-3.5">

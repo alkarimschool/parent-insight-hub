@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, GraduationCap, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { EducationLevel } from "@/lib/questions.data";
+import { getAssessmentContent } from "@/lib/assessment-content";
 
 export const Route = createFileRoute("/assessment/")({
   head: () => ({
@@ -21,10 +22,11 @@ export const Route = createFileRoute("/assessment/")({
 });
 
 const LEVEL_NAMES: Record<EducationLevel, string> = {
-  TK: "👶 TK / PAUD (Usia 3–6 Tahun)",
-  SD: "📘 Sekolah Dasar (SD)",
-  SMP: "📗 Sekolah Menengah (SMP)",
-  SMA: "🎓 SMA / SMK",
+  TK: `${getAssessmentContent("TK").icon} ${getAssessmentContent("TK").fullName}`,
+  SD: `${getAssessmentContent("SD").icon} ${getAssessmentContent("SD").fullName}`,
+  SMP: `${getAssessmentContent("SMP").icon} ${getAssessmentContent("SMP").fullName}`,
+  SMA: `${getAssessmentContent("SMA").icon} ${getAssessmentContent("SMA").fullName}`,
+  SMK: `${getAssessmentContent("SMK").icon} ${getAssessmentContent("SMK").fullName}`,
 };
 
 function AssessmentFormPage() {
@@ -103,10 +105,11 @@ function AssessmentFormPage() {
               onChange={(e) => setForm({ ...form, education_level: e.target.value as EducationLevel })}
               className="w-full rounded-2xl border border-input bg-background p-3 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
             >
-              <option value="TK">👶 TK / PAUD (Usia 3–6 Tahun)</option>
+              <option value="TK">👶 Pendidikan Anak Usia Dini (TK / PAUD)</option>
               <option value="SD">📘 Sekolah Dasar (SD)</option>
-              <option value="SMP">📗 Sekolah Menengah (SMP)</option>
-              <option value="SMA">🎓 SMA / SMK</option>
+              <option value="SMP">📗 Sekolah Menengah Pertama (SMP)</option>
+              <option value="SMA">🎓 Sekolah Menengah Atas (SMA)</option>
+              <option value="SMK">🛠️ Sekolah Menengah Kejuruan (SMK)</option>
             </select>
           </div>
 

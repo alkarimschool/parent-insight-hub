@@ -43,18 +43,25 @@ const DEFAULT_PROMPTS: Record<EducationLevel, { name: string; system_prompt: str
       "Berikut data anak SD dan hasil asesmen orang tua:\n\nDATA ORANG TUA:\nNama: {{parent_name}}\nWhatsApp: {{parent_whatsapp}}\n\nDATA ANAK:\nNama: {{child_name}}\nJenjang: {{education_level}}\nSekolah: {{child_school}}\n\nJAWABAN ASESMEN:\n{{answers}}\n\nBuat laporan analisis komprehensif 13 bagian termasuk analisis kemampuan akademik (literasi & numerasi SD) dan rekomendasi treatment.",
   },
   SMP: {
-    name: "Prompt AI Jenjang Sekolah Menengah (SMP)",
+    name: "Prompt AI Jenjang Sekolah Menengah Pertama (SMP)",
     system_prompt:
       "Anda adalah psikolog remaja dan konsultan pendidikan SMP (13-15 tahun). Evaluasi prestasi akademik, pemikiran kritis, motivasi belajar, pergaulan, media sosial, disiplin, dan kesiapan masa depan. Gunakan bahasa inspiratif, konstruktif, dan membangun. Selalu balas dalam format JSON valid.",
     user_template:
       "Berikut data siswa SMP dan hasil asesmen orang tua:\n\nDATA ORANG TUA:\nNama: {{parent_name}}\nWhatsApp: {{parent_whatsapp}}\n\nDATA ANAK:\nNama: {{child_name}}\nJenjang: {{education_level}}\nSekolah: {{child_school}}\n\nJAWABAN ASESMEN:\n{{answers}}\n\nBuat laporan analisis komprehensif 13 bagian termasuk pemikiran kritis, kesiapan akademik SMP, dan saran pendampingan remaja.",
   },
   SMA: {
-    name: "Prompt AI Jenjang SMA / SMK",
+    name: "Prompt AI Jenjang Sekolah Menengah Atas (SMA)",
     system_prompt:
-      "Anda adalah konsultan karier dan psikolog pendidikan SMA/SMK (16-18 tahun). Evaluasi prestasi akademik, pemikiran analitis, kemampuan riset, public speaking, kesiapan masuk perguruan tinggi, kesiapan karier, dan kepemimpinan. Gunakan bahasa analitis, profesional, dan futuristik. Selalu balas dalam format JSON valid.",
+      "Anda adalah konsultan karier dan psikolog pendidikan SMA (16-18 tahun). Evaluasi prestasi akademik, pemikiran analitis, kemampuan riset, public speaking, kesiapan masuk perguruan tinggi, kesiapan karier, dan kepemimpinan. Gunakan bahasa analitis, profesional, dan futuristik. Selalu balas dalam format JSON valid.",
     user_template:
       "Berikut data siswa SMA dan hasil asesmen orang tua:\n\nDATA ORANG TUA:\nNama: {{parent_name}}\nWhatsApp: {{parent_whatsapp}}\n\nDATA ANAK:\nNama: {{child_name}}\nJenjang: {{education_level}}\nSekolah: {{child_school}}\n\nJAWABAN ASESMEN:\n{{answers}}\n\nBuat laporan analisis komprehensif 13 bagian termasuk kesiapan kuliah/karier, pemikiran analitis, dan strategi akademik mandiri.",
+  },
+  SMK: {
+    name: "Prompt AI Jenjang Sekolah Menengah Kejuruan (SMK)",
+    system_prompt:
+      "Anda adalah konsultan pendidikan vokasi dan konsultan industri SMK (16-18 tahun). Evaluasi kompetensi keahlian praktis, kesiapan PKL/magang, etika kerja, disiplin industri, wirausaha, dan kesiapan dunia kerja. Gunakan bahasa analitis, praktis, dan profesional industri. Selalu balas dalam format JSON valid.",
+    user_template:
+      "Berikut data siswa SMK dan hasil asesmen orang tua:\n\nDATA ORANG TUA:\nNama: {{parent_name}}\nWhatsApp: {{parent_whatsapp}}\n\nDATA ANAK:\nNama: {{child_name}}\nJenjang: {{education_level}}\nSekolah: {{child_school}}\n\nJAWABAN ASESMEN:\n{{answers}}\n\nBuat laporan analisis komprehensif 13 bagian termasuk kesiapan kerja/vokasi, keahlian praktis SMK, dan strategi karir industri.",
   },
 };
 
@@ -140,7 +147,7 @@ function PromptAdmin() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Kelola Prompt AI Per Jenjang</h1>
           <p className="text-sm text-muted-foreground">
-            Sesuaikan System Prompt dan User Template secara khusus untuk jenjang TK, SD, SMP, dan SMA.
+            Sesuaikan System Prompt dan User Template secara khusus untuk jenjang TK, SD, SMP, SMA, dan SMK.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -155,7 +162,7 @@ function PromptAdmin() {
 
       {/* LEVEL SELECTOR TABS */}
       <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-card p-1.5 shadow-soft">
-        {(["TK", "SD", "SMP", "SMA"] as EducationLevel[]).map((lvl) => (
+        {(["TK", "SD", "SMP", "SMA", "SMK"] as EducationLevel[]).map((lvl) => (
           <button
             key={lvl}
             type="button"

@@ -9,16 +9,11 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { updateParentChildFn, getAdminParentsFn, deleteAssessmentFn } from "@/lib/admin.functions";
 
+import { getAssessmentContent } from "@/lib/assessment-content";
+
 export const Route = createFileRoute("/_authenticated/admin/parents")({
   component: ParentsList,
 });
-
-const LEVEL_TITLES_SHORT: Record<string, string> = {
-  TK: "Assessment Perkembangan Anak Usia Dini",
-  SD: "Assessment Karakter dan Potensi Siswa Sekolah Dasar",
-  SMP: "Assessment Karakter dan Perkembangan Remaja Awal",
-  SMA: "Assessment Minat, Bakat, dan Kesiapan Masa Depan",
-};
 
 function formatWaLink(phone: string, childName: string, level: string, assessmentId: string) {
   if (!phone) return "#";
@@ -26,9 +21,9 @@ function formatWaLink(phone: string, childName: string, level: string, assessmen
   if (clean.startsWith("0")) clean = "62" + clean.slice(1);
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
   const reportUrl = `${baseUrl}/assessment/result/${assessmentId}`;
-  const title = LEVEL_TITLES_SHORT[level] || LEVEL_TITLES_SHORT.TK;
+  const content = getAssessmentContent(level);
   const text = encodeURIComponent(
-    `Halo Ibu/Bapak, berikut adalah Laporan ${title} Ananda ${childName || "Anak"}:\n\n${reportUrl}\n\nTerima kasih!`
+    `Halo Ibu/Bapak, berikut adalah ${content.badge} Ananda ${childName || "Anak"}:\n\n${reportUrl}\n\nTerima kasih!`
   );
   return `https://wa.me/${clean}?text=${text}`;
 }
@@ -287,10 +282,11 @@ function ParentsList() {
                   onChange={(e) => setEditingRow({ ...editingRow, education_level: e.target.value })}
                   className="mt-1 w-full rounded-xl border border-input bg-background p-2.5 text-xs font-semibold"
                 >
-                  <option value="TK">👶 TK / PAUD</option>
+                  <option value="TK">👶 Pendidikan Anak Usia Dini (TK / PAUD)</option>
                   <option value="SD">📘 Sekolah Dasar (SD)</option>
-                  <option value="SMP">📗 Sekolah Menengah (SMP)</option>
-                  <option value="SMA">🎓 SMA / SMK</option>
+                  <option value="SMP">📗 Sekolah Menengah Pertama (SMP)</option>
+                  <option value="SMA">🎓 Sekolah Menengah Atas (SMA)</option>
+                  <option value="SMK">🛠️ Sekolah Menengah Kejuruan (SMK)</option>
                 </select>
               </div>
 
