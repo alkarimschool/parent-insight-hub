@@ -184,6 +184,70 @@ function generateFallbackResult(childName: string, parentName: string, avgScore:
   };
 }
 
+async function getOrSeedQuestionsForLevel(level: EducationLevel) {
+  try {
+    const { data: existingQs } = await supabaseAdmin
+      .from("questions")
+      .select("id, order_index, text, category_id, question_categories(name)")
+      .eq("education_level", level)
+      .order("order_index");
+
+    if (existingQs && existingQs.length >= 15) {
+      return existingQs;
+    }
+
+    const defaults = LEVEL_QUESTIONS[level] || LEVEL_QUESTIONS.TK;
+    const insertedQs: any[] = [];
+
+    for (const q of defaults) {
+      let catId: string | null = null;
+      if (q.category_name) {
+        const { data: existingCat } = await supabaseAdmin
+          .from("question_categories")
+          .select("id")
+          .eq("name", q.category_name)
+          .maybeSingle();
+
+        if (existingCat) {
+          catId = existingCat.id;
+        } else {
+          const { data: newCat } = await supabaseAdmin
+            .from("question_categories")
+            .insert({
+              name: q.category_name,
+              slug: q.category_name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+              order_index: q.order_index,
+            })
+            .select("id")
+            .single();
+          if (newCat) catId = newCat.id;
+        }
+      }
+
+      const { data: newQ } = await supabaseAdmin
+        .from("questions")
+        .insert({
+          text: q.text,
+          order_index: q.order_index,
+          category_id: catId,
+          education_level: level,
+          is_active: true,
+        })
+        .select("id, order_index, text, category_id")
+        .single();
+
+      if (newQ) {
+        insertedQs.push({ ...newQ, question_categories: { name: q.category_name } });
+      }
+    }
+
+    return insertedQs.length > 0 ? insertedQs : (existingQs ?? []);
+  } catch (e) {
+    console.warn("getOrSeedQuestionsForLevel warning:", e);
+    return [];
+  }
+}
+
 export async function submitAndAnalyze(data: SubmitInput) {
   const level: EducationLevel = data.child?.education_level || "TK";
 
