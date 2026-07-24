@@ -315,19 +315,22 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .single();
 
   if (aErr) {
-    const { data: aRetry, error: aRetryErr } = await supabaseAdmin
+    console.warn("Assessment insert with education_level failed:", aErr.message);
+    // Fallback insert without education_level if schema cache / column error occurs
+    const { data: aFallback, error: aFallbackErr } = await supabaseAdmin
       .from("assessments")
       .insert({
         parent_id: parent.id,
         child_id: child.id,
-        education_level: level,
         status: "analyzing",
       })
       .select()
       .single();
 
-    if (aRetryErr || !aRetry) throw new Error("Gagal membuat assessment di Supabase: " + (aRetryErr?.message || aErr.message));
-    assessment = aRetry;
+    if (aFallbackErr || !aFallback) {
+      throw new Error("Gagal membuat assessment di Supabase: " + (aFallbackErr?.message || aErr.message));
+    }
+    assessment = { ...aFallback, education_level: level };
   } else {
     assessment = aData;
   }
