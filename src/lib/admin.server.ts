@@ -183,18 +183,34 @@ export async function updateParentChildAssessmentServer(data: {
   school?: string;
   education_level?: string;
 }) {
-  if (data.parent_id) {
+  let parentId = data.parent_id;
+  let childId = data.child_id;
+
+  if (!parentId || !childId) {
+    const { data: a } = await supabaseAdmin
+      .from("assessments")
+      .select("parent_id, child_id")
+      .eq("id", data.assessment_id)
+      .maybeSingle();
+
+    if (a) {
+      if (!parentId) parentId = a.parent_id;
+      if (!childId) childId = a.child_id;
+    }
+  }
+
+  if (parentId) {
     await supabaseAdmin
       .from("parents")
       .update({ whatsapp: data.whatsapp })
-      .eq("id", data.parent_id);
+      .eq("id", parentId);
   }
 
-  if (data.child_id) {
+  if (childId) {
     await supabaseAdmin
       .from("children")
       .update({ name: data.child_name, school: data.school || null })
-      .eq("id", data.child_id);
+      .eq("id", childId);
   }
 
   if (data.assessment_id) {
@@ -222,7 +238,6 @@ export async function getAdminParentsListServer() {
     console.warn("Could not query assessments join", e);
   }
 
-  // Fallback: Query parents & children directly if assessments join is empty
   try {
     const { data: parents } = await supabaseAdmin
       .from("parents")
@@ -250,6 +265,11 @@ export async function getAdminParentsListServer() {
 
 export async function deleteAssessmentServer(id: string) {
   if (!id) return { ok: false };
+  try {
+    await supabaseAdmin.from("ai_results").delete().eq("assessment_id", id);
+    await supabaseAdmin.from("assessment_answers").delete().eq("assessment_id", id);
+  } catch {}
+
   const { error } = await supabaseAdmin.from("assessments").delete().eq("id", id);
   if (error) throw new Error(error.message);
   return { ok: true };

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { ExternalLink, Edit3, Trash2, Save, X, Search, GraduationCap } from "lucide-react";
+import { ExternalLink, Edit3, Trash2, Save, X, Search, GraduationCap, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { updateParentChildFn, getAdminParentsFn, deleteAssessmentFn } from "@/lib/admin.functions";
@@ -12,6 +12,18 @@ import { updateParentChildFn, getAdminParentsFn, deleteAssessmentFn } from "@/li
 export const Route = createFileRoute("/_authenticated/admin/parents")({
   component: ParentsList,
 });
+
+function formatWaLink(phone: string, childName: string, level: string, assessmentId: string) {
+  if (!phone) return "#";
+  let clean = phone.replace(/[^0-9]/g, "");
+  if (clean.startsWith("0")) clean = "62" + clean.slice(1);
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const reportUrl = `${baseUrl}/assessment/result/${assessmentId}`;
+  const text = encodeURIComponent(
+    `Halo Ibu/Bapak, berikut adalah Laporan Asesmen Perkembangan Ananda ${childName || "Anak"} (Jenjang ${level}):\n\n${reportUrl}\n\nTerima kasih!`
+  );
+  return `https://wa.me/${clean}?text=${text}`;
+}
 
 function ParentsList() {
   const qc = useQueryClient();
@@ -81,7 +93,7 @@ function ParentsList() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus data asesmen ini dari database?")) return;
+    if (!confirm("Hapus data asesmen ini dari database Supabase?")) return;
     try {
       await deleteAssessment({ data: { id } });
       toast.success("Data asesmen berhasil dihapus.");
@@ -94,9 +106,9 @@ function ParentsList() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Database Asesmen & Orang Tua</h1>
+        <h1 className="text-2xl font-bold text-foreground">Database Asesmen & Responden</h1>
         <p className="text-sm text-muted-foreground">
-          Kelola data responden, nomor WhatsApp, nama anak, dan hasil analisis asesmen yang tersimpan di Supabase.
+          Kelola data responden, nomor WhatsApp, nama anak, dan jalankan aksi edit / hapus / kirim WA di Supabase.
         </p>
       </div>
 
@@ -122,7 +134,7 @@ function ParentsList() {
               <th className="p-3.5">Jenjang</th>
               <th className="p-3.5">No WhatsApp</th>
               <th className="p-3.5">Hasil Analisis</th>
-              <th className="p-3.5 text-right">Aksi</th>
+              <th className="p-3.5 text-right">Menu Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40">
@@ -137,6 +149,8 @@ function ParentsList() {
             ) : (
               rows.map((r: any) => {
                 const lvl = r.education_level ?? "TK";
+                const waLink = formatWaLink(r.parents?.whatsapp ?? "", r.children?.name ?? "", lvl, r.id);
+
                 return (
                   <tr key={r.id} className="hover:bg-muted/30 transition">
                     <td className="p-3.5 text-muted-foreground whitespace-nowrap">
@@ -154,25 +168,40 @@ function ParentsList() {
                     <td className="p-3.5 font-mono text-muted-foreground">{r.parents?.whatsapp ?? "-"}</td>
                     <td className="p-3.5">
                       <div className="flex items-center gap-2">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${r.status === "analyzed" ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${r.status === "analyzed" ? "bg-emerald-500/10 text-emerald-600" : "bg-amber500/10 text-amber-600"}`}>
                           {r.status === "analyzed" ? "Selesai Analisis" : "Diproses"}
                         </span>
-                        <Link
-                          to="/assessment/result/$id"
-                          params={{ id: r.id }}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" /> Laporan {lvl}
-                        </Link>
                       </div>
                     </td>
                     <td className="p-3.5 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button size="sm" variant="outline" onClick={() => handleEditClick(r)} className="rounded-full text-xs h-8 px-3">
-                          <Edit3 className="h-3.5 w-3.5 mr-1" /> Edit
+                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                        {/* EDIT BUTTON */}
+                        <Button size="sm" variant="outline" onClick={() => handleEditClick(r)} className="rounded-full text-[11px] h-7 px-2.5">
+                          <Edit3 className="h-3 w-3 mr-1 text-primary" /> Edit
                         </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleDelete(r.id)} className="rounded-full text-xs h-8 px-2.5">
-                          <Trash2 className="h-3.5 w-3.5" />
+
+                        {/* VIEW REPORT BUTTON */}
+                        <Link
+                          to="/assessment/result/$id"
+                          params={{ id: r.id }}
+                          className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-background px-2.5 py-1 text-[11px] font-semibold text-foreground hover:bg-accent"
+                        >
+                          <ExternalLink className="h-3 w-3 text-primary" /> Lihat
+                        </Link>
+
+                        {/* KIRIM WA BUTTON */}
+                        <a
+                          href={waLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-soft hover:bg-emerald-700"
+                        >
+                          <MessageSquare className="h-3 w-3" /> WA
+                        </a>
+
+                        {/* DELETE BUTTON */}
+                        <Button size="sm" variant="destructive" onClick={() => handleDelete(r.id)} className="rounded-full text-[11px] h-7 px-2">
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </td>
