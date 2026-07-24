@@ -55,3 +55,16 @@ export const deleteAssessmentFn = createServerFn({ method: "POST" })
     const { deleteAssessmentServer } = await import("./admin.server");
     return deleteAssessmentServer(data.id);
   });
+
+export const getAdminStatsFn = createServerFn({ method: "POST" })
+  .handler(async () => {
+    const { getAdminStatsServer } = await import("./admin.server");
+    return getAdminStatsServer();
+  });
+
+export const getAdminRecentFn = createServerFn({ method: "POST" })
+  .inputValidator((d: any) => d)
+  .handler(async ({ data }) => {
+    const { getAdminRecentListServer } = await import("./admin.server");
+    return getAdminRecentListServer(data?.level);
+  });

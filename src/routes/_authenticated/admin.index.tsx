@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Users, ClipboardCheck, Clock, CheckCircle2, Baby, BookOpen, School, GraduationCap, ArrowRight, ExternalLink } from "lucide-react";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { getAdminStatsFn, getAdminRecentFn } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: Dashboard,
@@ -35,56 +36,20 @@ function Card({ title, value, icon: Icon, color, to }: { title: string; value: n
 function Dashboard() {
   const [selectedLevel, setSelectedLevel] = useState<string>("ALL");
 
+  const getStats = useServerFn(getAdminStatsFn);
+  const getRecent = useServerFn(getAdminRecentFn);
+
   const stats = useQuery({
     queryKey: ["admin-stats-multi-level"],
     queryFn: async () => {
-      const today = new Date(); today.setHours(0,0,0,0);
-      const [
-        { count: total },
-        { count: todayCount },
-        { count: analyzed },
-        { count: tkCount },
-        { count: sdCount },
-        { count: smpCount },
-        { count: smaCount },
-        { count: parents }
-      ] = await Promise.all([
-        supabase.from("assessments").select("*", { count: "exact", head: true }),
-        supabase.from("assessments").select("*", { count: "exact", head: true }).gte("created_at", today.toISOString()),
-        supabase.from("assessments").select("*", { count: "exact", head: true }).eq("status", "analyzed"),
-        supabase.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "TK"),
-        supabase.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "SD"),
-        supabase.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "SMP"),
-        supabase.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "SMA"),
-        supabase.from("parents").select("*", { count: "exact", head: true }),
-      ]);
-      return {
-        total: total ?? 0,
-        today: todayCount ?? 0,
-        analyzed: analyzed ?? 0,
-        tk: tkCount ?? 0,
-        sd: sdCount ?? 0,
-        smp: smpCount ?? 0,
-        sma: smaCount ?? 0,
-        parents: parents ?? 0
-      };
+      return await getStats();
     },
   });
 
   const recentList = useQuery({
     queryKey: ["admin-recent-list", selectedLevel],
     queryFn: async () => {
-      let q = supabase
-        .from("assessments")
-        .select("id, education_level, status, created_at, children(name, school), parents(whatsapp)")
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (selectedLevel !== "ALL") {
-        q = q.eq("education_level", selectedLevel);
-      }
-      const { data } = await q;
-      return data ?? [];
+      return await getRecent({ data: { level: selectedLevel } });
     },
   });
 
@@ -124,7 +89,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* RECENT ASSESSMENTS TABLE MATCHING DATABASE ORANG TUA COLUMNS */}
+      {/* RECENT ASSESSMENTS TABLE — SAME DATA SOURCE & COLUMNS AS DATABASE ORANG TUA */}
       <div className="rounded-3xl border border-border/60 bg-card p-6 shadow-soft space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4">
           <div className="flex items-center gap-2">
@@ -169,7 +134,7 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
-                {recentList.data?.map((r: any) => {
+                {(recentList.data as any[])?.map((r: any) => {
                   const lvl = r.education_level ?? "TK";
                   return (
                     <tr key={r.id} className="hover:bg-muted/30 transition">
@@ -180,12 +145,16 @@ function Dashboard() {
                         {r.children?.name ?? "-"}
                         {r.children?.school && <div className="text-[11px] font-normal text-muted-foreground">{r.children.school}</div>}
                       </td>
-                      <td className="py-3 px-3 font-bold text-primary">{lvl}</td>
+                      <td className="py-3 px-3">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary">
+                          <GraduationCap className="h-3 w-3" /> {lvl}
+                        </span>
+                      </td>
                       <td className="py-3 px-3 font-mono text-muted-foreground">{r.parents?.whatsapp ?? "-"}</td>
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-2">
                           <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${r.status === 'analyzed' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
-                            {r.status === 'analyzed' ? 'Selesai' : 'Diproses'}
+                            {r.status === 'analyzed' ? 'Selesai Analisis' : 'Diproses'}
                           </span>
                           <Link
                             to="/assessment/result/$id"

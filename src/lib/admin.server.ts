@@ -238,6 +238,61 @@ export async function getAdminParentsListServer() {
   return assessments ?? [];
 }
 
+export async function getAdminStatsServer() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [
+    { count: total },
+    { count: todayCount },
+    { count: analyzed },
+    { count: tkCount },
+    { count: sdCount },
+    { count: smpCount },
+    { count: smaCount },
+    { count: parents }
+  ] = await Promise.all([
+    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }),
+    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).gte("created_at", today.toISOString()),
+    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("status", "analyzed"),
+    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "TK"),
+    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "SD"),
+    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "SMP"),
+    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "SMA"),
+    supabaseAdmin.from("parents").select("*", { count: "exact", head: true }),
+  ]);
+
+  return {
+    total: total ?? 0,
+    today: todayCount ?? 0,
+    analyzed: analyzed ?? 0,
+    tk: tkCount ?? 0,
+    sd: sdCount ?? 0,
+    smp: smpCount ?? 0,
+    sma: smaCount ?? 0,
+    parents: parents ?? 0,
+  };
+}
+
+export async function getAdminRecentListServer(level?: string) {
+  let q = supabaseAdmin
+    .from("assessments")
+    .select("id, education_level, status, created_at, parent_id, child_id, parents(id, name, whatsapp), children(id, name, school)")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (level && level !== "ALL") {
+    q = q.eq("education_level", level);
+  }
+
+  const { data, error } = await q;
+  if (error) {
+    console.error("getAdminRecentListServer error:", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
 /**
  * Hapus data assessment beserta SELURUH data relasi.
  *
