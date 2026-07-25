@@ -75,64 +75,70 @@ export async function updateWaSettingsServer(data: {
   return { ok: true };
 }
 
-export async function updateWebsiteSettingsServer(data: {
-  site_name: string;
-  logo_text: string;
-  contact_email: string;
-  contact_whatsapp: string;
-  copyright: string;
-}) {
+export async function updateWebsiteSettingsServer(inputData: any) {
   const { data: existing } = await supabaseAdmin
     .from("website_settings")
-    .select("id")
+    .select("id, data, content")
     .limit(1)
     .maybeSingle();
+
+  const currentObj = (existing?.data as any) || (existing?.content as any) || {};
+  const mergedData = {
+    ...currentObj,
+    ...(typeof inputData === "object" ? inputData : {}),
+  };
 
   if (existing) {
     const { error } = await supabaseAdmin
       .from("website_settings")
       .update({
-        site_name: data.site_name,
-        logo_text: data.logo_text,
-        contact_email: data.contact_email,
-        contact_whatsapp: data.contact_whatsapp,
-        copyright: data.copyright,
+        data: mergedData,
+        content: mergedData,
         updated_at: new Date().toISOString(),
       })
       .eq("id", existing.id);
+
     if (error) throw new Error(error.message);
   } else {
     const { error } = await supabaseAdmin.from("website_settings").insert({
-      site_name: data.site_name,
-      logo_text: data.logo_text,
-      contact_email: data.contact_email,
-      contact_whatsapp: data.contact_whatsapp,
-      copyright: data.copyright,
+      id: 1,
+      data: mergedData,
+      content: mergedData,
     });
     if (error) throw new Error(error.message);
   }
   return { ok: true };
 }
 
-export async function updateHomepageSettingsServer(data: any) {
+export async function updateHomepageSettingsServer(inputData: any) {
   const { data: existing } = await supabaseAdmin
     .from("homepage_settings")
-    .select("id")
+    .select("id, data, content")
     .limit(1)
     .maybeSingle();
+
+  const currentObj = (existing?.data as any) || (existing?.content as any) || {};
+  const mergedData = {
+    ...currentObj,
+    ...(typeof inputData === "object" ? inputData : {}),
+  };
 
   if (existing) {
     const { error } = await supabaseAdmin
       .from("homepage_settings")
       .update({
-        content: data,
+        data: mergedData,
+        content: mergedData,
         updated_at: new Date().toISOString(),
       })
       .eq("id", existing.id);
+
     if (error) throw new Error(error.message);
   } else {
     const { error } = await supabaseAdmin.from("homepage_settings").insert({
-      content: data,
+      id: 1,
+      data: mergedData,
+      content: mergedData,
     });
     if (error) throw new Error(error.message);
   }
