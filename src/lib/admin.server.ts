@@ -174,6 +174,49 @@ export async function updatePromptServer(data: {
   return { ok: true };
 }
 
+export async function saveQuestionServer(data: {
+  id?: string;
+  text: string;
+  category_id?: string | null;
+  order_index?: number;
+  education_level: string;
+  is_active?: boolean;
+}) {
+  if (data.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.id)) {
+    const { error } = await supabaseAdmin
+      .from("questions")
+      .update({
+        text: data.text,
+        category_id: data.category_id || null,
+        order_index: data.order_index ?? 1,
+        education_level: data.education_level || "TK",
+        is_active: data.is_active ?? true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabaseAdmin.from("questions").insert({
+      text: data.text,
+      category_id: data.category_id || null,
+      order_index: data.order_index ?? 1,
+      education_level: data.education_level || "TK",
+      is_active: data.is_active ?? true,
+    });
+    if (error) throw new Error(error.message);
+  }
+  return { ok: true };
+}
+
+export async function deleteQuestionServer(id: string) {
+  if (!id) throw new Error("ID pertanyaan tidak valid.");
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    const { error } = await supabaseAdmin.from("questions").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+  }
+  return { ok: true };
+}
+
 export async function updateParentChildAssessmentServer(data: {
   assessment_id: string;
   parent_id?: string;

@@ -10,6 +10,9 @@ import { Plus, Trash2, Save, Filter, GraduationCap, CheckCircle2 } from "lucide-
 import { toast } from "sonner";
 import { LEVEL_QUESTIONS, EducationLevel } from "@/lib/questions.data";
 
+import { useServerFn } from "@tanstack/react-start";
+import { saveQuestionFn, deleteQuestionFn } from "@/lib/admin.functions";
+
 export const Route = createFileRoute("/_authenticated/admin/questions")({ component: QuestionsAdmin });
 
 function isUUID(str: string) {
@@ -18,6 +21,9 @@ function isUUID(str: string) {
 
 function QuestionsAdmin() {
   const qc = useQueryClient();
+  const saveQuestion = useServerFn(saveQuestionFn);
+  const deleteQuestion = useServerFn(deleteQuestionFn);
+
   const [levelFilter, setLevelFilter] = useState<string>("TK");
 
   const data = useQuery({
@@ -39,7 +45,6 @@ function QuestionsAdmin() {
         console.warn("Could not fetch DB questions", e);
       }
 
-      // Fallback: If DB table has no questions yet, show default level questions!
       const level = (levelFilter === "ALL" ? "TK" : levelFilter) as EducationLevel;
       let defaults: any[] = [];
       if (levelFilter === "ALL") {
@@ -77,49 +82,53 @@ function QuestionsAdmin() {
     const max = Math.max(0, ...(data.data?.qs ?? []).map((q: any) => q.order_index ?? 0));
     const targetLevel = levelFilter !== "ALL" ? levelFilter : addLevel;
 
-    const { error } = await supabase.from("questions").insert({
-      text,
-      category_id: catId || null,
-      order_index: max + 1,
-      education_level: targetLevel,
-      is_active: true,
-    });
-    if (error) return toast.error(error.message);
-    setText("");
-    toast.success(`Pertanyaan jenjang ${targetLevel} ditambahkan ke database.`);
-    qc.invalidateQueries({ queryKey: ["admin-questions-list"] });
+    try {
+      await saveQuestion({
+        data: {
+          text,
+          category_id: catId || null,
+          order_index: max + 1,
+          education_level: targetLevel,
+          is_active: true,
+        },
+      });
+      setText("");
+      toast.success(`Pertanyaan jenjang ${targetLevel} berhasil disimpan.`);
+      qc.invalidateQueries({ queryKey: ["admin-questions-list"] });
+    } catch (error: any) {
+      toast.error("Gagal menambahkan pertanyaan: " + (error?.message || "Error"));
+    }
   };
 
   const update = async (id: string, patch: any) => {
-    let error: any = null;
-
-    if (isUUID(id)) {
-      const res = await supabase.from("questions").update(patch).eq("id", id);
-      error = res.error;
-    } else {
-      // Save default fallback question directly into DB as a new persistent row
-      const res = await supabase.from("questions").insert({
-        text: patch.text || "",
-        order_index: patch.order_index ?? 1,
-        education_level: patch.education_level || "TK",
-        is_active: patch.is_active ?? true,
+    try {
+      await saveQuestion({
+        data: {
+          id: isUUID(id) ? id : undefined,
+          text: patch.text || "",
+          order_index: patch.order_index ?? 1,
+          education_level: patch.education_level || "TK",
+          is_active: patch.is_active ?? true,
+        },
       });
-      error = res.error;
+      toast.success("Pertanyaan berhasil disimpan ke database.");
+      qc.invalidateQueries({ queryKey: ["admin-questions-list"] });
+    } catch (error: any) {
+      toast.error("Gagal menyimpan: " + (error?.message || "Error"));
     }
-
-    if (error) return toast.error("Gagal menyimpan: " + error.message);
-    toast.success("Pertanyaan berhasil disimpan ke database.");
-    qc.invalidateQueries({ queryKey: ["admin-questions-list"] });
   };
 
   const remove = async (id: string) => {
     if (!confirm("Hapus pertanyaan ini?")) return;
-    if (isUUID(id)) {
-      const { error } = await supabase.from("questions").delete().eq("id", id);
-      if (error) return toast.error(error.message);
+    try {
+      if (isUUID(id)) {
+        await deleteQuestion({ data: { id } });
+      }
+      toast.success("Pertanyaan berhasil dihapus.");
+      qc.invalidateQueries({ queryKey: ["admin-questions-list"] });
+    } catch (error: any) {
+      toast.error("Gagal menghapus: " + (error?.message || "Error"));
     }
-    toast.success("Pertanyaan dihapus.");
-    qc.invalidateQueries({ queryKey: ["admin-questions-list"] });
   };
 
   const cats = data.data?.cats ?? [];

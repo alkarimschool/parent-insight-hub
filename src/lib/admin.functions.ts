@@ -68,3 +68,17 @@ export const getAdminRecentFn = createServerFn({ method: "POST" })
     const { getAdminRecentListServer } = await import("./admin.server");
     return getAdminRecentListServer(data?.level);
   });
+
+export const saveQuestionFn = createServerFn({ method: "POST" })
+  .inputValidator((data: any) => data)
+  .handler(async ({ data }) => {
+    const { saveQuestionServer } = await import("./admin.server");
+    return saveQuestionServer(data);
+  });
+
+export const deleteQuestionFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const { deleteQuestionServer } = await import("./admin.server");
+    return deleteQuestionServer(data.id);
+  });
