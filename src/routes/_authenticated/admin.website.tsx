@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchHomepage, fetchWebsite, HomepageData, WebsiteData } from "@/lib/settings";
+import { fetchHomepage, fetchWebsite, HomepageData, WebsiteData, DEFAULT_HOMEPAGE_DATA, DEFAULT_WEBSITE_DATA } from "@/lib/settings";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Save, Globe, Home, Plus, Trash2, HelpCircle, Sparkles, Layers } from "lucide-react";
+import { Save, Globe, Home, Plus, Trash2, HelpCircle, Sparkles, Layers, ShieldCheck, HeartHandshake, ListOrdered } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { saveWebsiteSettingsFn, saveHomepageSettingsFn } from "@/lib/admin.functions";
 
@@ -27,8 +27,8 @@ function WebsiteAdmin() {
   const websiteQuery = useQuery({ queryKey: ["admin-website-edit"], queryFn: fetchWebsite });
   const homepageQuery = useQuery({ queryKey: ["admin-homepage-edit"], queryFn: fetchHomepage });
 
-  const [web, setWeb] = useState<WebsiteData | null>(null);
-  const [home, setHome] = useState<HomepageData | null>(null);
+  const [web, setWeb] = useState<WebsiteData>(DEFAULT_WEBSITE_DATA);
+  const [home, setHome] = useState<HomepageData>(DEFAULT_HOMEPAGE_DATA);
 
   useEffect(() => {
     if (websiteQuery.data) setWeb(websiteQuery.data);
@@ -68,8 +68,8 @@ function WebsiteAdmin() {
     }
   };
 
-  if (websiteQuery.isLoading || homepageQuery.isLoading || !web || !home) {
-    return <div className="py-12 text-center text-muted-foreground">Memuat pengaturan website…</div>;
+  if (websiteQuery.isLoading || homepageQuery.isLoading) {
+    return <div className="py-12 text-center text-muted-foreground font-medium">Memuat pengaturan website…</div>;
   }
 
   return (
@@ -77,7 +77,7 @@ function WebsiteAdmin() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Pengaturan Website & Homepage</h1>
         <p className="text-sm text-muted-foreground">
-          Kelola seluruh konten, teks, kontak, SEO, dan FAQ tanpa perlu mengubah source code.
+          Kelola seluruh konten, teks, kontak, SEO, dan seksi homepage secara fleksibel.
         </p>
       </div>
 
@@ -107,7 +107,7 @@ function WebsiteAdmin() {
               <div>
                 <Label className="font-semibold">Nama Website / Aplikasi</Label>
                 <Input
-                  value={web.site_name}
+                  value={web.site_name ?? ""}
                   onChange={(e) => setWeb({ ...web, site_name: e.target.value })}
                   className="mt-1.5"
                 />
@@ -116,7 +116,7 @@ function WebsiteAdmin() {
               <div>
                 <Label className="font-semibold">Teks Logo Singkat</Label>
                 <Input
-                  value={web.logo_text}
+                  value={web.logo_text ?? ""}
                   onChange={(e) => setWeb({ ...web, logo_text: e.target.value })}
                   className="mt-1.5"
                 />
@@ -158,7 +158,7 @@ function WebsiteAdmin() {
                 <div>
                   <Label className="font-semibold">Meta Title Default</Label>
                   <Input
-                    value={web.meta_title}
+                    value={web.meta_title ?? ""}
                     onChange={(e) => setWeb({ ...web, meta_title: e.target.value })}
                     className="mt-1.5"
                   />
@@ -175,7 +175,7 @@ function WebsiteAdmin() {
                 <div className="sm:col-span-2">
                   <Label className="font-semibold">Meta Description Default</Label>
                   <Textarea
-                    value={web.meta_description}
+                    value={web.meta_description ?? ""}
                     onChange={(e) => setWeb({ ...web, meta_description: e.target.value })}
                     rows={3}
                     className="mt-1.5"
@@ -221,7 +221,7 @@ function WebsiteAdmin() {
                 <div>
                   <Label>Teks Tombol Utama (CTA)</Label>
                   <Input
-                    value={home.hero_cta}
+                    value={home.hero_cta ?? ""}
                     onChange={(e) => setHome({ ...home, hero_cta: e.target.value })}
                     className="mt-1"
                   />
@@ -229,7 +229,7 @@ function WebsiteAdmin() {
                 <div className="sm:col-span-2">
                   <Label>Judul Utama (Hero Title)</Label>
                   <Input
-                    value={home.hero_title}
+                    value={home.hero_title ?? ""}
                     onChange={(e) => setHome({ ...home, hero_title: e.target.value })}
                     className="mt-1 font-bold text-base"
                   />
@@ -237,12 +237,69 @@ function WebsiteAdmin() {
                 <div className="sm:col-span-2">
                   <Label>Deskripsi / Subtitle Hero</Label>
                   <Textarea
-                    value={home.hero_subtitle}
+                    value={home.hero_subtitle ?? ""}
                     onChange={(e) => setHome({ ...home, hero_subtitle: e.target.value })}
                     rows={3}
                     className="mt-1"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* WHY US SECTION */}
+            <div className="border-t border-border/40 pt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-foreground flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-primary" /> Seksi Keunggulan (Why PAA)
+                </h3>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>Judul Seksi Keunggulan</Label>
+                  <Input
+                    value={home.why_title ?? ""}
+                    onChange={(e) => setHome({ ...home, why_title: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Subtitle Seksi Keunggulan</Label>
+                  <Input
+                    value={home.why_subtitle ?? ""}
+                    onChange={(e) => setHome({ ...home, why_subtitle: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* BENEFITS SECTION */}
+            <div className="border-t border-border/40 pt-6 space-y-4">
+              <h3 className="font-bold text-foreground flex items-center gap-2">
+                <HeartHandshake className="h-4 w-4 text-primary" /> Seksi Manfaat
+              </h3>
+              <div>
+                <Label>Judul Seksi Manfaat</Label>
+                <Input
+                  value={home.benefits_title ?? ""}
+                  onChange={(e) => setHome({ ...home, benefits_title: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            {/* HOW IT WORKS SECTION */}
+            <div className="border-t border-border/40 pt-6 space-y-4">
+              <h3 className="font-bold text-foreground flex items-center gap-2">
+                <ListOrdered className="h-4 w-4 text-primary" /> Seksi Cara Kerja
+              </h3>
+              <div>
+                <Label>Judul Seksi Cara Kerja</Label>
+                <Input
+                  value={home.how_title ?? ""}
+                  onChange={(e) => setHome({ ...home, how_title: e.target.value })}
+                  className="mt-1"
+                />
               </div>
             </div>
 
@@ -291,8 +348,8 @@ function WebsiteAdmin() {
                       placeholder="Pertanyaan"
                       value={item.q}
                       onChange={(e) => {
-                        const next = [...home.faq_items];
-                        next[idx].q = e.target.value;
+                        const next = [...(home.faq_items ?? [])];
+                        next[idx] = { ...next[idx], q: e.target.value };
                         setHome({ ...home, faq_items: next });
                       }}
                       className="font-medium text-sm"
@@ -301,8 +358,8 @@ function WebsiteAdmin() {
                       placeholder="Jawaban"
                       value={item.a}
                       onChange={(e) => {
-                        const next = [...home.faq_items];
-                        next[idx].a = e.target.value;
+                        const next = [...(home.faq_items ?? [])];
+                        next[idx] = { ...next[idx], a: e.target.value };
                         setHome({ ...home, faq_items: next });
                       }}
                       rows={2}
@@ -311,6 +368,17 @@ function WebsiteAdmin() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* FOOTER TAGLINE */}
+            <div className="border-t border-border/40 pt-6 space-y-4">
+              <Label className="font-semibold">Tagline Sub-Footer Homepage</Label>
+              <Input
+                value={home.footer_tagline ?? ""}
+                onChange={(e) => setHome({ ...home, footer_tagline: e.target.value })}
+                className="mt-1"
+                placeholder="Mendampingi tumbuh kembang anak Indonesia..."
+              />
             </div>
 
             <div className="flex justify-end pt-4 border-t border-border/40">

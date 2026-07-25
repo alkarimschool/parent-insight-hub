@@ -1,11 +1,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-export async function updateAiSettingsServer(data: {
-  model: string;
-  temperature: number;
-  max_tokens: number;
-  is_active: boolean;
-}) {
+export async function updateAiSettingsServer(inputData: any) {
+  const data = inputData?.data ?? inputData;
   const { data: existing } = await supabaseAdmin
     .from("ai_settings")
     .select("id")
@@ -17,9 +13,9 @@ export async function updateAiSettingsServer(data: {
       .from("ai_settings")
       .update({
         model: data.model,
-        temperature: data.temperature,
-        max_tokens: data.max_tokens,
-        is_active: data.is_active,
+        temperature: Number(data.temperature ?? 0.7),
+        max_tokens: Number(data.max_tokens ?? 4096),
+        is_active: Boolean(data.is_active),
         updated_at: new Date().toISOString(),
       })
       .eq("id", existing.id);
@@ -27,22 +23,17 @@ export async function updateAiSettingsServer(data: {
   } else {
     const { error } = await supabaseAdmin.from("ai_settings").insert({
       model: data.model,
-      temperature: data.temperature,
-      max_tokens: data.max_tokens,
-      is_active: data.is_active,
+      temperature: Number(data.temperature ?? 0.7),
+      max_tokens: Number(data.max_tokens ?? 4096),
+      is_active: Boolean(data.is_active),
     });
     if (error) throw new Error(error.message);
   }
   return { ok: true };
 }
 
-export async function updateWaSettingsServer(data: {
-  api_url: string;
-  api_token: string;
-  sender: string;
-  template: string;
-  is_active: boolean;
-}) {
+export async function updateWaSettingsServer(inputData: any) {
+  const data = inputData?.data ?? inputData;
   const { data: existing } = await supabaseAdmin
     .from("whatsapp_settings")
     .select("id")
@@ -57,7 +48,7 @@ export async function updateWaSettingsServer(data: {
         api_token: data.api_token,
         sender: data.sender,
         template: data.template,
-        is_active: data.is_active,
+        is_active: Boolean(data.is_active),
         updated_at: new Date().toISOString(),
       })
       .eq("id", existing.id);
@@ -68,7 +59,7 @@ export async function updateWaSettingsServer(data: {
       api_token: data.api_token,
       sender: data.sender,
       template: data.template,
-      is_active: data.is_active,
+      is_active: Boolean(data.is_active),
     });
     if (error) throw new Error(error.message);
   }
@@ -76,24 +67,26 @@ export async function updateWaSettingsServer(data: {
 }
 
 export async function updateWebsiteSettingsServer(inputData: any) {
+  const payload = inputData?.data ?? inputData;
   const { data: existing } = await supabaseAdmin
     .from("website_settings")
-    .select("id, data, content")
+    .select("id, data")
     .limit(1)
     .maybeSingle();
 
-  const currentObj = (existing?.data as any) || (existing?.content as any) || {};
+  const currentObj = (existing?.data as any) || {};
+  const cleanCurrent = currentObj?.data ?? currentObj;
   const mergedData = {
-    ...currentObj,
-    ...(typeof inputData === "object" ? inputData : {}),
+    ...cleanCurrent,
+    ...(typeof payload === "object" ? payload : {}),
   };
+  delete (mergedData as any).data;
 
   if (existing) {
     const { error } = await supabaseAdmin
       .from("website_settings")
       .update({
         data: mergedData,
-        content: mergedData,
         updated_at: new Date().toISOString(),
       })
       .eq("id", existing.id);
@@ -103,7 +96,6 @@ export async function updateWebsiteSettingsServer(inputData: any) {
     const { error } = await supabaseAdmin.from("website_settings").insert({
       id: 1,
       data: mergedData,
-      content: mergedData,
     });
     if (error) throw new Error(error.message);
   }
@@ -111,24 +103,26 @@ export async function updateWebsiteSettingsServer(inputData: any) {
 }
 
 export async function updateHomepageSettingsServer(inputData: any) {
+  const payload = inputData?.data ?? inputData;
   const { data: existing } = await supabaseAdmin
     .from("homepage_settings")
-    .select("id, data, content")
+    .select("id, data")
     .limit(1)
     .maybeSingle();
 
-  const currentObj = (existing?.data as any) || (existing?.content as any) || {};
+  const currentObj = (existing?.data as any) || {};
+  const cleanCurrent = currentObj?.data ?? currentObj;
   const mergedData = {
-    ...currentObj,
-    ...(typeof inputData === "object" ? inputData : {}),
+    ...cleanCurrent,
+    ...(typeof payload === "object" ? payload : {}),
   };
+  delete (mergedData as any).data;
 
   if (existing) {
     const { error } = await supabaseAdmin
       .from("homepage_settings")
       .update({
         data: mergedData,
-        content: mergedData,
         updated_at: new Date().toISOString(),
       })
       .eq("id", existing.id);
@@ -138,7 +132,6 @@ export async function updateHomepageSettingsServer(inputData: any) {
     const { error } = await supabaseAdmin.from("homepage_settings").insert({
       id: 1,
       data: mergedData,
-      content: mergedData,
     });
     if (error) throw new Error(error.message);
   }
