@@ -548,21 +548,32 @@ export async function submitAndAnalyze(data: SubmitInput) {
   }
 
   // Save AI result to DB
-  await supabaseAdmin.from("ai_results").insert({
-    assessment_id: assessment.id,
-    content: parsedResult,
-    raw_text: rawText,
-    model: usedModel,
-  });
+  try {
+    const { error: aiErr } = await supabaseAdmin.from("ai_results").insert({
+      assessment_id: assessment.id,
+      content: parsedResult,
+      raw_text: rawText,
+      model: usedModel,
+    });
+    if (aiErr) {
+      console.warn("ai_results insert warning:", aiErr.message);
+    }
+  } catch (aiResCatchErr: any) {
+    console.warn("ai_results insert catch error:", aiResCatchErr?.message);
+  }
 
   // Update status to analyzed
-  await supabaseAdmin.from("assessments").update({ status: "analyzed" }).eq("id", assessment.id);
+  try {
+    await supabaseAdmin.from("assessments").update({ status: "analyzed" }).eq("id", assessment.id);
+  } catch (upErr: any) {
+    console.warn("assessment status update warning:", upErr?.message);
+  }
 
   // Save Activity Log: CREATE ASSESSMENT
   try {
     await supabaseAdmin.from("activity_logs").insert({
       action: "CREATE ASSESSMENT",
-      details: {
+      payload: {
         assessment_id: assessment.id,
         parent_name: data.parent.name,
         child_name: data.child.name,

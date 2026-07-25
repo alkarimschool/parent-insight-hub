@@ -3,11 +3,11 @@ import { z } from "zod";
 
 const SubmitSchema = z.object({
   parent: z.object({
-    name: z.string().trim().min(1).max(120),
-    whatsapp: z.string().trim().min(6).max(30),
+    name: z.string().trim().min(1).max(200),
+    whatsapp: z.string().trim().min(3).max(50),
   }),
   child: z.object({
-    name: z.string().trim().min(1).max(120),
+    name: z.string().trim().min(1).max(200),
     gender: z.enum(["L", "P"]).optional().default("L"),
     birth_date: z.string().optional().default("2020-01-01"),
     school: z.string().trim().max(200).optional().default(""),
@@ -25,7 +25,7 @@ export const submitAssessment = createServerFn({ method: "POST" })
   });
 
 export const getAssessmentResultFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .inputValidator((d: unknown) => z.object({ id: z.string().min(1) }).parse((d as any)?.data ?? d))
   .handler(async ({ data }) => {
     const { getAssessmentResultServer } = await import("./assessment.server");
     return getAssessmentResultServer(data.id);
