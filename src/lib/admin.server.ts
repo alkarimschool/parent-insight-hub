@@ -367,104 +367,121 @@ export async function getAdminRecentListServer(level?: string) {
  * Jika ingin hanya menghapus 1 assessment tanpa menghapus parent,
  * cukup hapus assessment saja (children tetap, cascade hapus answers & results).
  */
-export async function deleteAssessmentServer(assessmentId: string) {
-  if (!assessmentId) throw new Error("ID Assessment tidak valid.");
-
-  // 1. Fetch assessment + parent_id for logging & cascade root
-  const { data: assessment, error: fetchErr } = await supabaseAdmin
-    .from("assessments")
-    .select("id, parent_id, child_id, education_level, parents(id, name, whatsapp), children(id, name)")
-    .eq("id", assessmentId)
-    .maybeSingle();
-
-  if (fetchErr) {
-    console.error("deleteAssessmentServer fetch error:", fetchErr.message);
-    throw new Error("Gagal membaca data assessment: " + fetchErr.message);
-  }
-
-  if (!assessment) {
-    throw new Error("Data assessment tidak ditemukan di database.");
-  }
-
-  const parentId = assessment.parent_id;
-  const childName = (assessment as any)?.children?.name || "Anak";
-  const parentName = (assessment as any)?.parents?.name || "Orang Tua";
-  const level = assessment.education_level || "TK";
-
-  // 2. Check how many assessments this parent has
-  const { count: parentAssessmentCount } = await supabaseAdmin
-    .from("assessments")
-    .select("*", { count: "exact", head: true })
-    .eq("parent_id", parentId);
+export async function deleteAssessmentServer(targetId: string) {
+  if (!targetId) throw new Error("ID data tidak valid.");
 
   const errors: string[] = [];
 
-  if (parentAssessmentCount !== null && parentAssessmentCount <= 1) {
-    // Parent only has this 1 assessment — delete parent → CASCADE deletes everything
-    const { error: delParent } = await supabaseAdmin
-      .from("parents")
-      .delete()
-      .eq("id", parentId);
-
-    if (delParent) {
-      console.error("CASCADE delete via parents failed:", delParent.message);
-      errors.push("parents: " + delParent.message);
-    }
-  } else {
-    // Parent has multiple assessments — only delete this assessment (preserves parent & other assessments)
-    // First explicitly delete child tables that might not cascade from assessment
-    const { error: delResults } = await supabaseAdmin
-      .from("ai_results")
-      .delete()
-      .eq("assessment_id", assessmentId);
-    if (delResults) errors.push("ai_results: " + delResults.message);
-
-    const { error: delAnswers } = await supabaseAdmin
-      .from("assessment_answers")
-      .delete()
-      .eq("assessment_id", assessmentId);
-    if (delAnswers) errors.push("assessment_answers: " + delAnswers.message);
-
-    const { error: delAssessment } = await supabaseAdmin
-      .from("assessments")
-      .delete()
-      .eq("id", assessmentId);
-    if (delAssessment) errors.push("assessments: " + delAssessment.message);
-
-    // Delete orphaned child record
-    if (assessment.child_id) {
-      const { error: delChild } = await supabaseAdmin
-        .from("children")
-        .delete()
-        .eq("id", assessment.child_id);
-      if (delChild) errors.push("children: " + delChild.message);
-    }
-  }
-
-  // 3. Verify deletion
-  const { data: verify } = await supabaseAdmin
+  // 1. Check if targetId matches an assessment ID
+  const { data: assessment } = await supabaseAdmin
     .from("assessments")
-    .select("id")
-    .eq("id", assessmentId)
+    .select("id, parent_id, child_id")
+    .eq("id", targetId)
     .maybeSingle();
 
-  if (verify) {
-    console.error("Assessment still exists after delete attempt. Errors:", errors);
-    throw new Error("Gagal menghapus data dari database. Detail: " + errors.join("; "));
+  if (assessment) {
+    const parentId = assessment.parent_id;
+    const childId = assessment.child_id;
+
+    // Delete AI results for this assessment only
+    await supabaseAdmin.from("ai_results").delete().eq("assessment_id", targetId);
+
+    // Delete assessment answers for this assessment only
+    await supabaseAdmin.from("assessment_answers").delete().eq("assessment_id", targetId);
+
+    // Delete assessment record
+    const { error: delAssErr } = await supabaseAdmin.from("assessments").delete().eq("id", targetId);
+    if (delAssErr) errors.push("assessments: " + delAssErr.message);
+
+    // Check if child has remaining assessments; if none, delete child record
+    if (childId) {
+      const { count: childAssCount } = await supabaseAdmin
+        .from("assessments")
+        .select("*", { count: "exact", head: true })
+        .eq("child_id", childId);
+
+      if (!childAssCount || childAssCount === 0) {
+        await supabaseAdmin.from("children").delete().eq("id", childId);
+      }
+    }
+
+    // Check if parent has remaining assessments; if none, delete parent record
+    if (parentId) {
+      const { count: parentAssCount } = await supabaseAdmin
+        .from("assessments")
+        .select("*", { count: "exact", head: true })
+        .eq("parent_id", parentId);
+
+      if (!parentAssCount || parentAssCount === 0) {
+        await supabaseAdmin.from("parents").delete().eq("id", parentId);
+      }
+    }
+  } else {
+    // 2. Check if targetId matches a parent ID directly
+    const { data: parent } = await supabaseAdmin
+      .from("parents")
+      .select("id")
+      .eq("id", targetId)
+      .maybeSingle();
+
+    if (parent) {
+      const { data: pAssessments } = await supabaseAdmin
+        .from("assessments")
+        .select("id")
+        .eq("parent_id", targetId);
+
+      if (pAssessments && pAssessments.length > 0) {
+        for (const pa of pAssessments) {
+          await supabaseAdmin.from("ai_results").delete().eq("assessment_id", pa.id);
+          await supabaseAdmin.from("assessment_answers").delete().eq("assessment_id", pa.id);
+        }
+        await supabaseAdmin.from("assessments").delete().eq("parent_id", targetId);
+      }
+
+      await supabaseAdmin.from("children").delete().eq("parent_id", targetId);
+      const { error: delParErr } = await supabaseAdmin.from("parents").delete().eq("id", targetId);
+      if (delParErr) errors.push("parents: " + delParErr.message);
+    } else {
+      // 3. Check if targetId matches a child ID directly
+      const { data: child } = await supabaseAdmin
+        .from("children")
+        .select("id, parent_id")
+        .eq("id", targetId)
+        .maybeSingle();
+
+      if (child) {
+        const { data: cAssessments } = await supabaseAdmin
+          .from("assessments")
+          .select("id")
+          .eq("child_id", targetId);
+
+        if (cAssessments && cAssessments.length > 0) {
+          for (const ca of cAssessments) {
+            await supabaseAdmin.from("ai_results").delete().eq("assessment_id", ca.id);
+            await supabaseAdmin.from("assessment_answers").delete().eq("assessment_id", ca.id);
+          }
+          await supabaseAdmin.from("assessments").delete().eq("child_id", targetId);
+        }
+
+        await supabaseAdmin.from("children").delete().eq("id", targetId);
+      } else {
+        throw new Error("Data tidak ditemukan di database.");
+      }
+    }
   }
 
-  // 4. Activity Log
-  const { error: logErr } = await supabaseAdmin.from("activity_logs").insert({
-    action: "DELETE DATA",
-    details: {
-      assessment_id: assessmentId,
-      parent_name: parentName,
-      child_name: childName,
-      education_level: level,
-      timestamp: new Date().toISOString(),
-    },
-  });
-  if (logErr) console.warn("Activity log insert warning:", logErr.message);
+  // Activity Log
+  try {
+    await supabaseAdmin.from("activity_logs").insert({
+      action: "DELETE DATA",
+      details: {
+        target_id: targetId,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (logErr: any) {
+    console.warn("Activity log insert warning:", logErr?.message);
+  }
 
-  return { ok: true, id: assessmentId };
+  return { ok: true, id: targetId };
 }
