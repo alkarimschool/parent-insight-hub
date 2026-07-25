@@ -18,7 +18,7 @@ const SubmitSchema = z.object({
 });
 
 export const submitAssessment = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => SubmitSchema.parse(data))
+  .inputValidator((data: unknown) => SubmitSchema.parse((data as any)?.data ?? data))
   .handler(async ({ data }) => {
     const { submitAndAnalyze } = await import("./assessment.server");
     return submitAndAnalyze(data as any);
