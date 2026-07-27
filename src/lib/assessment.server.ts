@@ -292,79 +292,132 @@ export async function submitAndAnalyze(data: SubmitInput) {
 
   // 1. Save / Upsert Parent in Supabase
   let parent: any = null;
-  const { data: pExisting } = await supabaseAdmin
-    .from("parents")
-    .select("*")
-    .eq("whatsapp", data.parent.whatsapp.trim())
-    .maybeSingle();
-
-  if (pExisting) {
-    parent = pExisting;
-    await supabaseAdmin
+  try {
+    const { data: pExisting } = await supabaseAdmin
       .from("parents")
-      .update({ name: data.parent.name.trim() })
-      .eq("id", parent.id);
-  } else {
-    const { data: pInserted, error: pErr } = await supabaseAdmin
-      .from("parents")
-      .insert({ name: data.parent.name.trim(), whatsapp: data.parent.whatsapp.trim() })
-      .select()
-      .single();
+      .select("*")
+      .eq("whatsapp", data.parent.whatsapp.trim())
+      .maybeSingle();
 
-    if (pErr || !pInserted) {
-      throw new Error("Gagal menyimpan data orang tua di Supabase: " + (pErr?.message || "Error"));
+    if (pExisting) {
+      parent = pExisting;
+      await supabaseAdmin
+        .from("parents")
+        .update({ name: data.parent.name.trim() })
+        .eq("id", parent.id);
+    } else {
+      const { data: pInserted, error: pErr } = await supabaseAdmin
+        .from("parents")
+        .insert({ name: data.parent.name.trim(), whatsapp: data.parent.whatsapp.trim() })
+        .select()
+        .single();
+
+      if (pErr || !pInserted) {
+        console.warn("[submitAndAnalyze] Parent insert error, trying direct UUID fallback:", pErr?.message);
+        const pId = crypto.randomUUID();
+        const { error: pFbErr } = await supabaseAdmin
+          .from("parents")
+          .insert({ id: pId, name: data.parent.name.trim(), whatsapp: data.parent.whatsapp.trim() });
+
+        if (pFbErr) throw new Error(pFbErr.message);
+        parent = { id: pId, name: data.parent.name.trim(), whatsapp: data.parent.whatsapp.trim() };
+      } else {
+        parent = pInserted;
+      }
     }
-    parent = pInserted;
+  } catch (err: any) {
+    console.error("[submitAndAnalyze] Parent save failed:", err);
+    throw new Error("Gagal menyimpan data orang tua: " + (err?.message || "Error Database"));
   }
 
   // 2. Insert child
-  const { data: child, error: cErr } = await supabaseAdmin
-    .from("children")
-    .insert({
-      parent_id: parent.id,
-      name: data.child.name.trim(),
-      gender: data.child.gender || "L",
-      birth_date: data.child.birth_date || "2020-01-01",
-      school: data.child.school || null,
-      class_name: data.child.class_name || null,
-    })
-    .select()
-    .single();
+  let child: any = null;
+  try {
+    const { data: cInserted, error: cErr } = await supabaseAdmin
+      .from("children")
+      .insert({
+        parent_id: parent.id,
+        name: data.child.name.trim(),
+        gender: data.child.gender || "L",
+        birth_date: data.child.birth_date || "2020-01-01",
+        school: data.child.school || null,
+        class_name: data.child.class_name || null,
+      })
+      .select()
+      .single();
 
-  if (cErr || !child) throw new Error("Gagal menyimpan data anak di Supabase: " + cErr?.message);
+    if (cErr || !cInserted) {
+      console.warn("[submitAndAnalyze] Child insert error, trying direct UUID fallback:", cErr?.message);
+      const cId = crypto.randomUUID();
+      const { error: cFbErr } = await supabaseAdmin
+        .from("children")
+        .insert({
+          id: cId,
+          parent_id: parent.id,
+          name: data.child.name.trim(),
+          gender: data.child.gender || "L",
+          birth_date: data.child.birth_date || "2020-01-01",
+          school: data.child.school || null,
+          class_name: data.child.class_name || null,
+        });
+
+      if (cFbErr) throw new Error(cFbErr.message);
+      child = { id: cId, parent_id: parent.id, name: data.child.name.trim() };
+    } else {
+      child = cInserted;
+    }
+  } catch (err: any) {
+    console.error("[submitAndAnalyze] Child save failed:", err);
+    throw new Error("Gagal menyimpan data anak: " + (err?.message || "Error Database"));
+  }
 
   // 3. Insert assessment
   let assessment: any = null;
-  const { data: aData, error: aErr } = await supabaseAdmin
-    .from("assessments")
-    .insert({
-      parent_id: parent.id,
-      child_id: child.id,
-      education_level: level,
-      status: "analyzing",
-    })
-    .select()
-    .single();
-
-  if (aErr) {
-    console.warn("Assessment insert with education_level failed:", aErr.message);
-    // Fallback insert without education_level if schema cache / column error occurs
-    const { data: aFallback, error: aFallbackErr } = await supabaseAdmin
+  try {
+    const { data: aData, error: aErr } = await supabaseAdmin
       .from("assessments")
       .insert({
         parent_id: parent.id,
         child_id: child.id,
+        education_level: level,
         status: "analyzing",
       })
       .select()
       .single();
 
-    if (aFallbackErr || !aFallback) {
-      throw new Error("Gagal membuat assessment di Supabase: " + (aFallbackErr?.message || aErr.message));
+    if (aErr || !aData) {
+      console.warn("[submitAndAnalyze] Assessment insert with education_level failed, trying fallback:", aErr?.message);
+      const { data: aFallback, error: aFallbackErr } = await supabaseAdmin
+        .from("assessments")
+        .insert({
+          parent_id: parent.id,
+          child_id: child.id,
+          status: "analyzing",
+        })
+        .select()
+        .single();
+
+      if (aFallbackErr || !aFallback) {
+        const assId = crypto.randomUUID();
+        const { error: aFbErr2 } = await supabaseAdmin
+          .from("assessments")
+          .insert({
+            id: assId,
+            parent_id: parent.id,
+            child_id: child.id,
+            status: "analyzing",
+          });
+        if (aFbErr2) throw new Error(aFbErr2.message);
+        assessment = { id: assId, parent_id: parent.id, child_id: child.id, education_level: level, status: "analyzing" };
+      } else {
+        assessment = { ...aFallback, education_level: level };
+      }
+    } else {
+      assessment = aData;
     }
-    assessment = { ...aFallback, education_level: level };
-  } else {
-    assessment = aData;
+  } catch (err: any) {
+    console.error("[submitAndAnalyze] Assessment creation failed:", err);
+    throw new Error("Gagal membuat data assessment: " + (err?.message || "Error Database"));
   }
 
   // 4 & 5. Fetch/Seed DB questions for level and map answers to DB question UUIDs

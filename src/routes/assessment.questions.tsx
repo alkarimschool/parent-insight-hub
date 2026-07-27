@@ -138,7 +138,7 @@ function QuestionsPage() {
             class_name: formData.class_name || "",
             education_level: level,
           },
-          answers: list.map((q) => ({ question_id: q.id, score: answers[q.id] })),
+          answers: list.map((q) => ({ question_id: String(q.id), score: Number(answers[q.id] ?? 3) })),
         },
       });
 

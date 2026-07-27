@@ -1,24 +1,75 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+const NullableString = z.preprocess(
+  (v) => (v === null || v === undefined ? "" : String(v).trim()),
+  z.string()
+);
+
+const EducationLevelEnum = z.preprocess(
+  (v) => {
+    if (!v) return "TK";
+    const str = String(v).toUpperCase().trim();
+    if (["TK", "SD", "SMP", "SMA", "SMK"].includes(str)) return str;
+    return "TK";
+  },
+  z.enum(["TK", "SD", "SMP", "SMA", "SMK"])
+);
+
+const GenderEnum = z.preprocess(
+  (v) => {
+    if (!v) return "L";
+    const str = String(v).toUpperCase().trim();
+    if (str === "P" || str === "PEREMPUAN") return "P";
+    return "L";
+  },
+  z.enum(["L", "P"])
+);
+
+const ScoreNumber = z.preprocess(
+  (v) => {
+    const num = Number(v);
+    if (isNaN(num)) return 3;
+    return Math.min(5, Math.max(1, Math.round(num)));
+  },
+  z.number().int().min(1).max(5)
+);
+
 const SubmitSchema = z.object({
   parent: z.object({
-    name: z.string().trim().min(1).max(200),
-    whatsapp: z.string().trim().min(3).max(50),
+    name: NullableString.pipe(z.string().min(1, "Nama orang tua wajib diisi").max(200)),
+    whatsapp: NullableString.pipe(z.string().min(3, "Nomor WhatsApp wajib diisi").max(50)),
   }),
   child: z.object({
-    name: z.string().trim().min(1).max(200),
-    gender: z.enum(["L", "P"]).optional().default("L"),
-    birth_date: z.string().optional().default("2020-01-01"),
-    school: z.string().trim().max(200).optional().default(""),
-    class_name: z.string().trim().max(120).optional().default(""),
-    education_level: z.enum(["TK", "SD", "SMP", "SMA", "SMK"]).optional().default("TK"),
+    name: NullableString.pipe(z.string().min(1, "Nama anak wajib diisi").max(200)),
+    gender: GenderEnum,
+    birth_date: NullableString.transform((v) => v || "2020-01-01"),
+    school: NullableString,
+    class_name: NullableString,
+    education_level: EducationLevelEnum,
   }),
-  answers: z.array(z.object({ question_id: z.string().min(1), score: z.number().int().min(1).max(5) })).min(1),
+  answers: z.array(
+    z.object({
+      question_id: z.preprocess((v) => String(v ?? ""), z.string().min(1)),
+      score: ScoreNumber,
+    })
+  ).min(1, "Jawaban assessment tidak boleh kosong"),
 });
 
 export const submitAssessment = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => SubmitSchema.parse((data as any)?.data ?? data))
+  .inputValidator((rawInput: unknown) => {
+    try {
+      const payload = (rawInput as any)?.data ?? rawInput;
+      return SubmitSchema.parse(payload);
+    } catch (err: any) {
+      console.error("[submitAssessment] Input validation failed:", err);
+      if (err instanceof z.ZodError) {
+        const issues = err.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ");
+        throw new Error(`Validasi data gagal: ${issues}`);
+      }
+      throw err;
+    }
+  })
   .handler(async ({ data }) => {
     const { submitAndAnalyze } = await import("./assessment.server");
     return submitAndAnalyze(data as any);
