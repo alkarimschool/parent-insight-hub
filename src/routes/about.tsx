@@ -15,8 +15,8 @@ export const Route = createFileRoute("/about")({
 });
 
 function AboutPage() {
-  const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite });
-  const homepage = useQuery({ queryKey: ["homepage"], queryFn: fetchHomepage });
+  const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite, staleTime: 0 });
+  const homepage = useQuery({ queryKey: ["homepage"], queryFn: fetchHomepage, staleTime: 0 });
   const w = website.data;
   const h = homepage.data;
 

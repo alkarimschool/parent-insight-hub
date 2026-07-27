@@ -9,11 +9,17 @@ export interface HomepageData {
   why_subtitle?: string;
   why_items: Array<{ icon: string; title: string; desc: string }>;
   benefits_title: string;
+  benefits_subtitle?: string;
   benefits_items: Array<{ icon: string; title: string; desc: string }>;
   how_title: string;
+  how_subtitle?: string;
   how_items: Array<{ step: string; title: string; desc: string }>;
   faq_title: string;
+  faq_subtitle?: string;
   faq_items: Array<{ q: string; a: string }>;
+  cta_title?: string;
+  cta_subtitle?: string;
+  cta_btn_text?: string;
   footer_tagline?: string;
 }
 
@@ -47,6 +53,7 @@ export const DEFAULT_HOMEPAGE_DATA: HomepageData = {
     { icon: "ShieldCheck", title: "Privasi Terjaga", desc: "Data keluarga Anda terenkripsi aman dan tidak dipublikasikan." },
   ],
   benefits_title: "Manfaat Yang Anda Dapatkan",
+  benefits_subtitle: "Berbagai keuntungan yang bisa didapatkan untuk mendampingi tumbuh kembang anak.",
   benefits_items: [
     { icon: "CheckCircle", title: "Laporan Detail", desc: "Evaluasi lengkap berbagai aspek tumbuh kembang." },
     { icon: "Heart", title: "Panduan Pengasuhan", desc: "Saran praktis sehari-hari untuk mendampingi anak." },
@@ -54,17 +61,22 @@ export const DEFAULT_HOMEPAGE_DATA: HomepageData = {
     { icon: "Clock", title: "Akses Kapan Saja", desc: "Laporan tersimpan dan dapat diakses kapan pun Anda butuhkan." },
   ],
   how_title: "Cara Kerja Asesmen",
+  how_subtitle: "Langkah mudah memulai asesmen tumbuh kembang anak.",
   how_items: [
     { step: "1", title: "Pilih Jenjang", desc: "Pilih jenjang pendidikan anak (TK, SD, SMP, SMA/SMK)." },
     { step: "2", title: "Isi Asesmen", desc: "Jawab pertanyaan seputar aktivitas dan kebiasaan anak." },
-    { step: "3", title: "Proses AI", desc: "Sistem meganalisis pola jawaban secara mendalam." },
+    { step: "3", title: "Proses AI", desc: "Sistem menganalisis pola jawaban secara mendalam." },
     { step: "4", title: "Terima Laporan", desc: "Dapatkan hasil analisis dan panduan lengkap." },
   ],
   faq_title: "Pertanyaan yang Sering Diajukan",
+  faq_subtitle: "Temukan jawaban dari pertanyaan yang sering ditanyakan orang tua.",
   faq_items: [
     { q: "Berapa lama waktu yang dibutuhkan?", a: "Sekitar 5 hingga 10 menit untuk menyelesaikan seluruh pertanyaan." },
     { q: "Apakah asesmen ini gratis?", a: "Ya, Anda dapat mencoba asesmen secara gratis dan mendapatkan laporan evaluasi." },
   ],
+  cta_title: "Siap memahami perkembangan anak Anda?",
+  cta_subtitle: "Selesaikan asesmen dalam 5–10 menit dan dapatkan laporan personal.",
+  cta_btn_text: "Mulai Asesmen Sekarang",
   footer_tagline: "Mendampingi tumbuh kembang anak Indonesia menuju masa depan gemilang.",
 };
 
@@ -81,12 +93,28 @@ export const DEFAULT_WEBSITE_DATA: WebsiteData = {
 
 export async function fetchHomepage(): Promise<HomepageData> {
   try {
-    const { data } = await supabase.from("homepage_settings").select("data").eq("id", 1).maybeSingle();
+    const { data, error } = await supabase
+      .from("homepage_settings")
+      .select("data")
+      .order("id", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error("[fetchHomepage] Supabase query error:", error.message);
+      return DEFAULT_HOMEPAGE_DATA;
+    }
+
     const raw = (data?.data as any) ?? null;
-    if (!raw) return DEFAULT_HOMEPAGE_DATA;
+    if (!raw) {
+      console.info("[fetchHomepage] No data row found, returning DEFAULT_HOMEPAGE_DATA.");
+      return DEFAULT_HOMEPAGE_DATA;
+    }
+
     const unwrapped = raw?.data ?? raw;
     return { ...DEFAULT_HOMEPAGE_DATA, ...unwrapped };
-  } catch {
+  } catch (err: any) {
+    console.error("[fetchHomepage] Exception error:", err?.message || err);
     return DEFAULT_HOMEPAGE_DATA;
   }
 }

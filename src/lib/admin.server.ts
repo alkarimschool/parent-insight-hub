@@ -103,39 +103,63 @@ export async function updateWebsiteSettingsServer(inputData: any) {
 }
 
 export async function updateHomepageSettingsServer(inputData: any) {
-  const payload = inputData?.data ?? inputData;
-  const { data: existing } = await supabaseAdmin
-    .from("homepage_settings")
-    .select("id, data")
-    .limit(1)
-    .maybeSingle();
+  try {
+    const payload = inputData?.data ?? inputData;
+    if (!payload || typeof payload !== "object") {
+      throw new Error("Payload data homepage tidak valid.");
+    }
 
-  const currentObj = (existing?.data as any) || {};
-  const cleanCurrent = currentObj?.data ?? currentObj;
-  const mergedData = {
-    ...cleanCurrent,
-    ...(typeof payload === "object" ? payload : {}),
-  };
-  delete (mergedData as any).data;
+    console.info("[updateHomepageSettingsServer] Saving payload keys:", Object.keys(payload));
 
-  if (existing) {
-    const { error } = await supabaseAdmin
+    const { data: existing, error: fetchErr } = await supabaseAdmin
       .from("homepage_settings")
-      .update({
-        data: mergedData,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", existing.id);
+      .select("id, data")
+      .order("id", { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
-    if (error) throw new Error(error.message);
-  } else {
-    const { error } = await supabaseAdmin.from("homepage_settings").insert({
-      id: 1,
-      data: mergedData,
-    });
-    if (error) throw new Error(error.message);
+    if (fetchErr) {
+      console.error("[updateHomepageSettingsServer] Fetch existing error:", fetchErr.message);
+    }
+
+    const currentObj = (existing?.data as any) || {};
+    const cleanCurrent = currentObj?.data ?? currentObj;
+    const mergedData = {
+      ...cleanCurrent,
+      ...payload,
+    };
+    delete (mergedData as any).data;
+
+    if (existing?.id) {
+      const { error: updateErr } = await supabaseAdmin
+        .from("homepage_settings")
+        .update({
+          data: mergedData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id);
+
+      if (updateErr) {
+        console.error("[updateHomepageSettingsServer] Update DB error:", updateErr.message);
+        throw new Error(updateErr.message);
+      }
+    } else {
+      const { error: insertErr } = await supabaseAdmin.from("homepage_settings").insert({
+        id: 1,
+        data: mergedData,
+      });
+      if (insertErr) {
+        console.error("[updateHomepageSettingsServer] Insert DB error:", insertErr.message);
+        throw new Error(insertErr.message);
+      }
+    }
+
+    console.info("[updateHomepageSettingsServer] Homepage settings saved successfully.");
+    return { ok: true };
+  } catch (err: any) {
+    console.error("[updateHomepageSettingsServer] Exception:", err?.message || err);
+    return { ok: false, error: err?.message || "Gagal menyimpan data ke database" };
   }
-  return { ok: true };
 }
 
 export async function updatePromptServer(data: {
