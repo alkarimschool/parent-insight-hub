@@ -1,40 +1,8 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { getEducationLevel } from "./questions.data";
 
 export function extractTrueLevel(a: any): string {
-  if (!a) return "TK";
-  
-  if (a.education_level && ["SD", "SMP", "SMA", "SMK"].includes(String(a.education_level).toUpperCase())) {
-    return String(a.education_level).toUpperCase();
-  }
-
-  if (a.assessment_title) {
-    const t = String(a.assessment_title).toUpperCase();
-    if (t.includes("SMK")) return "SMK";
-    if (t.includes("SMA")) return "SMA";
-    if (t.includes("SMP")) return "SMP";
-    if (t.includes("SD")) return "SD";
-  }
-
-  if (a.ai_prompt) {
-    const p = String(a.ai_prompt);
-    if (p.includes("Sekolah Menengah Kejuruan (SMK)") || p.includes("Jenjang: SMK")) return "SMK";
-    if (p.includes("Sekolah Menengah Atas (SMA)") || p.includes("Jenjang: SMA")) return "SMA";
-    if (p.includes("Sekolah Menengah Pertama (SMP)") || p.includes("Jenjang: SMP")) return "SMP";
-    if (p.includes("Sekolah Dasar (SD)") || p.includes("Jenjang: SD")) return "SD";
-  }
-
-  if (a.ai_result && typeof a.ai_result === "object") {
-    const resLvl = (a.ai_result.shortName || a.ai_result.education_level || a.ai_result.level) as string;
-    if (resLvl && ["SD", "SMP", "SMA", "SMK"].includes(String(resLvl).toUpperCase())) {
-      return String(resLvl).toUpperCase();
-    }
-  }
-
-  if (a.education_level && String(a.education_level).toUpperCase() === "TK") {
-    return "TK";
-  }
-
-  return "TK";
+  return getEducationLevel(a);
 }
 
 export async function updateAiSettingsServer(inputData: any) {

@@ -7,6 +7,7 @@ import { CheckCircle2, Sparkles, Home, GraduationCap, Printer } from "lucide-rea
 import { useServerFn } from "@tanstack/react-start";
 import { getAssessmentResultFn } from "@/lib/assessment.functions";
 import { getAssessmentContent } from "@/lib/assessment-content";
+import { getEducationLevel } from "@/lib/questions.data";
 
 export const Route = createFileRoute("/assessment/result/$id")({
   head: () => ({ meta: [{ title: "Hasil Assessment" }, { name: "robots", content: "noindex" }] }),
@@ -42,6 +43,7 @@ function List({ items }: { items?: string[] }) {
 function ResultPage() {
   const { id } = Route.useParams();
   const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite });
+
   const getResult = useServerFn(getAssessmentResultFn);
 
   const result = useQuery({
@@ -57,7 +59,8 @@ function ResultPage() {
   const c = data?.content as any;
   const childName = data?.child_name ?? "Anak";
   const parentName = data?.parent_name ?? "Orang Tua";
-  const level = (data?.education_level || c?.shortName || c?.education_level || "TK") as string;
+  const level = getEducationLevel(data || c);
+  console.log("[STAGE: VIEW_RENDER]", "Education Level View:", level);
   const content = getAssessmentContent(level);
 
   // Synchronize dynamic metadata (title, description, Open Graph, Twitter metadata)

@@ -1,5 +1,52 @@
 export type EducationLevel = "TK" | "SD" | "SMP" | "SMA" | "SMK";
 
+export function getEducationLevel(input: any): EducationLevel {
+  if (!input) return "TK";
+
+  if (typeof input === "string") {
+    const str = input.trim().toUpperCase();
+    if (["TK", "SD", "SMP", "SMA", "SMK"].includes(str)) {
+      return str as EducationLevel;
+    }
+  }
+
+  if (typeof input === "object") {
+    if (input.education_level && ["TK", "SD", "SMP", "SMA", "SMK"].includes(String(input.education_level).trim().toUpperCase())) {
+      return String(input.education_level).trim().toUpperCase() as EducationLevel;
+    }
+    if (input.shortName && ["TK", "SD", "SMP", "SMA", "SMK"].includes(String(input.shortName).trim().toUpperCase())) {
+      return String(input.shortName).trim().toUpperCase() as EducationLevel;
+    }
+    if (input.level && ["TK", "SD", "SMP", "SMA", "SMK"].includes(String(input.level).trim().toUpperCase())) {
+      return String(input.level).trim().toUpperCase() as EducationLevel;
+    }
+    if (input.assessment_title) {
+      const t = String(input.assessment_title).toUpperCase();
+      if (t.includes("SMK")) return "SMK";
+      if (t.includes("SMA")) return "SMA";
+      if (t.includes("SMP")) return "SMP";
+      if (t.includes("SD")) return "SD";
+      if (t.includes("TK")) return "TK";
+    }
+    if (input.ai_prompt) {
+      const p = String(input.ai_prompt);
+      if (p.includes("Sekolah Menengah Kejuruan (SMK)") || p.includes("Jenjang: SMK")) return "SMK";
+      if (p.includes("Sekolah Menengah Atas (SMA)") || p.includes("Jenjang: SMA")) return "SMA";
+      if (p.includes("Sekolah Menengah Pertama (SMP)") || p.includes("Jenjang: SMP")) return "SMP";
+      if (p.includes("Sekolah Dasar (SD)") || p.includes("Jenjang: SD")) return "SD";
+      if (p.includes("TK / PAUD") || p.includes("Jenjang: TK")) return "TK";
+    }
+    if (input.ai_result && typeof input.ai_result === "object") {
+      const resLvl = (input.ai_result.shortName || input.ai_result.education_level || input.ai_result.level) as string;
+      if (resLvl && ["TK", "SD", "SMP", "SMA", "SMK"].includes(String(resLvl).trim().toUpperCase())) {
+        return String(resLvl).trim().toUpperCase() as EducationLevel;
+      }
+    }
+  }
+
+  return "TK";
+}
+
 export interface QuestionData {
   id: string;
   education_level: EducationLevel;

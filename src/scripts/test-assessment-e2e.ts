@@ -6,7 +6,7 @@ async function runE2ETests() {
   console.log("🚀 STARTING E2E AUTOMATED ASSESSMENT VERIFICATION");
   console.log("=================================================\n");
 
-  const levelsToTest: EducationLevel[] = ["TK", "SD", "SMP", "SMA"];
+  const levelsToTest: EducationLevel[] = ["TK", "SD", "SMP", "SMA", "SMK"];
   let passedCount = 0;
 
   for (const level of levelsToTest) {
@@ -23,7 +23,7 @@ async function runE2ETests() {
       child: {
         name: `Anak Test ${level}`,
         gender: "L" as const,
-        birth_date: level === "TK" ? "2020-05-15" : level === "SD" ? "2016-08-20" : level === "SMP" ? "2012-03-10" : "2009-11-05",
+        birth_date: level === "TK" ? "2020-05-15" : level === "SD" ? "2016-08-20" : level === "SMP" ? "2012-03-10" : "2008-11-05",
         school: `Sekolah Test ${level}`,
         class_name: `Kelas ${level}`,
         education_level: level,
@@ -79,6 +79,9 @@ async function runE2ETests() {
       }
       if (level === "SMA" && !resultData.content?.reportTitle?.includes("SMA")) {
         throw new Error(`Expected SMA in report title, got: ${resultData.content?.reportTitle}`);
+      }
+      if (level === "SMK" && !resultData.content?.reportTitle?.includes("SMK")) {
+        throw new Error(`Expected SMK in report title, got: ${resultData.content?.reportTitle}`);
       }
 
       console.log(`🎉 VERIFICATION PASSED FOR LEVEL ${level}!\n`);
