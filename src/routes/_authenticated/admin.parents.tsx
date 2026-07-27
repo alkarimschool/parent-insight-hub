@@ -74,7 +74,7 @@ function ParentsList() {
       child_name: c?.name ?? "",
       whatsapp: p?.whatsapp ?? "",
       school: c?.school ?? "",
-      education_level: r.education_level ?? "TK",
+      education_level: r.education_level || "",
     });
   };
 
@@ -173,7 +173,7 @@ function ParentsList() {
               </tr>
             ) : (
               rows.map((r: any) => {
-                const lvl = r.education_level ?? "TK";
+                const lvl = r.education_level || "-";
                 const pObj = Array.isArray(r.parents) ? r.parents[0] : r.parents;
                 const cObj = Array.isArray(r.children) ? r.children[0] : r.children;
                 const waLink = formatWaLink(pObj?.whatsapp ?? "", cObj?.name ?? "", lvl, r.id);
@@ -331,7 +331,7 @@ function ParentsList() {
 
             <div className="rounded-2xl border border-border/60 bg-muted/40 p-3 text-xs space-y-1">
               <div className="flex justify-between"><span className="text-muted-foreground">Nama Anak:</span> <span className="font-bold text-foreground">{deletingRow.children?.name || "-"}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Jenjang:</span> <span className="font-bold text-primary">{deletingRow.education_level || "TK"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Jenjang:</span> <span className="font-bold text-primary">{deletingRow.education_level || "-"}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">WhatsApp:</span> <span className="font-mono text-muted-foreground">{deletingRow.parents?.whatsapp || "-"}</span></div>
             </div>
 

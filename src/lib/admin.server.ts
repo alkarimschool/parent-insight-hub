@@ -1,5 +1,42 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+export function extractTrueLevel(a: any): string {
+  if (!a) return "TK";
+  
+  if (a.education_level && ["SD", "SMP", "SMA", "SMK"].includes(String(a.education_level).toUpperCase())) {
+    return String(a.education_level).toUpperCase();
+  }
+
+  if (a.assessment_title) {
+    const t = String(a.assessment_title).toUpperCase();
+    if (t.includes("SMK")) return "SMK";
+    if (t.includes("SMA")) return "SMA";
+    if (t.includes("SMP")) return "SMP";
+    if (t.includes("SD")) return "SD";
+  }
+
+  if (a.ai_prompt) {
+    const p = String(a.ai_prompt);
+    if (p.includes("Sekolah Menengah Kejuruan (SMK)") || p.includes("Jenjang: SMK")) return "SMK";
+    if (p.includes("Sekolah Menengah Atas (SMA)") || p.includes("Jenjang: SMA")) return "SMA";
+    if (p.includes("Sekolah Menengah Pertama (SMP)") || p.includes("Jenjang: SMP")) return "SMP";
+    if (p.includes("Sekolah Dasar (SD)") || p.includes("Jenjang: SD")) return "SD";
+  }
+
+  if (a.ai_result && typeof a.ai_result === "object") {
+    const resLvl = (a.ai_result.shortName || a.ai_result.education_level || a.ai_result.level) as string;
+    if (resLvl && ["SD", "SMP", "SMA", "SMK"].includes(String(resLvl).toUpperCase())) {
+      return String(resLvl).toUpperCase();
+    }
+  }
+
+  if (a.education_level && String(a.education_level).toUpperCase() === "TK") {
+    return "TK";
+  }
+
+  return "TK";
+}
+
 export async function updateAiSettingsServer(inputData: any) {
   const data = inputData?.data ?? inputData;
   const { data: existing } = await supabaseAdmin
@@ -264,6 +301,10 @@ export async function saveQuestionServer(data: {
   education_level: string;
   is_active?: boolean;
 }) {
+  const cleanLvl = (data.education_level && ["TK", "SD", "SMP", "SMA", "SMK"].includes(String(data.education_level).toUpperCase()))
+    ? String(data.education_level).toUpperCase()
+    : "TK";
+
   if (data.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.id)) {
     const { error } = await supabaseAdmin
       .from("questions")
@@ -271,7 +312,7 @@ export async function saveQuestionServer(data: {
         text: data.text,
         category_id: data.category_id || null,
         order_index: data.order_index ?? 1,
-        education_level: data.education_level || "TK",
+        education_level: cleanLvl,
         is_active: data.is_active ?? true,
         updated_at: new Date().toISOString(),
       })
@@ -282,7 +323,7 @@ export async function saveQuestionServer(data: {
       text: data.text,
       category_id: data.category_id || null,
       order_index: data.order_index ?? 1,
-      education_level: data.education_level || "TK",
+      education_level: cleanLvl,
       is_active: data.is_active ?? true,
     });
     if (error) throw new Error(error.message);
@@ -338,11 +379,15 @@ export async function updateParentChildAssessmentServer(data: {
       .eq("id", childId);
   }
 
-  if (data.assessment_id) {
-    await supabaseAdmin
-      .from("assessments")
-      .update({ education_level: data.education_level || "TK" })
-      .eq("id", data.assessment_id);
+  // Strictly partial update: ONLY update education_level if provided as valid level string
+  if (data.assessment_id && data.education_level) {
+    const cleanLvl = String(data.education_level).toUpperCase().trim();
+    if (["TK", "SD", "SMP", "SMA", "SMK"].includes(cleanLvl)) {
+      await supabaseAdmin
+        .from("assessments")
+        .update({ education_level: cleanLvl, updated_at: new Date().toISOString() })
+        .eq("id", data.assessment_id);
+    }
   }
 
   return { ok: true };
@@ -380,11 +425,17 @@ export async function getAdminParentsListServer() {
 
       const pObj = parentMap.get(a.parent_id);
       const cObj = childMap.get(a.child_id);
+      const trueLvl = extractTrueLevel(a);
+
+      // Auto-heal database record if DB row was stuck at default 'TK' while title/prompt/result was SD/SMP/SMA/SMK
+      if (a.id && a.education_level !== trueLvl) {
+        supabaseAdmin.from("assessments").update({ education_level: trueLvl }).eq("id", a.id).then();
+      }
 
       resultList.push({
         id: a.id,
         status: a.status || "analyzed",
-        education_level: a.education_level || "TK",
+        education_level: trueLvl,
         created_at: a.created_at || new Date().toISOString(),
         parent_id: a.parent_id,
         child_id: a.child_id,
@@ -420,37 +471,35 @@ export async function getAdminStatsServer() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [
-    { count: total },
-    { count: todayCount },
-    { count: analyzed },
-    { count: tkCount },
-    { count: sdCount },
-    { count: smpCount },
-    { count: smaCount },
-    { count: smkCount },
-    { count: parents }
-  ] = await Promise.all([
-    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }),
+  const [{ data: assessments }, { count: todayCount }, { count: parents }] = await Promise.all([
+    supabaseAdmin.from("assessments").select("id, status, education_level, assessment_title, ai_prompt, created_at"),
     supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).gte("created_at", today.toISOString()),
-    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("status", "analyzed"),
-    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "TK"),
-    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "SD"),
-    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "SMP"),
-    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "SMA"),
-    supabaseAdmin.from("assessments").select("*", { count: "exact", head: true }).eq("education_level", "SMK"),
     supabaseAdmin.from("parents").select("*", { count: "exact", head: true }),
   ]);
 
+  const list = assessments ?? [];
+  let tk = 0, sd = 0, smp = 0, sma = 0, smk = 0, analyzed = 0;
+
+  list.forEach((a) => {
+    const lvl = extractTrueLevel(a);
+    if (lvl === "TK") tk++;
+    else if (lvl === "SD") sd++;
+    else if (lvl === "SMP") smp++;
+    else if (lvl === "SMA") sma++;
+    else if (lvl === "SMK") smk++;
+
+    if (a.status === "analyzed") analyzed++;
+  });
+
   return {
-    total: total ?? 0,
+    total: list.length,
     today: todayCount ?? 0,
-    analyzed: analyzed ?? 0,
-    tk: tkCount ?? 0,
-    sd: sdCount ?? 0,
-    smp: smpCount ?? 0,
-    sma: smaCount ?? 0,
-    smk: smkCount ?? 0,
+    analyzed,
+    tk,
+    sd,
+    smp,
+    sma,
+    smk,
     parents: parents ?? 0,
   };
 }
@@ -465,9 +514,17 @@ export async function getAdminRecentListServer(level?: string) {
   const pMap = new Map((parents ?? []).map((p) => [p.id, p]));
   const cMap = new Map((children ?? []).map((c) => [c.id, c]));
 
-  let filtered = assessments ?? [];
+  const processedList = (assessments ?? []).map((a) => {
+    const trueLvl = extractTrueLevel(a);
+    if (a.id && a.education_level !== trueLvl) {
+      supabaseAdmin.from("assessments").update({ education_level: trueLvl }).eq("id", a.id).then();
+    }
+    return { ...a, education_level: trueLvl };
+  });
+
+  let filtered = processedList;
   if (level && level !== "ALL") {
-    filtered = filtered.filter((a) => a.education_level === level);
+    filtered = processedList.filter((a) => a.education_level === level);
   }
 
   return filtered.slice(0, 10).map((a) => ({
@@ -477,27 +534,11 @@ export async function getAdminRecentListServer(level?: string) {
   }));
 }
 
-/**
- * Hapus data assessment beserta SELURUH data relasi.
- *
- * Schema FK cascade chain:
- *   parents  ← ON DELETE CASCADE ←  children  ← ON DELETE CASCADE ←  assessments
- *   assessments  ← ON DELETE CASCADE ←  assessment_answers
- *   assessments  ← ON DELETE CASCADE ←  ai_results
- *
- * Strategi: Hapus `parents` record → PostgreSQL CASCADE otomatis menghapus
- * children, assessments, assessment_answers, dan ai_results.
- *
- * Jika parent memiliki >1 child/assessment, seluruhnya ikut terhapus.
- * Jika ingin hanya menghapus 1 assessment tanpa menghapus parent,
- * cukup hapus assessment saja (children tetap, cascade hapus answers & results).
- */
 export async function deleteAssessmentServer(targetId: string) {
   if (!targetId) throw new Error("ID data tidak valid.");
 
   const errors: string[] = [];
 
-  // 1. Check if targetId matches an assessment ID
   const { data: assessment } = await supabaseAdmin
     .from("assessments")
     .select("id, parent_id, child_id")
@@ -508,17 +549,12 @@ export async function deleteAssessmentServer(targetId: string) {
     const parentId = assessment.parent_id;
     const childId = assessment.child_id;
 
-    // Delete AI results for this assessment only
     await supabaseAdmin.from("ai_results").delete().eq("assessment_id", targetId);
-
-    // Delete assessment answers for this assessment only
     await supabaseAdmin.from("assessment_answers").delete().eq("assessment_id", targetId);
 
-    // Delete assessment record
     const { error: delAssErr } = await supabaseAdmin.from("assessments").delete().eq("id", targetId);
     if (delAssErr) errors.push("assessments: " + delAssErr.message);
 
-    // Check if child has remaining assessments; if none, delete child record
     if (childId) {
       const { count: childAssCount } = await supabaseAdmin
         .from("assessments")
@@ -530,7 +566,6 @@ export async function deleteAssessmentServer(targetId: string) {
       }
     }
 
-    // Check if parent has remaining assessments; if none, delete parent record
     if (parentId) {
       const { count: parentAssCount } = await supabaseAdmin
         .from("assessments")
@@ -542,7 +577,6 @@ export async function deleteAssessmentServer(targetId: string) {
       }
     }
   } else {
-    // 2. Check if targetId matches a parent ID directly
     const { data: parent } = await supabaseAdmin
       .from("parents")
       .select("id")
@@ -567,7 +601,6 @@ export async function deleteAssessmentServer(targetId: string) {
       const { error: delParErr } = await supabaseAdmin.from("parents").delete().eq("id", targetId);
       if (delParErr) errors.push("parents: " + delParErr.message);
     } else {
-      // 3. Check if targetId matches a child ID directly
       const { data: child } = await supabaseAdmin
         .from("children")
         .select("id, parent_id")
@@ -595,7 +628,6 @@ export async function deleteAssessmentServer(targetId: string) {
     }
   }
 
-  // Activity Log
   try {
     await supabaseAdmin.from("activity_logs").insert({
       action: "DELETE DATA",

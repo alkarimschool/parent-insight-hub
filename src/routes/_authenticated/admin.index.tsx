@@ -140,7 +140,7 @@ function Dashboard() {
               </thead>
               <tbody className="divide-y divide-border/40">
                 {(recentList.data as any[])?.map((r: any) => {
-                  const lvl = r.education_level ?? "TK";
+                  const lvl = r.education_level || "-";
                   return (
                     <tr key={r.id} className="hover:bg-muted/30 transition">
                       <td className="py-3 px-3 text-muted-foreground whitespace-nowrap">
