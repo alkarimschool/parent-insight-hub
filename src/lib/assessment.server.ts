@@ -294,13 +294,18 @@ async function getOrSeedQuestionsForLevel(level: EducationLevel) {
 }
 
 export async function submitAndAnalyze(data: SubmitInput) {
-  const level: EducationLevel = data.child?.education_level || "TK";
+  const rawLevel = data.child?.education_level;
+  const level: EducationLevel = (rawLevel && ["TK", "SD", "SMP", "SMA", "SMK"].includes(String(rawLevel).toUpperCase()))
+    ? (String(rawLevel).toUpperCase() as EducationLevel)
+    : "TK";
   const assessmentContent = getAssessmentContent(level);
 
-  console.info(`[STAGE 1: SUBMIT_START] Processing assessment submit for child: "${data.child?.name}" | Parent: "${data.parent?.name}" | Level: "${level}"`);
+  const parentName = data.parent?.name?.trim() || `Orang Tua Ananda ${data.child?.name?.trim() || "Anak"}`;
 
-  if (!data.parent?.name?.trim() || !data.parent?.whatsapp?.trim() || !data.child?.name?.trim()) {
-    throw new Error("Data Orang Tua dan Anak harus diisi lengkap.");
+  console.info(`[STAGE 1: SUBMIT_START] Processing assessment submit for child: "${data.child?.name}" | Parent: "${parentName}" | Level: "${level}"`);
+
+  if (!data.parent?.whatsapp?.trim() || !data.child?.name?.trim()) {
+    throw new Error("Data WhatsApp dan Nama Anak harus diisi.");
   }
   if (!data.answers || data.answers.length === 0) {
     throw new Error("Silakan lengkapi seluruh pertanyaan sebelum mengirim assessment.");
@@ -319,12 +324,12 @@ export async function submitAndAnalyze(data: SubmitInput) {
       parent = pExisting;
       await supabaseAdmin
         .from("parents")
-        .update({ name: data.parent.name.trim() })
+        .update({ name: parentName })
         .eq("id", parent.id);
     } else {
       const { data: pInserted, error: pErr } = await supabaseAdmin
         .from("parents")
-        .insert({ name: data.parent.name.trim(), whatsapp: data.parent.whatsapp.trim() })
+        .insert({ name: parentName, whatsapp: data.parent.whatsapp.trim() })
         .select()
         .single();
 
@@ -333,10 +338,10 @@ export async function submitAndAnalyze(data: SubmitInput) {
         const pId = crypto.randomUUID();
         const { error: pFbErr } = await supabaseAdmin
           .from("parents")
-          .insert({ id: pId, name: data.parent.name.trim(), whatsapp: data.parent.whatsapp.trim() });
+          .insert({ id: pId, name: parentName, whatsapp: data.parent.whatsapp.trim() });
 
         if (pFbErr) console.warn("Parent UUID fallback insert warning:", pFbErr.message);
-        parent = { id: pId, name: data.parent.name.trim(), whatsapp: data.parent.whatsapp.trim() };
+        parent = { id: pId, name: parentName, whatsapp: data.parent.whatsapp.trim() };
       } else {
         parent = pInserted;
       }
@@ -389,7 +394,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     throw new Error("Gagal menyimpan data anak: " + (err?.message || "Error Database"));
   }
 
-  // 3. Insert assessment - WITH FALLBACKS FOR SCHEMA CACHE MISSING COLUMNS
+  // 3. Insert assessment - WITH FALLBACKS THAT GUARANTEE EDUCATION_LEVEL
   let assessment: any = null;
   const assTitle = assessmentContent.reportTitle;
   try {
@@ -559,7 +564,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
   console.info(`[STAGE 7: PROMPT_LEVEL] Verified active prompt education_level matched: "${level}"`);
 
   const filled = activePrompt.user_template
-    .replace(/\{\{parent_name\}\}/g, data.parent.name)
+    .replace(/\{\{parent_name\}\}/g, parentName)
     .replace(/\{\{parent_whatsapp\}\}/g, data.parent.whatsapp)
     .replace(/\{\{child_name\}\}/g, data.child.name)
     .replace(/\{\{child_gender\}\}/g, data.child.gender === "L" ? "Laki-laki" : "Perempuan")
@@ -617,7 +622,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
 
   if (!parsedResult || !parsedResult.ringkasan) {
     console.info(`[AI_FALLBACK] Utilizing level-specific rule-based fallback result for level: ${level}`);
-    parsedResult = generateFallbackResult(data.child.name, data.parent.name, avgScore, level);
+    parsedResult = generateFallbackResult(data.child.name, parentName, avgScore, level);
     rawText = JSON.stringify(parsedResult);
   }
 
@@ -649,7 +654,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
   inMemoryAssessmentCache.set(assessment.id, {
     assessment_id: assessment.id,
     education_level: level,
-    parent_name: data.parent.name,
+    parent_name: parentName,
     child_name: data.child.name,
     created_at: new Date().toISOString(),
     content: parsedResult,
@@ -688,11 +693,18 @@ export async function submitAndAnalyze(data: SubmitInput) {
       .eq("id", assessment.id);
 
     if (upErr) {
-      // Fallback update if extended columns missing
-      await supabaseAdmin
+      console.warn("assessment update with full payload failed, trying status & education_level:", upErr.message);
+      const { error: upErr2 } = await supabaseAdmin
         .from("assessments")
-        .update({ status: "analyzed" })
+        .update({ status: "analyzed", education_level: level })
         .eq("id", assessment.id);
+
+      if (upErr2) {
+        await supabaseAdmin
+          .from("assessments")
+          .update({ status: "analyzed" })
+          .eq("id", assessment.id);
+      }
     }
   } catch (upErr: any) {
     console.warn("assessment status update warning:", upErr?.message);
@@ -706,7 +718,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
       action: "CREATE ASSESSMENT",
       payload: {
         assessment_id: assessment.id,
-        parent_name: data.parent.name,
+        parent_name: parentName,
         child_name: data.child.name,
         education_level: level,
         assessment_title: assessmentContent.reportTitle,
@@ -784,7 +796,7 @@ export async function getAssessmentResultServer(assessmentId: string) {
 
   let content = (assessment.ai_result || aiRes?.content) as any;
 
-  // 5. Determine true level from content or DB
+  // 5. Multi-tier level extraction logic to prevent level reverting to TK
   let level: EducationLevel | null = null;
 
   if (content && typeof content === "object") {
@@ -795,10 +807,28 @@ export async function getAssessmentResultServer(assessmentId: string) {
   }
 
   if (!level && assessment.education_level) {
-    const dbLevel = assessment.education_level as EducationLevel;
-    if (dbLevel && ["TK", "SD", "SMP", "SMA", "SMK"].includes(dbLevel)) {
+    const dbLevel = String(assessment.education_level).toUpperCase().trim() as EducationLevel;
+    if (["TK", "SD", "SMP", "SMA", "SMK"].includes(dbLevel)) {
       level = dbLevel;
     }
+  }
+
+  if (!level && assessment.ai_prompt) {
+    const promptStr = String(assessment.ai_prompt);
+    if (promptStr.includes("Sekolah Menengah Kejuruan (SMK)") || promptStr.includes("Jenjang: SMK")) level = "SMK";
+    else if (promptStr.includes("Sekolah Menengah Atas (SMA)") || promptStr.includes("Jenjang: SMA")) level = "SMA";
+    else if (promptStr.includes("Sekolah Menengah Pertama (SMP)") || promptStr.includes("Jenjang: SMP")) level = "SMP";
+    else if (promptStr.includes("Sekolah Dasar (SD)") || promptStr.includes("Jenjang: SD")) level = "SD";
+    else if (promptStr.includes("TK / PAUD") || promptStr.includes("Jenjang: TK")) level = "TK";
+  }
+
+  if (!level && assessment.assessment_title) {
+    const titleStr = String(assessment.assessment_title);
+    if (titleStr.includes("SMK")) level = "SMK";
+    else if (titleStr.includes("SMA")) level = "SMA";
+    else if (titleStr.includes("SMP")) level = "SMP";
+    else if (titleStr.includes("SD")) level = "SD";
+    else if (titleStr.includes("TK")) level = "TK";
   }
 
   if (!level) {
