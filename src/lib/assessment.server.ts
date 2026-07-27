@@ -26,7 +26,6 @@ interface CachedAssessment {
   status: string;
 }
 
-// In-memory cache for ultra-fast and RLS-resilient assessment resolution
 const inMemoryAssessmentCache = new Map<string, CachedAssessment>();
 
 function isUUID(str: string) {
@@ -165,7 +164,7 @@ const LEVEL_PROFILES: Record<EducationLevel, {
       { kategori: "Kemandirian & Masa Depan", aktivitas: "Beri ruang otonomi penuh dalam pengambilan keputusan hidup dan pengelolaan keuangan pribadi." }
     ],
     rekomendasi_akademik: (name) => `Fasilitasi latihan soal analitis tingkat lanjut, ikuti tryout PTN/PTS secara konsisten, dan tingkatkan keterampilan komunikasi publik serta riset literatur mandiri.`,
-    kesimpulan: (c, p) => `Kedewasaan dan kesiapan akademik ananda ${c} dalam menghadapi Perguruan Tinggi & Dunia Karier sudah sangat optimal. Dukungan dan doa dari Ibu/Bapak ${p} akan mengantarkannya mencapai cita-cita besarnya.`
+    kesimpulan: (c, p) => `Kedewasaan dan kesiapan akademik ananda ${c} dalam menghadapi Perguruan Tinggi & Dunia Karier sudah sangat optimal. Dukungan dan doa dari Ibu/Bapak ${p} akan mengantarkannya meraih cita-cita besarnya.`
   },
 
   SMK: {
@@ -310,9 +309,13 @@ export async function submitAndAnalyze(data: SubmitInput) {
     throw new Error("Silakan lengkapi seluruh pertanyaan sebelum mengirim assessment.");
   }
 
-  // 1. Save / Upsert Parent in Supabase
+  // ==========================================
+  // 1. DATABASE OPERASI: INSERT / UPSERT PARENTS
+  // ==========================================
   let parent: any = null;
-  const { data: pExisting } = await supabaseAdmin
+  console.log("[DB:INSERT:PARENTS]", "Saving parent payload:", { name: parentName, whatsapp: data.parent.whatsapp.trim() });
+  
+  const { data: pExisting, error: pExistErr } = await supabaseAdmin
     .from("parents")
     .select("*")
     .eq("whatsapp", data.parent.whatsapp.trim())
@@ -320,10 +323,12 @@ export async function submitAndAnalyze(data: SubmitInput) {
 
   if (pExisting) {
     parent = pExisting;
-    await supabaseAdmin
+    console.log("[DB:UPSERT:PARENTS]", "Existing parent found:", parent.id);
+    const { error: pUpErr } = await supabaseAdmin
       .from("parents")
       .update({ name: parentName })
       .eq("id", parent.id);
+    if (pUpErr) console.warn("[DB:WARN:PARENTS_UPDATE]", pUpErr.message);
   } else {
     const { data: pInserted, error: pErr } = await supabaseAdmin
       .from("parents")
@@ -331,17 +336,25 @@ export async function submitAndAnalyze(data: SubmitInput) {
       .select()
       .single();
 
+    console.log("[DB:INSERT:PARENTS_RESULT]", { data: pInserted, error: pErr?.message });
+
     if (pErr || !pInserted) {
-      const pId = crypto.randomUUID();
-      await supabaseAdmin.from("parents").insert({ id: pId, name: parentName, whatsapp: data.parent.whatsapp.trim() });
-      parent = { id: pId, name: parentName, whatsapp: data.parent.whatsapp.trim() };
-    } else {
-      parent = pInserted;
+      console.error("[DB:ERROR:PARENTS]", pErr);
+      throw new Error("Gagal menyimpan data orang tua ke database Supabase: " + (pErr?.message || "Insert parents gagal"));
     }
+    parent = pInserted;
   }
 
-  // 2. Insert child
-  let child: any = null;
+  // ==========================================
+  // 2. DATABASE OPERASI: INSERT CHILDREN
+  // ==========================================
+  console.log("[DB:INSERT:CHILDREN]", "Saving child payload:", {
+    parent_id: parent.id,
+    name: data.child.name.trim(),
+    gender: data.child.gender || "L",
+    birth_date: data.child.birth_date || "2020-01-01",
+  });
+
   const { data: cInserted, error: cErr } = await supabaseAdmin
     .from("children")
     .insert({
@@ -355,26 +368,27 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .select()
     .single();
 
+  console.log("[DB:INSERT:CHILDREN_RESULT]", { data: cInserted, error: cErr?.message });
+
   if (cErr || !cInserted) {
-    const cId = crypto.randomUUID();
-    await supabaseAdmin.from("children").insert({
-      id: cId,
-      parent_id: parent.id,
-      name: data.child.name.trim(),
-      gender: data.child.gender || "L",
-      birth_date: data.child.birth_date || "2020-01-01",
-      school: data.child.school || null,
-      class_name: data.child.class_name || null,
-    });
-    child = { id: cId, parent_id: parent.id, name: data.child.name.trim() };
-  } else {
-    child = cInserted;
+    console.error("[DB:ERROR:CHILDREN]", cErr);
+    throw new Error("Gagal menyimpan data anak ke database Supabase: " + (cErr?.message || "Insert children gagal"));
   }
+  const child = cInserted;
 
-  // 3. STAGE 2: DATABASE INSERT - Create assessment record with explicit education_level
-  let assessment: any = null;
+  // ==========================================
+  // 3. DATABASE OPERASI: INSERT ASSESSMENTS
+  // ==========================================
   const assTitle = assessmentContent.reportTitle;
+  console.log("[DB:INSERT:ASSESSMENTS]", "Saving assessment payload:", {
+    parent_id: parent.id,
+    child_id: child.id,
+    education_level: submitLevel,
+    assessment_title: assTitle,
+    status: "analyzing",
+  });
 
+  let assessment: any = null;
   const { data: aData, error: aErr } = await supabaseAdmin
     .from("assessments")
     .insert({
@@ -387,7 +401,10 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .select()
     .single();
 
+  console.log("[DB:INSERT:ASSESSMENTS_RESULT]", { data: aData, error: aErr?.message });
+
   if (aErr || !aData) {
+    console.warn("[DB:WARN:ASSESSMENTS_FULL_FAIL] Retrying with minimal payload:", aErr?.message);
     const { data: aFallback, error: aFallbackErr } = await supabaseAdmin
       .from("assessments")
       .insert({
@@ -399,35 +416,37 @@ export async function submitAndAnalyze(data: SubmitInput) {
       .select()
       .single();
 
+    console.log("[DB:INSERT:ASSESSMENTS_FALLBACK_RESULT]", { data: aFallback, error: aFallbackErr?.message });
+
     if (aFallbackErr || !aFallback) {
-      const assId = crypto.randomUUID();
-      await supabaseAdmin.from("assessments").insert({
-        id: assId,
-        parent_id: parent.id,
-        child_id: child.id,
-        education_level: submitLevel,
-        status: "analyzing",
-      });
-      assessment = { id: assId, parent_id: parent.id, child_id: child.id, education_level: submitLevel, assessment_title: assTitle, status: "analyzing" };
-    } else {
-      assessment = { ...aFallback, education_level: submitLevel, assessment_title: assTitle };
+      console.error("[DB:ERROR:ASSESSMENTS]", aFallbackErr || aErr);
+      throw new Error("Gagal menyimpan data asesmen ke database Supabase: " + (aFallbackErr?.message || aErr?.message || "Insert assessments gagal"));
     }
+    assessment = aFallback;
   } else {
     assessment = aData;
   }
 
-  // SINGLE SOURCE OF TRUTH RE-FETCH DIRECTLY FROM DATABASE:
-  const { data: dbAssessmentRecord } = await supabaseAdmin
+  // ==========================================
+  // SINGLE SOURCE OF TRUTH: RE-FETCH ASSESSMENT
+  // ==========================================
+  const { data: dbAssessmentRecord, error: dbFetchErr } = await supabaseAdmin
     .from("assessments")
     .select("*")
     .eq("id", assessment.id)
     .maybeSingle();
 
-  // Extract education level strictly from the database record!
-  const dbEducationLevel: EducationLevel = getEducationLevel(dbAssessmentRecord || assessment);
+  if (dbFetchErr || !dbAssessmentRecord) {
+    console.error("[DB:ERROR:ASSESSMENTS_FETCH]", dbFetchErr);
+    throw new Error("Gagal memverifikasi record asesmen di database Supabase setelah INSERT.");
+  }
+
+  const dbEducationLevel: EducationLevel = getEducationLevel(dbAssessmentRecord);
   console.log("[STAGE: DATABASE_INSERT]", "Education Level Database:", dbEducationLevel);
 
-  // 4 & 5. Fetch DB questions & save answers
+  // ==========================================
+  // 4. DATABASE OPERASI: INSERT ASSESSMENT_ANSWERS
+  // ==========================================
   const dbQuestions = await getOrSeedQuestionsForLevel(dbEducationLevel);
   const answerRows: Array<{ assessment_id: string; question_id: string; score: number }> = [];
   const answersFormattedText: string[] = [];
@@ -466,16 +485,21 @@ export async function submitAndAnalyze(data: SubmitInput) {
   });
 
   if (answerRows.length > 0) {
-    try {
-      await supabaseAdmin.from("assessment_answers").insert(answerRows);
-    } catch (ansErr: any) {
-      console.warn("[ANSWERS_INSERT_WARN]", ansErr?.message);
+    console.log("[DB:INSERT:ANSWERS]", "Saving answer rows:", answerRows.length);
+    const { data: ansInserted, error: ansErr } = await supabaseAdmin.from("assessment_answers").insert(answerRows).select();
+    console.log("[DB:INSERT:ANSWERS_RESULT]", { count: ansInserted?.length, error: ansErr?.message });
+    if (ansErr) {
+      console.error("[DB:ERROR:ANSWERS]", ansErr);
+      throw new Error("Gagal menyimpan jawaban asesmen ke database Supabase: " + ansErr.message);
     }
   }
 
   const answersText = answersFormattedText.join("\n");
 
-  // STAGE 3: PROMPT BUILD - Fetch active prompt for dbEducationLevel
+  // ==========================================
+  // STAGE 3: PROMPT BUILD & CALL AI CLIENT
+  // (Dijalankan HANYA setelah seluruh 4 INSERT DB Berhasil!)
+  // ==========================================
   console.log("[STAGE: PROMPT_BUILD]", "Education Level Prompt:", dbEducationLevel);
 
   let activePrompt: any = null;
@@ -587,7 +611,9 @@ export async function submitAndAnalyze(data: SubmitInput) {
     rawText = JSON.stringify(parsedResult);
   }
 
-  // STAGE 4: AI RESULT - Save and log AI result
+  // ==========================================
+  // STAGE 4: DATABASE OPERASI: INSERT AI_RESULTS & UPDATE ASSESSMENTS
+  // ==========================================
   console.log("[STAGE: AI_RESULT]", "Education Level Result:", dbEducationLevel);
 
   parsedResult = {
@@ -613,7 +639,6 @@ export async function submitAndAnalyze(data: SubmitInput) {
       .replace(/anak usia dini/gi, `peserta didik ${levelContentObj.shortName}`);
   }
 
-  // SAVE TO IN-MEMORY CACHE WITH SINGLE SOURCE OF TRUTH LEVEL
   inMemoryAssessmentCache.set(assessment.id, {
     assessment_id: assessment.id,
     education_level: dbEducationLevel,
@@ -624,52 +649,58 @@ export async function submitAndAnalyze(data: SubmitInput) {
     status: "analyzed",
   });
 
-  // Save AI result to ai_results
-  try {
-    await supabaseAdmin.from("ai_results").insert({
-      assessment_id: assessment.id,
-      content: parsedResult,
-      raw_text: rawText,
-      model: usedModel,
-    });
-  } catch (aiErr: any) {
-    console.warn("ai_results insert warning:", aiErr?.message);
+  // 5. INSERT AI_RESULTS TO DATABASE
+  console.log("[DB:INSERT:AI_RESULTS]", "Saving ai_results payload for assessment:", assessment.id);
+  const { data: aiResInserted, error: aiResErr } = await supabaseAdmin.from("ai_results").insert({
+    assessment_id: assessment.id,
+    content: parsedResult,
+    raw_text: rawText,
+    model: usedModel,
+  }).select().single();
+
+  console.log("[DB:INSERT:AI_RESULTS_RESULT]", { data: aiResInserted, error: aiResErr?.message });
+  if (aiResErr) {
+    console.error("[DB:ERROR:AI_RESULTS]", aiResErr);
   }
 
-  // UPDATE assessments with status analyzed and explicit dbEducationLevel
-  try {
-    const updatePayload: any = {
-      status: "analyzed",
-      education_level: dbEducationLevel,
-      assessment_title: levelContentObj.reportTitle,
-      ai_prompt: filledPrompt,
-      ai_result: parsedResult,
-      updated_at: new Date().toISOString(),
-    };
-    if (activePrompt?.id) {
-      updatePayload.prompt_id = activePrompt.id;
-    }
+  // 6. UPDATE ASSESSMENTS STATUS TO ANALYZED IN DATABASE
+  console.log("[DB:UPDATE:ASSESSMENTS]", "Updating assessment status analyzed:", { id: assessment.id, education_level: dbEducationLevel });
+  const updatePayload: any = {
+    status: "analyzed",
+    education_level: dbEducationLevel,
+    assessment_title: levelContentObj.reportTitle,
+    ai_prompt: filledPrompt,
+    ai_result: parsedResult,
+    updated_at: new Date().toISOString(),
+  };
+  if (activePrompt?.id) {
+    updatePayload.prompt_id = activePrompt.id;
+  }
 
-    const { error: upErr } = await supabaseAdmin
+  const { data: upData, error: upErr } = await supabaseAdmin
+    .from("assessments")
+    .update(updatePayload)
+    .eq("id", assessment.id)
+    .select()
+    .single();
+
+  console.log("[DB:UPDATE:ASSESSMENTS_RESULT]", { data: upData, error: upErr?.message });
+
+  if (upErr) {
+    console.warn("[DB:WARN:UPDATE_FULL_FAIL] Retrying status & level update:", upErr.message);
+    const { data: upData2, error: upErr2 } = await supabaseAdmin
       .from("assessments")
-      .update(updatePayload)
-      .eq("id", assessment.id);
+      .update({ status: "analyzed", education_level: dbEducationLevel, updated_at: new Date().toISOString() })
+      .eq("id", assessment.id)
+      .select()
+      .single();
 
-    if (upErr) {
-      const { error: upErr2 } = await supabaseAdmin
-        .from("assessments")
-        .update({ status: "analyzed", education_level: dbEducationLevel, updated_at: new Date().toISOString() })
-        .eq("id", assessment.id);
+    console.log("[DB:UPDATE:ASSESSMENTS_RETRY_RESULT]", { data: upData2, error: upErr2?.message });
 
-      if (upErr2) {
-        await supabaseAdmin
-          .from("assessments")
-          .update({ status: "analyzed", updated_at: new Date().toISOString() })
-          .eq("id", assessment.id);
-      }
+    if (upErr2) {
+      console.error("[DB:ERROR:UPDATE_ASSESSMENTS]", upErr2);
+      throw new Error("Gagal meng-update status asesmen ke database Supabase: " + upErr2.message);
     }
-  } catch (upErr: any) {
-    console.warn("assessment status update warning:", upErr?.message);
   }
 
   return { assessment_id: assessment.id, status: "analyzed" as const };
@@ -678,11 +709,81 @@ export async function submitAndAnalyze(data: SubmitInput) {
 export async function getAssessmentResultServer(assessmentId: string) {
   if (!assessmentId) return null;
 
-  // 1. Check in-memory cache first
+  // 1. Fetch assessment record directly from database first to guarantee fresh DB read
+  const { data: assessment, error: aErr } = await supabaseAdmin
+    .from("assessments")
+    .select("*")
+    .eq("id", assessmentId)
+    .maybeSingle();
+
+  if (aErr) console.warn("[getAssessmentResultServer] DB fetch warning:", aErr.message);
+
+  if (assessment) {
+    const level = getEducationLevel(assessment);
+    console.log("[STAGE: VIEW_RENDER]", "Education Level View:", level);
+
+    const { data: aiRes } = await supabaseAdmin
+      .from("ai_results")
+      .select("*")
+      .eq("assessment_id", assessmentId)
+      .maybeSingle();
+
+    const [{ data: child }, { data: parent }] = await Promise.all([
+      assessment.child_id
+        ? supabaseAdmin.from("children").select("*").eq("id", assessment.child_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      assessment.parent_id
+        ? supabaseAdmin.from("parents").select("*").eq("id", assessment.parent_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    let content = (assessment.ai_result || aiRes?.content) as any;
+    const assessmentContent = getAssessmentContent(level);
+
+    if (!content || typeof content !== "object" || !content.ringkasan) {
+      content = generateFallbackResult(child?.name || "Anak", parent?.name || "Orang Tua", 4.0, level);
+    }
+
+    content = {
+      ...content,
+      education_level: level,
+      shortName: level,
+      badge: assessmentContent.badge,
+      title: assessmentContent.title,
+      description: assessmentContent.description,
+      summaryTitle: assessmentContent.summaryTitle,
+      introText: assessmentContent.introText,
+      reportTitle: assessmentContent.reportTitle,
+      metadataTitle: assessmentContent.metadataTitle,
+      metadataDescription: assessmentContent.metadataDescription,
+      fullName: assessmentContent.fullName,
+      sections: assessmentContent.sections,
+    };
+
+    if (level !== "TK" && content.ringkasan) {
+      content.ringkasan = content.ringkasan
+        .replace(/perkembangan anak usia dini \(TK \/ PAUD\)/gi, `karakter dan potensi akademik ${assessmentContent.fullName}`)
+        .replace(/perkembangan anak usia dini/gi, `potensi dan kebiasaan belajar ${assessmentContent.fullName}`)
+        .replace(/anak usia dini/gi, `peserta didik ${assessmentContent.shortName}`);
+    }
+
+    return {
+      assessment_id: assessmentId,
+      status: "analyzed",
+      education_level: level,
+      assessment_title: assessmentContent.reportTitle,
+      child_name: child?.name || "Anak",
+      parent_name: parent?.name || "Orang Tua",
+      created_at: assessment.created_at || new Date().toISOString(),
+      content,
+    };
+  }
+
+  // 2. Fallback to in-memory cache if DB query returned null during serverless propagation
   const cached = inMemoryAssessmentCache.get(assessmentId);
   if (cached) {
     const level = getEducationLevel(cached.education_level);
-    console.log("[STAGE: VIEW_RENDER]", "Education Level View:", level);
+    console.log("[STAGE: VIEW_RENDER_CACHE]", "Education Level View Cache:", level);
 
     const assessmentContent = getAssessmentContent(level);
     const content = {
@@ -713,73 +814,7 @@ export async function getAssessmentResultServer(assessmentId: string) {
     };
   }
 
-  // 2. Fetch assessment record directly from database
-  const { data: assessment } = await supabaseAdmin
-    .from("assessments")
-    .select("*")
-    .eq("id", assessmentId)
-    .maybeSingle();
-
-  if (!assessment) return null;
-
-  const level = getEducationLevel(assessment);
-  console.log("[STAGE: VIEW_RENDER]", "Education Level View:", level);
-
-  const { data: aiRes } = await supabaseAdmin
-    .from("ai_results")
-    .select("*")
-    .eq("assessment_id", assessmentId)
-    .maybeSingle();
-
-  const [{ data: child }, { data: parent }] = await Promise.all([
-    assessment.child_id
-      ? supabaseAdmin.from("children").select("*").eq("id", assessment.child_id).maybeSingle()
-      : Promise.resolve({ data: null }),
-    assessment.parent_id
-      ? supabaseAdmin.from("parents").select("*").eq("id", assessment.parent_id).maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
-
-  let content = (assessment.ai_result || aiRes?.content) as any;
-  const assessmentContent = getAssessmentContent(level);
-
-  if (!content || typeof content !== "object" || !content.ringkasan) {
-    content = generateFallbackResult(child?.name || "Anak", parent?.name || "Orang Tua", 4.0, level);
-  }
-
-  content = {
-    ...content,
-    education_level: level,
-    shortName: level,
-    badge: assessmentContent.badge,
-    title: assessmentContent.title,
-    description: assessmentContent.description,
-    summaryTitle: assessmentContent.summaryTitle,
-    introText: assessmentContent.introText,
-    reportTitle: assessmentContent.reportTitle,
-    metadataTitle: assessmentContent.metadataTitle,
-    metadataDescription: assessmentContent.metadataDescription,
-    fullName: assessmentContent.fullName,
-    sections: assessmentContent.sections,
-  };
-
-  if (level !== "TK" && content.ringkasan) {
-    content.ringkasan = content.ringkasan
-      .replace(/perkembangan anak usia dini \(TK \/ PAUD\)/gi, `karakter dan potensi akademik ${assessmentContent.fullName}`)
-      .replace(/perkembangan anak usia dini/gi, `potensi dan kebiasaan belajar ${assessmentContent.fullName}`)
-      .replace(/anak usia dini/gi, `peserta didik ${assessmentContent.shortName}`);
-  }
-
-  return {
-    assessment_id: assessmentId,
-    status: "analyzed",
-    education_level: level,
-    assessment_title: assessmentContent.reportTitle,
-    child_name: child?.name || "Anak",
-    parent_name: parent?.name || "Orang Tua",
-    created_at: assessment.created_at || new Date().toISOString(),
-    content,
-  };
+  return null;
 }
 
 export async function runTestPrompt() {

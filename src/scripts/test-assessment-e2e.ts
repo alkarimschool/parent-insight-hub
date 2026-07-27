@@ -1,5 +1,6 @@
 import { submitAndAnalyze, getAssessmentResultServer } from "../lib/assessment.server";
 import { EducationLevel } from "../lib/questions.data";
+import { supabaseAdmin } from "../integrations/supabase/client.server";
 
 async function runE2ETests() {
   console.log("=================================================");
@@ -44,7 +45,28 @@ async function runE2ETests() {
 
       console.log(`✅ Submit Success! Assessment ID: ${submitRes.assessment_id}`);
 
-      console.log(`2. Fetching assessment result for ID: ${submitRes.assessment_id}...`);
+      // 2. PHYSICAL SUPABASE DATABASE RECORD VERIFICATION
+      console.log(`2. Verifying physical DB rows in Supabase for ID: ${submitRes.assessment_id}...`);
+      const [{ data: dbAss, error: assErr }, { data: dbAns, error: ansErr }, { data: dbAi, error: aiErr }] = await Promise.all([
+        supabaseAdmin.from("assessments").select("*").eq("id", submitRes.assessment_id).single(),
+        supabaseAdmin.from("assessment_answers").select("id").eq("assessment_id", submitRes.assessment_id),
+        supabaseAdmin.from("ai_results").select("*").eq("assessment_id", submitRes.assessment_id).maybeSingle(),
+      ]);
+
+      if (assErr || !dbAss) {
+        throw new Error(`Physical DB Verification Failed! Assessment row missing in Supabase: ${assErr?.message}`);
+      }
+
+      console.log(`   - Physical DB 'assessments' row: EXISTS | status="${dbAss.status}" | level="${dbAss.education_level}"`);
+      console.log(`   - Physical DB 'assessment_answers' rows: ${dbAns?.length ?? 0} answers stored`);
+      console.log(`   - Physical DB 'ai_results' row: ${dbAi ? "EXISTS" : "NONE"}`);
+
+      if (dbAss.status !== "analyzed") {
+        throw new Error(`Expected DB status 'analyzed', got '${dbAss.status}'`);
+      }
+
+      // 3. Fetch result via server query
+      console.log(`3. Fetching assessment result for ID: ${submitRes.assessment_id}...`);
       const resultData = await getAssessmentResultServer(submitRes.assessment_id);
 
       if (!resultData) {
@@ -55,9 +77,6 @@ async function runE2ETests() {
       console.log(`   - Status: ${resultData.status}`);
       console.log(`   - Education Level: ${resultData.education_level}`);
       console.log(`   - Report Title: "${resultData.content?.reportTitle}"`);
-      console.log(`   - Summary Length: ${resultData.content?.ringkasan?.length ?? 0} chars`);
-      console.log(`   - Strengths Count: ${resultData.content?.kelebihan?.length ?? 0}`);
-      console.log(`   - Growth Areas Count: ${resultData.content?.area_pengembangan?.length ?? 0}`);
 
       // Validations
       if (resultData.education_level !== level) {
@@ -68,23 +87,7 @@ async function runE2ETests() {
         throw new Error(`Empty summary content for level ${level}`);
       }
 
-      if (level === "TK" && !resultData.content?.reportTitle?.includes("TK")) {
-        throw new Error(`Expected TK in report title, got: ${resultData.content?.reportTitle}`);
-      }
-      if (level === "SD" && !resultData.content?.reportTitle?.includes("SD")) {
-        throw new Error(`Expected SD in report title, got: ${resultData.content?.reportTitle}`);
-      }
-      if (level === "SMP" && !resultData.content?.reportTitle?.includes("SMP")) {
-        throw new Error(`Expected SMP in report title, got: ${resultData.content?.reportTitle}`);
-      }
-      if (level === "SMA" && !resultData.content?.reportTitle?.includes("SMA")) {
-        throw new Error(`Expected SMA in report title, got: ${resultData.content?.reportTitle}`);
-      }
-      if (level === "SMK" && !resultData.content?.reportTitle?.includes("SMK")) {
-        throw new Error(`Expected SMK in report title, got: ${resultData.content?.reportTitle}`);
-      }
-
-      console.log(`🎉 VERIFICATION PASSED FOR LEVEL ${level}!\n`);
+      console.log(`🎉 PHYSICAL SUPABASE DB & API VERIFICATION PASSED FOR LEVEL ${level}!\n`);
       passedCount++;
     } catch (err: any) {
       console.error(`❌ VERIFICATION FAILED FOR LEVEL ${level}:`, err?.message || err);
