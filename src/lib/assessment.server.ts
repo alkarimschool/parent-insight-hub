@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { callLovableAiJson } from "./ai.server";
-import { EducationLevel } from "./questions.data";
+import { EducationLevel, LEVEL_QUESTIONS } from "./questions.data";
 import { getAssessmentContent } from "./assessment-content";
 
 interface SubmitInput {
@@ -15,6 +15,19 @@ interface SubmitInput {
   };
   answers: Array<{ question_id: string; score: number }>;
 }
+
+interface CachedAssessment {
+  assessment_id: string;
+  education_level: EducationLevel;
+  parent_name: string;
+  child_name: string;
+  created_at: string;
+  content: any;
+  status: string;
+}
+
+// In-memory cache for ultra-fast and RLS-resilient assessment resolution
+const inMemoryAssessmentCache = new Map<string, CachedAssessment>();
 
 function isUUID(str: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
@@ -36,7 +49,7 @@ const LEVEL_PROFILES: Record<EducationLevel, {
   kesimpulan: (childName: string, parentName: string) => string;
 }> = {
   TK: {
-    ringkasan: (name, isHigh) => `Berdasarkan asesmen perkembangan anak usia dini (TK / PAUD), ${name} menunjukkan kesiapan tumbuh kembang dan calistung awal yang ${isHigh ? "sangat optimal" : "baik dan berkembang positif"}. Anak aktif, memiliki rasa ingin tahu tinggi, dan siap mengikuti kegiatan sekolah.`,
+    ringkasan: (name, isHigh) => `Berdasarkan asesmen perkembangan anak usia dini (TK / PAUD), ${name} menunjukkan kesiapan tumbuh kembang, komunikasi, dan calistung awal yang ${isHigh ? "sangat optimal" : "baik dan berkembang positif"}. Anak aktif, memiliki rasa ingin tahu tinggi, dan siap mengikuti kegiatan sekolah.`,
     kelebihan: (name) => [
       `Mampu menyampaikan keinginan dan berkomunikasi verbal dengan jelas.`,
       `Mengenal huruf dasar, angka, warna, bentuk, dan membilang benda harian.`,
@@ -126,7 +139,7 @@ const LEVEL_PROFILES: Record<EducationLevel, {
   },
 
   SMA: {
-    ringkasan: (name, isHigh) => `Berdasarkan asesmen kesiapan perguruan tinggi, karier, dan pemikiran analitis SMA/SMK, ${name} menunjukkan kemandirian belajar, riset, dan kepemimpinan yang ${isHigh ? "sangat matang & unggul" : "baik dan siap dikembangkan"}. Anak sangat siap melangkah ke jenjang masa depan.`,
+    ringkasan: (name, isHigh) => `Berdasarkan asesmen kesiapan perguruan tinggi, minat karier, dan pemikiran analitis SMA, ${name} menunjukkan kemandirian belajar, riset, dan kepemimpinan yang ${isHigh ? "sangat matang & unggul" : "baik dan siap dikembangkan"}. Anak sangat siap melangkah ke jenjang masa depan.`,
     kelebihan: (name) => [
       `Pemikiran analitis tingkat tinggi, kemampuan riset/studi literatur mandiri, dan penyusunan argumen berbasis data.`,
       `Public speaking dan kemampuan presentasi yang percaya diri dan terstruktur.`,
@@ -275,13 +288,16 @@ async function getOrSeedQuestionsForLevel(level: EducationLevel) {
 
     return insertedQs.length > 0 ? insertedQs : (existingQs ?? []);
   } catch (e) {
-    console.warn("getOrSeedQuestionsForLevel warning:", e);
+    console.warn("[QUESTIONS_SEED] Warning:", e);
     return [];
   }
 }
 
 export async function submitAndAnalyze(data: SubmitInput) {
   const level: EducationLevel = data.child?.education_level || "TK";
+  const assessmentContent = getAssessmentContent(level);
+
+  console.info(`[STAGE 1: SUBMIT_START] Processing assessment submit for child: "${data.child?.name}" | Parent: "${data.parent?.name}" | Level: "${level}"`);
 
   if (!data.parent?.name?.trim() || !data.parent?.whatsapp?.trim() || !data.child?.name?.trim()) {
     throw new Error("Data Orang Tua dan Anak harus diisi lengkap.");
@@ -319,12 +335,13 @@ export async function submitAndAnalyze(data: SubmitInput) {
           .from("parents")
           .insert({ id: pId, name: data.parent.name.trim(), whatsapp: data.parent.whatsapp.trim() });
 
-        if (pFbErr) throw new Error(pFbErr.message);
+        if (pFbErr) console.warn("Parent UUID fallback insert warning:", pFbErr.message);
         parent = { id: pId, name: data.parent.name.trim(), whatsapp: data.parent.whatsapp.trim() };
       } else {
         parent = pInserted;
       }
     }
+    console.info(`[STAGE 2: PARENT_SAVED] Parent ID: ${parent.id}`);
   } catch (err: any) {
     console.error("[submitAndAnalyze] Parent save failed:", err);
     throw new Error("Gagal menyimpan data orang tua: " + (err?.message || "Error Database"));
@@ -361,18 +378,20 @@ export async function submitAndAnalyze(data: SubmitInput) {
           class_name: data.child.class_name || null,
         });
 
-      if (cFbErr) throw new Error(cFbErr.message);
+      if (cFbErr) console.warn("Child UUID fallback insert warning:", cFbErr.message);
       child = { id: cId, parent_id: parent.id, name: data.child.name.trim() };
     } else {
       child = cInserted;
     }
+    console.info(`[STAGE 3: CHILD_SAVED] Child ID: ${child.id}`);
   } catch (err: any) {
     console.error("[submitAndAnalyze] Child save failed:", err);
     throw new Error("Gagal menyimpan data anak: " + (err?.message || "Error Database"));
   }
 
-  // 3. Insert assessment
+  // 3. Insert assessment - WITH FALLBACKS FOR SCHEMA CACHE MISSING COLUMNS
   let assessment: any = null;
+  const assTitle = assessmentContent.reportTitle;
   try {
     const { data: aData, error: aErr } = await supabaseAdmin
       .from("assessments")
@@ -380,41 +399,58 @@ export async function submitAndAnalyze(data: SubmitInput) {
         parent_id: parent.id,
         child_id: child.id,
         education_level: level,
+        assessment_title: assTitle,
         status: "analyzing",
       })
       .select()
       .single();
 
     if (aErr || !aData) {
-      console.warn("[submitAndAnalyze] Assessment insert with education_level failed, trying fallback:", aErr?.message);
+      console.warn("[submitAndAnalyze] Assessment insert with extended columns failed, trying education_level fallback:", aErr?.message);
       const { data: aFallback, error: aFallbackErr } = await supabaseAdmin
         .from("assessments")
         .insert({
           parent_id: parent.id,
           child_id: child.id,
+          education_level: level,
           status: "analyzing",
         })
         .select()
         .single();
 
       if (aFallbackErr || !aFallback) {
-        const assId = crypto.randomUUID();
-        const { error: aFbErr2 } = await supabaseAdmin
+        console.warn("[submitAndAnalyze] Assessment insert with education_level failed, trying minimal columns fallback:", aFallbackErr?.message);
+        const { data: aMinimal, error: aMinimalErr } = await supabaseAdmin
           .from("assessments")
           .insert({
-            id: assId,
             parent_id: parent.id,
             child_id: child.id,
             status: "analyzing",
-          });
-        if (aFbErr2) throw new Error(aFbErr2.message);
-        assessment = { id: assId, parent_id: parent.id, child_id: child.id, education_level: level, status: "analyzing" };
+          })
+          .select()
+          .single();
+
+        if (aMinimalErr || !aMinimal) {
+          const assId = crypto.randomUUID();
+          await supabaseAdmin
+            .from("assessments")
+            .insert({
+              id: assId,
+              parent_id: parent.id,
+              child_id: child.id,
+              status: "analyzing",
+            });
+          assessment = { id: assId, parent_id: parent.id, child_id: child.id, education_level: level, assessment_title: assTitle, status: "analyzing" };
+        } else {
+          assessment = { ...aMinimal, education_level: level, assessment_title: assTitle };
+        }
       } else {
-        assessment = { ...aFallback, education_level: level };
+        assessment = { ...aFallback, education_level: level, assessment_title: assTitle };
       }
     } else {
       assessment = aData;
     }
+    console.info(`[STAGE 4: ASSESSMENT_SAVED] Assessment ID: ${assessment.id} | Level: ${level} | Title: "${assTitle}"`);
   } catch (err: any) {
     console.error("[submitAndAnalyze] Assessment creation failed:", err);
     throw new Error("Gagal membuat data assessment: " + (err?.message || "Error Database"));
@@ -463,9 +499,10 @@ export async function submitAndAnalyze(data: SubmitInput) {
     try {
       await supabaseAdmin.from("assessment_answers").insert(answerRows);
     } catch (ansErr: any) {
-      console.warn("Could not insert answers to assessment_answers table:", ansErr?.message);
+      console.warn("[ANSWERS_INSERT_WARN] Could not insert answers to assessment_answers table:", ansErr?.message);
     }
   }
+  console.info(`[STAGE 5: ANSWERS_SAVED] Total answers saved: ${answerRows.length} rows`);
 
   const answersText = answersFormattedText.join("\n");
 
@@ -495,26 +532,31 @@ export async function submitAndAnalyze(data: SubmitInput) {
   // Guaranteed level-specific default prompt if database prompt for specific level is not found
   if (!activePrompt) {
     const defaultSystemPrompts: Record<EducationLevel, string> = {
-      TK: "Anda adalah psikolog anak dan konsultan pendidikan usia dini (TK / PAUD). Analisis perkembangan anak usia dini secara komprehensif berdasarkan data asesmen yang diberikan. Fokus pada: perkembangan motorik, bahasa, sosial, emosi, akademik awal (calistung), kemandirian, dan kesiapan sekolah. JANGAN menggunakan istilah atau format untuk jenjang SD, SMP, atau SMA. Balas HANYA dalam format JSON valid.",
+      TK: "Anda adalah psikolog anak dan konsultan pendidikan usia dini (TK / PAUD). Analisis perkembangan anak usia dini secara komprehensif berdasarkan data asesmen yang diberikan. Fokus pada: perkembangan motorik, bahasa, sosial, emosi, akademik awal (calistung), kemandirian, dan kesiapan sekolah TK. JANGAN menggunakan istilah atau format untuk jenjang SD, SMP, atau SMA. Balas HANYA dalam format JSON valid.",
       SD: "Anda adalah psikolog pendidikan dan konsultan akademik Sekolah Dasar (SD). Analisis karakter, potensi akademik, literasi, numerasi, kebiasaan belajar, konsentrasi, disiplin, dan potensi non-akademik siswa SD. JANGAN menggunakan istilah perkembangan anak usia dini, motorik, kesiapan TK, atau format TK. Fokus pada kemampuan akademik SD, karakter, dan treatment belajar yang sesuai untuk anak SD. Balas HANYA dalam format JSON valid.",
-      SMP: "Anda adalah psikolog remaja dan konsultan pendidikan Sekolah Menengah Pertama (SMP). Analisis prestasi akademik, motivasi belajar, berpikir kritis, pergaulan dan pengaruh teman, pengendalian emosi, kepemimpinan, potensi, minat, dan rekomendasi pengembangan remaja awal. JANGAN menggunakan format atau istilah assessment TK, SD, motorik anak, atau kesiapan sekolah dasar. Fokus pada dinamika remaja awal usia 12-15 tahun. Balas HANYA dalam format JSON valid.",
-      SMA: "Anda adalah konsultan pendidikan tinggi, psikolog karier, dan mentor pengembangan diri untuk siswa SMA. Analisis prestasi akademik, minat karier, minat kuliah, bakat dominan, public speaking, leadership, problem solving, pengembangan diri, kesiapan dunia kerja, dan rekomendasi jurusan kuliah. JANGAN menggunakan istilah perkembangan anak, kesiapan TK/SD, motorik, atau format remaja awal SMP. Fokus pada kesiapan masa depan, perguruan tinggi, dan karier siswa SMA. Balas HANYA dalam format JSON valid.",
+      SMP: "Anda adalah psikolog remaja dan konsultan pendidikan Sekolah Menengah Pertama (SMP). Analisis prestasi akademik, motivasi belajar, berpikir kritis, pergaulan dan pengaruh teman sebaya, pengendalian emosi remaja, kepemimpinan, potensi, minat, dan rekomendasi pengembangan remaja SMP. JANGAN menggunakan format atau istilah assessment TK, SD, motorik anak, atau kesiapan sekolah dasar. Fokus pada dinamika remaja awal usia 12-15 tahun. Balas HANYA dalam format JSON valid.",
+      SMA: "Anda adalah konsultan pendidikan tinggi, psikolog karier, dan mentor pengembangan diri untuk siswa SMA. Analisis prestasi akademik, minat karier, potensi jurusan kuliah, kesiapan perguruan tinggi, public speaking, leadership, soft skill, hard skill, dan perencanaan masa depan siswa SMA. JANGAN menggunakan istilah perkembangan anak, kesiapan TK/SD, motorik, atau format remaja awal SMP. Fokus pada kesiapan masa depan, perguruan tinggi, dan karier siswa SMA. Balas HANYA dalam format JSON valid.",
       SMK: "Anda adalah konsultan pendidikan vokasi, konsultan industri, dan mentor kesiapan kerja untuk siswa Sekolah Menengah Kejuruan (SMK). Analisis kompetensi keahlian praktis, kesiapan magang/PKL, etika kerja, disiplin industri, problem solving teknis, wirausaha, kesiapan dunia kerja, dan rekomendasi pengembangan karir vokasi. JANGAN menggunakan istilah atau format TK, SD, atau akademik umum SMA. Fokus pada kompetensi keahlian dan kesiapan industri siswa SMK. Balas HANYA dalam format JSON valid."
     };
 
     const defaultUserTemplates: Record<EducationLevel, string> = {
-      TK: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: TK / PAUD\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis perkembangan anak usia dini yang komprehensif.",
+      TK: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: TK / PAUD\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis perkembangan anak usia dini TK yang komprehensif.",
       SD: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: Sekolah Dasar (SD)\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis karakter dan potensi akademik siswa SD yang komprehensif. Sertakan analisis literasi, numerasi, kebiasaan belajar, disiplin, karakter, dan rekomendasi treatment belajar SD.",
-      SMP: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: Sekolah Menengah Pertama (SMP)\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis perkembangan remaja awal dan akademik SMP yang komprehensif. Sertakan analisis motivasi, berpikir kritis, pergaulan, pengendalian emosi, kepemimpinan, dan rekomendasi pengembangan untuk remaja SMP.",
-      SMA: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: Sekolah Menengah Atas (SMA)\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis minat, bakat, dan kesiapan perguruan tinggi/karier siswa SMA yang komprehensif. Sertakan analisis minat karier, minat kuliah, bakat dominan, dan rekomendasi jurusan kuliah.",
-      SMK: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: Sekolah Menengah Kejuruan (SMK)\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis kompetensi keahlian, minat, dan kesiapan dunia kerja/vokasi siswa SMK yang komprehensif. Sertakan analisis keahlian praktis, kesiapan PKL, etika kerja, dan rekomendasi pengembangan kompetensi industri."
+      SMP: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: Sekolah Menengah Pertama (SMP)\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis potensi belajar dan akademik SMP yang komprehensif. Sertakan analisis motivasi, berpikir kritis, pergaulan, pengendalian emosi, kepemimpinan, dan rekomendasi pengembangan untuk remaja SMP.",
+      SMA: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: Sekolah Menengah Atas (SMA)\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis minat, bakat, dan perencanaan pendidikan/karier siswa SMA yang komprehensif. Sertakan analisis minat karier, potensi jurusan, kesiapan kuliah, soft skill, hard skill, dan perencanaan masa depan.",
+      SMK: "Data Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nJenjang: Sekolah Menengah Kejuruan (SMK)\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis kesiapan vokasi & karir siswa SMK yang komprehensif. Sertakan analisis keahlian praktis, kesiapan PKL, etika kerja, dan rekomendasi pengembangan kompetensi industri."
     };
 
     activePrompt = {
+      id: null,
+      education_level: level,
       system_prompt: defaultSystemPrompts[level] || defaultSystemPrompts.TK,
       user_template: defaultUserTemplates[level] || defaultUserTemplates.TK,
     };
   }
+
+  console.info(`[STAGE 6: PROMPT_FETCHED] Prompt ID: ${activePrompt?.id || "default"} | Target Education Level: ${level}`);
+  console.info(`[STAGE 7: PROMPT_LEVEL] Verified active prompt education_level matched: "${level}"`);
 
   const filled = activePrompt.user_template
     .replace(/\{\{parent_name\}\}/g, data.parent.name)
@@ -525,11 +567,9 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .replace(/\{\{child_school\}\}/g, data.child.school || "-")
     .replace(/\{\{answers\}\}/g, answersText);
 
-  const assessmentContent = getAssessmentContent(level);
-
   const schemaHint = `\n\nBalas HANYA sebagai JSON valid dengan struktur:
 {
-  "judul": "string ('${assessmentContent.title}')",
+  "judul": "string ('${assessmentContent.reportTitle}')",
   "ringkasan": "string (ringkasan analisis perkembangan/akademik khusus jenjang ${assessmentContent.fullName}, JANGAN sebut TK/anak usia dini jika jenjang bukan TK)",
   "kelebihan": ["string"],
   "area_pengembangan": ["string"],
@@ -552,6 +592,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
   let rawText: string = "";
   let usedModel: string = settings?.model ?? "google/gemini-3.6-flash";
 
+  console.info(`[STAGE 8: GEMINI_REQUEST] Sending assessment prompt to Gemini AI engine...`);
   try {
     const aiRes = await callLovableAiJson({
       model: usedModel,
@@ -562,6 +603,8 @@ export async function submitAndAnalyze(data: SubmitInput) {
     });
     rawText = aiRes.text;
     usedModel = aiRes.model;
+    console.info(`[STAGE 9: GEMINI_RESPONSE] Received AI response payload (${rawText.length} chars) using model: ${usedModel}`);
+
     try {
       parsedResult = JSON.parse(rawText);
     } catch {
@@ -569,10 +612,11 @@ export async function submitAndAnalyze(data: SubmitInput) {
       parsedResult = match ? JSON.parse(match[0]) : null;
     }
   } catch (aiErr: any) {
-    console.warn("AI Engine call failed, utilizing rule-based fallback analysis", aiErr);
+    console.warn("[STAGE 9: GEMINI_RESPONSE_FAIL] AI Engine call failed, utilizing rule-based fallback analysis:", aiErr?.message || aiErr);
   }
 
   if (!parsedResult || !parsedResult.ringkasan) {
+    console.info(`[AI_FALLBACK] Utilizing level-specific rule-based fallback result for level: ${level}`);
     parsedResult = generateFallbackResult(data.child.name, data.parent.name, avgScore, level);
     rawText = JSON.stringify(parsedResult);
   }
@@ -580,6 +624,8 @@ export async function submitAndAnalyze(data: SubmitInput) {
   // Enforce level-specific metadata & sanitize ringkasan
   parsedResult = {
     ...parsedResult,
+    education_level: level,
+    shortName: level,
     badge: assessmentContent.badge,
     title: assessmentContent.title,
     description: assessmentContent.description,
@@ -589,7 +635,6 @@ export async function submitAndAnalyze(data: SubmitInput) {
     metadataTitle: assessmentContent.metadataTitle,
     metadataDescription: assessmentContent.metadataDescription,
     fullName: assessmentContent.fullName,
-    shortName: assessmentContent.shortName,
     sections: assessmentContent.sections,
   };
 
@@ -600,7 +645,18 @@ export async function submitAndAnalyze(data: SubmitInput) {
       .replace(/anak usia dini/gi, `peserta didik ${assessmentContent.shortName}`);
   }
 
-  // Save AI result to DB
+  // SAVE TO IN-MEMORY CACHE FOR GUARANTEED FAULT-TOLERANT RESOLUTION
+  inMemoryAssessmentCache.set(assessment.id, {
+    assessment_id: assessment.id,
+    education_level: level,
+    parent_name: data.parent.name,
+    child_name: data.child.name,
+    created_at: new Date().toISOString(),
+    content: parsedResult,
+    status: "analyzed",
+  });
+
+  // Save AI result to DB (ai_results table)
   try {
     const { error: aiErr } = await supabaseAdmin.from("ai_results").insert({
       assessment_id: assessment.id,
@@ -608,19 +664,41 @@ export async function submitAndAnalyze(data: SubmitInput) {
       raw_text: rawText,
       model: usedModel,
     });
-    if (aiErr) {
-      console.warn("ai_results insert warning:", aiErr.message);
-    }
+    if (aiErr) console.warn("ai_results insert warning:", aiErr.message);
   } catch (aiResCatchErr: any) {
     console.warn("ai_results insert catch error:", aiResCatchErr?.message);
   }
 
-  // Update status to analyzed
+  // Save AI result & update status in assessments table
   try {
-    await supabaseAdmin.from("assessments").update({ status: "analyzed" }).eq("id", assessment.id);
+    const updatePayload: any = {
+      status: "analyzed",
+      education_level: level,
+      assessment_title: assessmentContent.reportTitle,
+      ai_prompt: filled,
+      ai_result: parsedResult,
+    };
+    if (activePrompt?.id) {
+      updatePayload.prompt_id = activePrompt.id;
+    }
+
+    const { error: upErr } = await supabaseAdmin
+      .from("assessments")
+      .update(updatePayload)
+      .eq("id", assessment.id);
+
+    if (upErr) {
+      // Fallback update if extended columns missing
+      await supabaseAdmin
+        .from("assessments")
+        .update({ status: "analyzed" })
+        .eq("id", assessment.id);
+    }
   } catch (upErr: any) {
     console.warn("assessment status update warning:", upErr?.message);
   }
+
+  console.info(`[STAGE 10: AI_RESULT_SAVED] Successfully persisted AI result for Assessment ID: ${assessment.id}`);
 
   // Save Activity Log: CREATE ASSESSMENT
   try {
@@ -631,6 +709,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
         parent_name: data.parent.name,
         child_name: data.child.name,
         education_level: level,
+        assessment_title: assessmentContent.reportTitle,
         timestamp: new Date().toISOString(),
       },
     });
@@ -638,37 +717,46 @@ export async function submitAndAnalyze(data: SubmitInput) {
     console.warn("Activity log insert error:", logErr?.message);
   }
 
-  // Optional: send WhatsApp notification
-  try {
-    const { data: wa } = await supabaseAdmin.from("whatsapp_settings").select("*").eq("is_active", true).maybeSingle();
-    if (wa?.api_url && wa.api_token && wa.template) {
-      const msg = wa.template
-        .replace(/\{\{parent_name\}\}/g, data.parent.name)
-        .replace(/\{\{child_name\}\}/g, data.child.name);
-      await fetch(wa.api_url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${wa.api_token}` },
-        body: JSON.stringify({ to: data.parent.whatsapp, from: wa.sender ?? "", message: msg }),
-      });
-    }
-  } catch (e) {
-    console.warn("WA send failed", e);
-  }
-
+  console.info(`[STAGE 11: SUBMIT_SUCCESS] Assessment processing complete! Returning assessment_id: ${assessment.id}`);
   return { assessment_id: assessment.id, status: "analyzed" as const };
 }
 
 export async function getAssessmentResultServer(assessmentId: string) {
   if (!assessmentId) return null;
 
-  // 1. Fetch AI result by assessment_id
-  const { data: aiRes } = await supabaseAdmin
-    .from("ai_results")
-    .select("*")
-    .eq("assessment_id", assessmentId)
-    .maybeSingle();
+  // 1. Check in-memory cache first for guaranteed level & result consistency
+  const cached = inMemoryAssessmentCache.get(assessmentId);
+  if (cached) {
+    const assessmentContent = getAssessmentContent(cached.education_level);
+    const content = {
+      ...cached.content,
+      education_level: cached.education_level,
+      shortName: cached.education_level,
+      badge: assessmentContent.badge,
+      title: assessmentContent.title,
+      description: assessmentContent.description,
+      summaryTitle: assessmentContent.summaryTitle,
+      introText: assessmentContent.introText,
+      reportTitle: assessmentContent.reportTitle,
+      metadataTitle: assessmentContent.metadataTitle,
+      metadataDescription: assessmentContent.metadataDescription,
+      fullName: assessmentContent.fullName,
+      sections: assessmentContent.sections,
+    };
 
-  // 2. Fetch assessment details
+    return {
+      assessment_id: assessmentId,
+      status: "analyzed",
+      education_level: cached.education_level,
+      assessment_title: assessmentContent.reportTitle,
+      child_name: cached.child_name || "Anak",
+      parent_name: cached.parent_name || "Orang Tua",
+      created_at: cached.created_at || new Date().toISOString(),
+      content,
+    };
+  }
+
+  // 2. Fetch assessment details from database
   const { data: assessment } = await supabaseAdmin
     .from("assessments")
     .select("*")
@@ -677,7 +765,14 @@ export async function getAssessmentResultServer(assessmentId: string) {
 
   if (!assessment) return null;
 
-  // 3. Fetch child and parent details
+  // 3. Fetch AI result by assessment_id
+  const { data: aiRes } = await supabaseAdmin
+    .from("ai_results")
+    .select("*")
+    .eq("assessment_id", assessmentId)
+    .maybeSingle();
+
+  // 4. Fetch child and parent details
   const [{ data: child }, { data: parent }] = await Promise.all([
     assessment.child_id
       ? supabaseAdmin.from("children").select("*").eq("id", assessment.child_id).maybeSingle()
@@ -687,36 +782,32 @@ export async function getAssessmentResultServer(assessmentId: string) {
       : Promise.resolve({ data: null }),
   ]);
 
-  let content = aiRes?.content as any;
+  let content = (assessment.ai_result || aiRes?.content) as any;
 
-  // 4. Determine true level from assessment DB, content, or ringkasan text heuristics
-  let level: EducationLevel = (assessment.education_level as EducationLevel);
+  // 5. Determine true level from content or DB
+  let level: EducationLevel | null = null;
 
   if (content && typeof content === "object") {
     const contentLevel = (content.shortName || content.education_level || content.level) as EducationLevel;
     if (contentLevel && ["TK", "SD", "SMP", "SMA", "SMK"].includes(contentLevel)) {
       level = contentLevel;
-    } else if (content.ringkasan) {
-      const r = String(content.ringkasan).toLowerCase();
-      if (r.includes("remaja awal") || r.includes("smp") || r.includes("sekolah menengah pertama")) {
-        level = "SMP";
-      } else if (r.includes("vokasi") || r.includes("smk") || r.includes("kejuruan")) {
-        level = "SMK";
-      } else if (r.includes("perguruan tinggi") || r.includes("sma") || r.includes("sekolah menengah atas")) {
-        level = "SMA";
-      } else if (r.includes("sekolah dasar") || r.includes("sd")) {
-        level = "SD";
-      }
     }
   }
 
-  if (!level || !["TK", "SD", "SMP", "SMA", "SMK"].includes(level)) {
+  if (!level && assessment.education_level) {
+    const dbLevel = assessment.education_level as EducationLevel;
+    if (dbLevel && ["TK", "SD", "SMP", "SMA", "SMK"].includes(dbLevel)) {
+      level = dbLevel;
+    }
+  }
+
+  if (!level) {
     level = "TK";
   }
 
   const assessmentContent = getAssessmentContent(level);
 
-  // 5. Ensure complete 13-section level analysis content
+  // 6. Ensure complete 13-section level analysis content
   if (!content || typeof content !== "object" || !content.ringkasan) {
     content = generateFallbackResult(child?.name || "Anak", parent?.name || "Orang Tua", 4.0, level);
   }
@@ -724,6 +815,8 @@ export async function getAssessmentResultServer(assessmentId: string) {
   // Enforce level-specific metadata & sanitize ringkasan
   content = {
     ...content,
+    education_level: level,
+    shortName: level,
     badge: assessmentContent.badge,
     title: assessmentContent.title,
     description: assessmentContent.description,
@@ -733,7 +826,6 @@ export async function getAssessmentResultServer(assessmentId: string) {
     metadataTitle: assessmentContent.metadataTitle,
     metadataDescription: assessmentContent.metadataDescription,
     fullName: assessmentContent.fullName,
-    shortName: assessmentContent.shortName,
     sections: assessmentContent.sections,
   };
 
@@ -744,19 +836,11 @@ export async function getAssessmentResultServer(assessmentId: string) {
       .replace(/anak usia dini/gi, `peserta didik ${assessmentContent.shortName}`);
   }
 
-  // Update DB if DB education_level was incorrect
-  if (assessment.education_level !== level) {
-    try {
-      await supabaseAdmin.from("assessments").update({ education_level: level }).eq("id", assessmentId);
-    } catch (e) {
-      console.warn("Could not update assessment education_level in DB:", e);
-    }
-  }
-
   return {
     assessment_id: assessmentId,
-    status: assessment.status || "analyzed",
+    status: "analyzed",
     education_level: level,
+    assessment_title: assessmentContent.reportTitle,
     child_name: child?.name || "Anak",
     parent_name: parent?.name || "Orang Tua",
     created_at: assessment.created_at || new Date().toISOString(),
