@@ -162,39 +162,98 @@ export async function updateHomepageSettingsServer(inputData: any) {
   }
 }
 
-export async function updatePromptServer(data: {
-  id?: string;
-  name: string;
-  education_level?: string;
-  system_prompt: string;
-  user_template: string;
-  is_active: boolean;
-}) {
-  const level = data.education_level || "TK";
-  if (data.id && data.id !== "default") {
-    const { error } = await supabaseAdmin
-      .from("ai_prompts")
-      .update({
-        name: data.name,
-        education_level: level,
-        system_prompt: data.system_prompt,
-        user_template: data.user_template,
-        is_active: data.is_active,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", data.id);
-    if (error) throw new Error(error.message);
-  } else {
-    const { error } = await supabaseAdmin.from("ai_prompts").insert({
-      name: data.name,
-      education_level: level,
-      system_prompt: data.system_prompt,
-      user_template: data.user_template,
-      is_active: data.is_active,
-    });
-    if (error) throw new Error(error.message);
+export async function updatePromptServer(inputData: any) {
+  try {
+    const data = inputData?.data ?? inputData;
+    if (!data || typeof data !== "object") {
+      throw new Error("Data prompt AI tidak valid.");
+    }
+
+    const level = String(data.education_level || "TK").toUpperCase();
+    const promptId = data.id;
+
+    console.info(`[updatePromptServer] Saving prompt for level ${level}, id: ${promptId}`);
+
+    // 1. If valid UUID ID, update existing record directly
+    if (promptId && promptId !== "default" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(promptId)) {
+      const { error: updateErr } = await supabaseAdmin
+        .from("ai_prompts")
+        .update({
+          name: data.name || `Prompt AI Jenjang ${level}`,
+          education_level: level,
+          system_prompt: data.system_prompt || "",
+          user_template: data.user_template || "",
+          is_active: data.is_active ?? true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", promptId);
+
+      if (updateErr) {
+        console.warn("[updatePromptServer] Update with education_level failed, attempting fallback update:", updateErr.message);
+        const { error: fbErr } = await supabaseAdmin
+          .from("ai_prompts")
+          .update({
+            name: data.name || `Prompt AI Jenjang ${level}`,
+            system_prompt: data.system_prompt || "",
+            user_template: data.user_template || "",
+            is_active: data.is_active ?? true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", promptId);
+        if (fbErr) throw new Error(fbErr.message);
+      }
+    } else {
+      // 2. Check if an active prompt for this education level already exists in database
+      const { data: existingForLevel } = await supabaseAdmin
+        .from("ai_prompts")
+        .select("id")
+        .eq("education_level", level)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingForLevel?.id) {
+        const { error: updateErr } = await supabaseAdmin
+          .from("ai_prompts")
+          .update({
+            name: data.name || `Prompt AI Jenjang ${level}`,
+            education_level: level,
+            system_prompt: data.system_prompt || "",
+            user_template: data.user_template || "",
+            is_active: data.is_active ?? true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingForLevel.id);
+
+        if (updateErr) throw new Error(updateErr.message);
+      } else {
+        // 3. Insert new prompt record
+        const { error: insertErr } = await supabaseAdmin.from("ai_prompts").insert({
+          name: data.name || `Prompt AI Jenjang ${level}`,
+          education_level: level,
+          system_prompt: data.system_prompt || "",
+          user_template: data.user_template || "",
+          is_active: data.is_active ?? true,
+        });
+
+        if (insertErr) {
+          console.warn("[updatePromptServer] Insert with education_level failed, trying fallback insert:", insertErr.message);
+          const { error: fbInsertErr } = await supabaseAdmin.from("ai_prompts").insert({
+            name: data.name || `Prompt AI Jenjang ${level}`,
+            system_prompt: data.system_prompt || "",
+            user_template: data.user_template || "",
+            is_active: data.is_active ?? true,
+          });
+          if (fbInsertErr) throw new Error(fbInsertErr.message);
+        }
+      }
+    }
+
+    console.info(`[updatePromptServer] Successfully saved AI Prompt for level ${level}`);
+    return { ok: true };
+  } catch (err: any) {
+    console.error("[updatePromptServer] Save error:", err?.message || err);
+    return { ok: false, error: err?.message || "Gagal menyimpan prompt AI ke database" };
   }
-  return { ok: true };
 }
 
 export async function saveQuestionServer(data: {

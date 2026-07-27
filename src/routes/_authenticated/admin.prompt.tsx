@@ -108,10 +108,18 @@ function PromptAdmin() {
     if (!form) return;
     setSaving(true);
     try {
-      await savePromptServer({ data: { ...form, education_level: activeLevel } });
+      console.info("[AdminPrompt] Saving prompt for level:", activeLevel, form);
+      const res = await savePromptServer({ data: { ...form, education_level: activeLevel } });
+      if (!res || (res as any).ok !== true) {
+        throw new Error((res as any)?.error || "Gagal menyimpan prompt AI ke database");
+      }
       toast.success(`Prompt AI Jenjang ${activeLevel} berhasil disimpan!`);
-      qc.invalidateQueries({ queryKey: ["admin-prompt-level"] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin-prompt-level"] }),
+        qc.refetchQueries({ queryKey: ["admin-prompt-level"] }),
+      ]);
     } catch (e: any) {
+      console.error("[AdminPrompt] Save error:", e);
       toast.error(e?.message ?? "Gagal menyimpan prompt.");
     } finally {
       setSaving(false);
