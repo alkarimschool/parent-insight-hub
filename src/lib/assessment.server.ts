@@ -729,39 +729,44 @@ export async function submitAndAnalyze(data: SubmitInput) {
 export async function getAssessmentResultServer(assessmentId: string) {
   if (!assessmentId) return null;
 
-  // 1. Fetch assessment record directly from database first to guarantee fresh DB read
-  const { data: assessment, error: aErr } = await supabaseAdmin
-    .from("assessments")
-    .select("*")
-    .eq("id", assessmentId)
-    .maybeSingle();
+  const cached = inMemoryAssessmentCache.get(assessmentId);
+
+  // 1. Fetch assessment record and ai_results concurrently from database
+  const [{ data: assessment, error: aErr }, { data: aiRes }] = await Promise.all([
+    supabaseAdmin.from("assessments").select("*").eq("id", assessmentId).maybeSingle(),
+    supabaseAdmin.from("ai_results").select("*").eq("assessment_id", assessmentId).maybeSingle(),
+  ]);
 
   if (aErr) console.warn("[getAssessmentResultServer] DB fetch warning:", aErr.message);
 
-  if (assessment) {
-    const level = getEducationLevel(assessment);
+  if (assessment || cached) {
+    const level: EducationLevel = getEducationLevel(
+      assessment?.education_level ||
+      aiRes?.content?.shortName ||
+      aiRes?.content?.education_level ||
+      aiRes?.content?.level ||
+      cached?.education_level ||
+      assessment
+    );
     console.log("[STAGE: VIEW_RENDER]", "Education Level View:", level);
 
-    const { data: aiRes } = await supabaseAdmin
-      .from("ai_results")
-      .select("*")
-      .eq("assessment_id", assessmentId)
-      .maybeSingle();
-
     const [{ data: child }, { data: parent }] = await Promise.all([
-      assessment.child_id
+      assessment?.child_id
         ? supabaseAdmin.from("children").select("*").eq("id", assessment.child_id).maybeSingle()
         : Promise.resolve({ data: null }),
-      assessment.parent_id
+      assessment?.parent_id
         ? supabaseAdmin.from("parents").select("*").eq("id", assessment.parent_id).maybeSingle()
         : Promise.resolve({ data: null }),
     ]);
 
-    let content = (assessment.ai_result || aiRes?.content) as any;
+    let content = (assessment?.ai_result || aiRes?.content || cached?.content) as any;
     const assessmentContent = getAssessmentContent(level);
 
+    const childName = child?.name || cached?.child_name || "Anak";
+    const parentName = parent?.name || cached?.parent_name || "Orang Tua";
+
     if (!content || typeof content !== "object" || !content.ringkasan) {
-      content = generateFallbackResult(child?.name || "Anak", parent?.name || "Orang Tua", 4.0, level);
+      content = generateFallbackResult(childName, parentName, 4.0, level);
     }
 
     content = {
@@ -792,15 +797,14 @@ export async function getAssessmentResultServer(assessmentId: string) {
       status: "analyzed",
       education_level: level,
       assessment_title: assessmentContent.reportTitle,
-      child_name: child?.name || "Anak",
-      parent_name: parent?.name || "Orang Tua",
-      created_at: assessment.created_at || new Date().toISOString(),
+      child_name: childName,
+      parent_name: parentName,
+      created_at: assessment?.created_at || cached?.created_at || new Date().toISOString(),
       content,
     };
   }
 
   // 2. Fallback to in-memory cache if DB query returned null during serverless propagation
-  const cached = inMemoryAssessmentCache.get(assessmentId);
   if (cached) {
     const level = getEducationLevel(cached.education_level);
     console.log("[STAGE: VIEW_RENDER_CACHE]", "Education Level View Cache:", level);
