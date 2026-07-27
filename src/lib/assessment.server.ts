@@ -471,7 +471,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .eq("id", assessment.id)
     .maybeSingle();
 
-  const dbEducationLevel: EducationLevel = getEducationLevel(dbAssessmentRecord || assessment);
+  const dbEducationLevel: EducationLevel = submitLevel;
   console.log("[STAGE: DATABASE_INSERT]", "Education Level Database:", dbEducationLevel);
 
   // ==========================================
