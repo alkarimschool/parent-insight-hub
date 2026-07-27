@@ -105,7 +105,7 @@ function ResultPage() {
             {content.description}
           </p>
           <div className="mt-3 flex flex-wrap justify-center gap-4 text-xs font-medium text-muted-foreground print:text-gray-800">
-            <span>Orang Tua: <strong className="text-foreground print:text-black">{parentName}</strong></span>
+            <span>Nama Anak: <strong className="text-foreground print:text-black">{childName}</strong></span>
             <span>•</span>
             <span>Jenjang: <strong className="text-foreground print:text-black">{content.shortName} ({content.fullName})</strong></span>
             {data?.created_at && (

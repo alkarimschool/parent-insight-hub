@@ -114,8 +114,8 @@ function QuestionsPage() {
   const progress = list.length ? (answered / list.length) * 100 : 0;
 
   const handleSubmit = async () => {
-    if (!formData || !formData.parent_name?.trim() || !formData.whatsapp?.trim() || !formData.child_name?.trim()) {
-      toast.error("Data orang tua/anak belum lengkap. Silakan kembali ke pengisian data.");
+    if (!formData || !formData.whatsapp?.trim() || !formData.child_name?.trim()) {
+      toast.error("Data anak/WhatsApp belum lengkap. Silakan kembali ke pengisian data.");
       navigate({ to: "/assessment" });
       return;
     }
@@ -125,11 +125,13 @@ function QuestionsPage() {
     }
     if (submitting) return;
 
+    const parentName = formData.parent_name?.trim() || `Orang Tua Ananda ${formData.child_name.trim()}`;
+
     setSubmitting(true);
     try {
       const res = await submit({
         data: {
-          parent: { name: formData.parent_name.trim(), whatsapp: formData.whatsapp.trim() },
+          parent: { name: parentName, whatsapp: formData.whatsapp.trim() },
           child: {
             name: formData.child_name.trim(),
             gender: formData.gender || "L",

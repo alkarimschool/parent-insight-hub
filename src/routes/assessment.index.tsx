@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, GraduationCap, CheckCircle2 } from "lucide-react";
+import { ArrowRight, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { EducationLevel } from "@/lib/questions.data";
 import { getAssessmentContent } from "@/lib/assessment-content";
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/assessment/")({
   head: () => ({
     meta: [
       { title: "Mulai Assessment — Parent Awareness Assessment" },
-      { name: "description", content: "Isi data orang tua dan anak untuk memulai asesmen perkembangan." },
+      { name: "description", content: "Isi data anak dan nomor WhatsApp untuk memulai asesmen perkembangan." },
     ],
   }),
   component: AssessmentFormPage,
@@ -35,16 +35,12 @@ function AssessmentFormPage() {
   const search: any = useSearch({ from: "/assessment/" });
 
   const [form, setForm] = useState<{
-    parent_name: string;
     whatsapp: string;
     child_name: string;
-    school: string;
     education_level: EducationLevel;
   }>({
-    parent_name: "",
     whatsapp: "",
     child_name: "",
-    school: "",
     education_level: (search?.level as EducationLevel) || "TK",
   });
 
@@ -66,12 +62,17 @@ function AssessmentFormPage() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.parent_name.trim() || !form.whatsapp.trim() || !form.child_name.trim()) {
-      toast.error("Mohon isi Nama Orang Tua, WhatsApp, dan Nama Anak.");
+    if (!form.whatsapp.trim() || !form.child_name.trim()) {
+      toast.error("Mohon isi Nomor WhatsApp dan Nama Anak.");
       return;
     }
     try {
-      sessionStorage.setItem("paa_form", JSON.stringify(form));
+      const payload = {
+        ...form,
+        parent_name: `Orang Tua Ananda ${form.child_name.trim()}`,
+        school: "",
+      };
+      sessionStorage.setItem("paa_form", JSON.stringify(payload));
     } catch {}
     navigate({ to: "/assessment/questions" });
   };
@@ -87,8 +88,8 @@ function AssessmentFormPage() {
           <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary">
             <GraduationCap className="h-4 w-4" /> {LEVEL_NAMES[form.education_level]}
           </div>
-          <h1 className="mt-4 text-3xl font-bold text-foreground sm:text-4xl">Data Orang Tua & Anak</h1>
-          <p className="mt-2 text-muted-foreground">Isi data berikut untuk memulai asesmen jenjang {form.education_level}.</p>
+          <h1 className="mt-4 text-3xl font-bold text-foreground sm:text-4xl">Data Anak & Kontak</h1>
+          <p className="mt-2 text-muted-foreground">Isi data anak dan nomor WhatsApp untuk memulai asesmen jenjang {form.education_level}.</p>
         </div>
 
         <form onSubmit={submit} className="rounded-3xl border border-border/60 bg-card p-6 shadow-soft sm:p-8 space-y-6">
@@ -115,18 +116,6 @@ function AssessmentFormPage() {
 
           <div className="grid gap-5">
             <div>
-              <Label htmlFor="parent_name">Nama Orang Tua *</Label>
-              <Input
-                id="parent_name"
-                value={form.parent_name}
-                onChange={(e) => setForm({ ...form, parent_name: e.target.value })}
-                className="mt-1.5"
-                maxLength={120}
-                required
-                placeholder="Nagita Slavina"
-              />
-            </div>
-            <div>
               <Label htmlFor="whatsapp">Nomor WhatsApp *</Label>
               <Input
                 id="whatsapp"
@@ -149,17 +138,6 @@ function AssessmentFormPage() {
                 maxLength={120}
                 required
                 placeholder="Rafathar Malik Ahmad"
-              />
-            </div>
-            <div>
-              <Label htmlFor="school">Nama Sekolah</Label>
-              <Input
-                id="school"
-                placeholder="Contoh: TK / SD / SMP / SMA Al-Karim"
-                value={form.school}
-                onChange={(e) => setForm({ ...form, school: e.target.value })}
-                className="mt-1.5"
-                maxLength={200}
               />
             </div>
           </div>
