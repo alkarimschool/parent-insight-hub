@@ -112,7 +112,35 @@ function QuestionsPage() {
     const parentName = formData.parent_name?.trim() || `Orang Tua Ananda ${formData.child_name.trim()}`;
 
     setSubmitting(true);
+    console.log("[STAGE 1: FRONTEND_SUBMIT_START]", {
+      level,
+      parentName,
+      childName: formData.child_name.trim(),
+      answersCount: list.length,
+    });
+
     try {
+      const payloadAnswers = list.map((q: any) => {
+        const isTextarea = q.type === "textarea";
+        const rawVal = answers[q.id];
+        if (isTextarea) {
+          return {
+            question_id: String(q.id),
+            score: 5,
+            text_answer: String(rawVal ?? "").trim(),
+          };
+        }
+        const scoreNum = typeof rawVal === "number" ? rawVal : 3;
+        const matchedOpt = q.options?.find((o: any) => o.v === scoreNum);
+        return {
+          question_id: String(q.id),
+          score: scoreNum,
+          text_answer: matchedOpt?.label || "",
+        };
+      });
+
+      console.log("[STAGE 2: PAYLOAD_SENT_TO_SERVER_FN]", { answersCount: payloadAnswers.length });
+
       const res = await submit({
         data: {
           parent: { name: parentName, whatsapp: formData.whatsapp.trim() },
@@ -124,26 +152,11 @@ function QuestionsPage() {
             class_name: formData.class_name || "",
             education_level: level,
           },
-          answers: list.map((q: any) => {
-            const isTextarea = q.type === "textarea";
-            const rawVal = answers[q.id];
-            if (isTextarea) {
-              return {
-                question_id: String(q.id),
-                score: 5,
-                text_answer: String(rawVal ?? "").trim(),
-              };
-            }
-            const scoreNum = typeof rawVal === "number" ? rawVal : 3;
-            const matchedOpt = q.options?.find((o: any) => o.v === scoreNum);
-            return {
-              question_id: String(q.id),
-              score: scoreNum,
-              text_answer: matchedOpt?.label || "",
-            };
-          }),
+          answers: payloadAnswers,
         },
       });
+
+      console.log("[STAGE 7: FRONTEND_RESPONSE_RECEIVED]", res);
 
       if (!res || !res.assessment_id) {
         throw new Error("Gagal menerima ID Assessment dari server.");
@@ -152,11 +165,17 @@ function QuestionsPage() {
       localStorage.removeItem(`paa_answers_${level}`);
       sessionStorage.removeItem("paa_form");
       toast.success("✅ Assessment berhasil dikirim dan dianalisis!");
-      navigate({ to: "/assessment/result/$id", params: { id: res.assessment_id } });
+
+      console.log("[STAGE 8: FRONTEND_NAVIGATING]", `/assessment/result/${res.assessment_id}`);
+      await navigate({ to: "/assessment/result/$id", params: { id: res.assessment_id } });
     } catch (e: any) {
-      console.error("Submit assessment error:", e);
-      const msg = e?.message || e?.data?.message || "Gagal mengirim assessment. Silakan coba beberapa saat lagi.";
-      toast.error(msg);
+      console.error("[STAGE: FRONTEND_SUBMIT_ERROR]", e);
+      const msg =
+        typeof e === "string"
+          ? e
+          : e?.message || e?.data?.message || "Gagal mengirim assessment. Silakan coba beberapa saat lagi.";
+      toast.error(String(msg));
+    } finally {
       setSubmitting(false);
     }
   };

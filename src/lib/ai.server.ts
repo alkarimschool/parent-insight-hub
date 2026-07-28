@@ -15,16 +15,16 @@ export async function callLovableAiJson(opts: AiCallOptions): Promise<{ text: st
     console.warn("[AI_SERVER] No direct GEMINI_API_KEY or LOVABLE_API_KEY found in process.env. Will fallback to rule-based analysis if AI request fails.");
   }
 
-  const maxRetries = 2;
+  const maxRetries = 1;
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
     const startTime = Date.now();
     try {
-      console.info(`[GEMINI_REQUEST] Attempt ${attempt}/${maxRetries + 1} | Model: ${opts.model} | SystemPrompt length: ${opts.systemPrompt.length} chars | UserPrompt length: ${opts.userPrompt.length} chars`);
+      console.info(`[STAGE 4: AI_ANALYSIS_START] Attempt ${attempt}/${maxRetries + 1} | Model: ${opts.model} | SystemPrompt length: ${opts.systemPrompt.length} chars | UserPrompt length: ${opts.userPrompt.length} chars`);
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s fast timeout
 
       let res: Response;
       let usedModelName = opts.model;
@@ -95,7 +95,7 @@ export async function callLovableAiJson(opts: AiCallOptions): Promise<{ text: st
         extractedText = json?.choices?.[0]?.message?.content ?? "";
       }
 
-      console.info(`[GEMINI_RESPONSE] Success | Duration: ${durationMs}ms | Response length: ${extractedText.length} chars`);
+      console.info(`[STAGE 5: AI_ANALYSIS_COMPLETE] Success | Duration: ${durationMs}ms | Response length: ${extractedText.length} chars`);
       return { text: extractedText, model: usedModelName };
     } catch (err: any) {
       lastError = err;
@@ -103,7 +103,7 @@ export async function callLovableAiJson(opts: AiCallOptions): Promise<{ text: st
       console.warn(`[GEMINI_ERROR] Attempt ${attempt} failed after ${durationMs}ms:`, err?.message || err);
 
       if (attempt <= maxRetries) {
-        const backoffMs = attempt * 1000;
+        const backoffMs = 500;
         console.info(`[GEMINI_RETRY] Retrying in ${backoffMs}ms...`);
         await new Promise((r) => setTimeout(r, backoffMs));
       }

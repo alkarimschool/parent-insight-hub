@@ -794,6 +794,8 @@ export async function submitAndAnalyze(data: SubmitInput) {
     console.warn("[DB:WARN:AI_RESULTS_INSERT]", aiResErr.message);
   }
 
+  console.log("[STAGE 6: DB_AI_RESULTS_SAVED]", "Assessment ID:", assessment.id, "Model:", usedModel);
+
   // 6. UPDATE ASSESSMENTS STATUS TO ANALYZED IN DATABASE (RESILIENT UPDATES)
   console.log("[DB:UPDATE:ASSESSMENTS]", "Updating assessment status analyzed:", { id: assessment.id, education_level: dbEducationLevel });
   
@@ -808,27 +810,29 @@ export async function submitAndAnalyze(data: SubmitInput) {
     })
     .eq("id", assessment.id)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (upErr) {
-    console.warn("[DB:WARN:UPDATE_FULL_FAIL] Retrying status-only update:", upErr.message);
+  if (upErr || !upData) {
+    console.warn("[DB:WARN:UPDATE_FULL_FAIL] Retrying status-only update:", upErr?.message || "No rows updated");
     const { data: upData2, error: upErr2 } = await supabaseAdmin
       .from("assessments")
       .update({ status: "analyzed", updated_at: new Date().toISOString() })
       .eq("id", assessment.id)
       .select()
-      .single();
+      .maybeSingle();
 
     console.log("[DB:UPDATE:ASSESSMENTS_RETRY_RESULT]", { data: upData2, error: upErr2?.message });
   } else {
     console.log("[DB:UPDATE:ASSESSMENTS_RESULT:SUCCESS]", upData?.id);
   }
 
+  console.log("[STAGE 7: SERVER_FN_SUCCESS_RESPONSE]", { assessment_id: assessment.id, status: "analyzed" });
   return { assessment_id: assessment.id, status: "analyzed" as const };
 }
 
 export async function getAssessmentResultServer(assessmentId: string) {
   if (!assessmentId) return null;
+  console.log("[STAGE 9: RESULT_FETCH_START]", "Fetching result for assessment ID:", assessmentId);
 
   const cached = inMemoryAssessmentCache.get(assessmentId);
 
@@ -895,6 +899,8 @@ export async function getAssessmentResultServer(assessmentId: string) {
         .replace(/perkembangan anak usia dini/gi, `potensi dan kebiasaan belajar ${assessmentContent.fullName}`)
         .replace(/anak usia dini/gi, `peserta didik ${assessmentContent.shortName}`);
     }
+
+    console.log("[STAGE 10: RESULT_PAGE_RENDERED]", "Successfully fetched result payload for assessment ID:", assessmentId);
 
     return {
       assessment_id: assessmentId,
