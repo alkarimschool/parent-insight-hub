@@ -853,8 +853,11 @@ export async function getAssessmentResultServer(assessmentId: string) {
     const childName = child?.name || cached?.child_name || "Anak";
     const parentName = parent?.name || cached?.parent_name || "Orang Tua";
 
-    if (!content || typeof content !== "object" || !content.ringkasan) {
+    if (!content || typeof content !== "object" || (!content.ringkasan && !content.status_perkembangan && !content.kekuatan_anak)) {
       content = generateFallbackResult(childName, parentName, 4.0, level);
+    }
+    if (!content.ringkasan) {
+      content.ringkasan = content.penjelasan_status || "Perkembangan dan kesiapan anak berkembang positif.";
     }
 
     content = {
