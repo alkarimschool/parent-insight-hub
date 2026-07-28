@@ -62,21 +62,18 @@ export interface QuestionData {
 
 export const LEVEL_QUESTIONS: Record<EducationLevel, QuestionData[]> = {
   TK: [
-    { id: "tk-q1", education_level: "TK", category_name: "Komunikasi", text: "Apakah anak mampu menyampaikan keinginan, pendapat, atau perasaannya dengan jelas kepada orang lain?", order_index: 1 },
-    { id: "tk-q2", education_level: "TK", category_name: "Komunikasi", text: "Ketika diberikan arahan sederhana, apakah anak dapat memahami dan melakukannya dengan baik?", order_index: 2 },
-    { id: "tk-q3", education_level: "TK", category_name: "Komunikasi", text: "Apakah anak berani bertanya, menjawab pertanyaan, atau bercerita kepada orang lain?", order_index: 3 },
-    { id: "tk-q4", education_level: "TK", category_name: "Sosial dan Emosional", text: "Apakah anak mudah bermain dan bergaul dengan teman-teman seusianya?", order_index: 4 },
-    { id: "tk-q5", education_level: "TK", category_name: "Sosial dan Emosional", text: "Saat menghadapi kekecewaan, apakah anak mampu mengendalikan emosinya tanpa marah atau menangis berlebihan?", order_index: 5 },
-    { id: "tk-q6", education_level: "TK", category_name: "Sosial dan Emosional", text: "Apakah anak menunjukkan rasa peduli, seperti membantu atau menghibur orang lain yang sedang sedih atau kesulitan?", order_index: 6 },
-    { id: "tk-q7", education_level: "TK", category_name: "Kemandirian", text: "Apakah anak mampu melakukan kegiatan sehari-hari seperti makan, memakai pakaian, atau merapikan mainan secara mandiri?", order_index: 7 },
-    { id: "tk-q8", education_level: "TK", category_name: "Kemandirian", text: "Apakah anak terbiasa menjaga dan merapikan barang-barang miliknya setelah digunakan?", order_index: 8 },
-    { id: "tk-q9", education_level: "TK", category_name: "Kemandirian", text: "Apakah anak berani mencoba aktivitas atau pengalaman baru tanpa harus selalu didampingi orang tua?", order_index: 9 },
-    { id: "tk-q10", education_level: "TK", category_name: "Belajar dan Konsentrasi", text: "Apakah anak mampu berkonsentrasi mengikuti kegiatan atau bermain selama sekitar 10–15 menit?", order_index: 10 },
-    { id: "tk-q11", education_level: "TK", category_name: "Belajar dan Konsentrasi", text: "Apakah anak sering menunjukkan rasa ingin tahu dengan bertanya atau mencoba hal-hal baru?", order_index: 11 },
-    { id: "tk-q12", education_level: "TK", category_name: "Belajar dan Konsentrasi", text: "Apakah anak tetap berusaha menyelesaikan tugas atau permainan meskipun mengalami kesulitan?", order_index: 12 },
-    { id: "tk-q13", education_level: "TK", category_name: "Kemampuan Akademik Awal", text: "Apakah anak mampu mengenal huruf dasar, angka, warna, bentuk, atau membilang/berhitung benda sederhana sesuai usianya?", order_index: 13 },
-    { id: "tk-q14", education_level: "TK", category_name: "Kemampuan Akademik Awal", text: "Apakah anak tertarik dan mulai mampu membaca kata pendek, menulis/mencoret huruf, atau mengelompokkan benda sesuai jumlahnya?", order_index: 14 },
-    { id: "tk-q15", education_level: "TK", category_name: "Kesiapan Sekolah", text: "Menurut Anda, apakah perkembangan dan kesiapan sekolah anak saat ini sudah sesuai dengan usianya?", order_index: 15 },
+    { id: "tk-q1", education_level: "TK", category_name: "Motorik & Fisik", text: "Apakah anak aktif bergerak, mampu melompat, serta lihai memegang pensil/sendok atau menggunting kertas?", order_index: 1 },
+    { id: "tk-q2", education_level: "TK", category_name: "Bahasa & Komunikasi", text: "Apakah anak mampu mengungkapkan keinginan, menceritakan pengalaman harian, atau menjawab pertanyaan dengan jelas?", order_index: 2 },
+    { id: "tk-q3", education_level: "TK", category_name: "Sosial & Emosional", text: "Apakah anak mudah berbaur dengan teman seusianya dan bersedia berbagi mainan atau bergantian?", order_index: 3 },
+    { id: "tk-q4", education_level: "TK", category_name: "Regulasi Emosi", text: "Saat merasa kecewa atau lelah, apakah anak dapat ditenangkan dan mulai belajar mengendalikan emosi?", order_index: 4 },
+    { id: "tk-q5", education_level: "TK", category_name: "Kemandirian Harian", text: "Apakah anak terbiasa melakukan aktivitas mandiri seperti makan, memakai sepatu, dan merapikan mainannya?", order_index: 5 },
+    { id: "tk-q6", education_level: "TK", category_name: "Daya Fokus & Konsentrasi", text: "Apakah anak mampu fokus mendengarkan cerita atau menyelesaikan aktivitas permainan selama 10–15 menit?", order_index: 6 },
+    { id: "tk-q7", education_level: "TK", category_name: "Eksplorasi & Ingin Tahu", text: "Apakah anak sering bertanya tentang hal-hal baru di sekitarnya dan antusias mencoba permainan baru?", order_index: 7 },
+    { id: "tk-q8", education_level: "TK", category_name: "Kemampuan Akademik Awal", text: "Apakah anak sudah mampu mengenali huruf dasar, menyebutkan angka, serta mengenal warna dan bentuk geometri?", order_index: 8 },
+    { id: "tk-q9", education_level: "TK", category_name: "Keterampilan Pra-Membaca", text: "Apakah anak tertarik membaca buku cerita bergambar, mencoret/menulis huruf, atau membilang benda?", order_index: 9 },
+    { id: "tk-q10", education_level: "TK", category_name: "Ketahanan Belajar", text: "Apakah anak tetap berusaha mencoba menyelesaikan tugas atau permainan meskipun mengalami sedikit kesulitan?", order_index: 10 },
+    { id: "tk-q11", education_level: "TK", category_name: "Kepatuhan Instruksi", text: "Apakah anak dapat memahami dan mengikuti instruksi sederhana dari guru di sekolah atau orang tua di rumah?", order_index: 11 },
+    { id: "tk-q12", education_level: "TK", category_name: "Kesiapan Tumbuh Kembang", text: "Secara umum, apakah perkembangan dan kesiapan sekolah TK anak saat ini berkembang sesuai usianya?", order_index: 12 },
   ],
 
   SD: [

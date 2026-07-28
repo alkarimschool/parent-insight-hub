@@ -117,67 +117,124 @@ function ResultPage() {
                 <span>Tanggal: <strong className="text-foreground print:text-black">{new Date(data.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</strong></span>
               </>
             )}
-          </div>
         </div>
 
         {result.isLoading || !c ? (
           <div className="rounded-3xl border border-border/60 bg-card p-10 text-center shadow-soft">
             <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <p className="mt-4 text-sm font-semibold text-foreground">AI sedang menyusun laporan analisis 13 bagian khusus jenjang {content.shortName}…</p>
+            <p className="mt-4 text-sm font-semibold text-foreground">AI sedang menyusun laporan analisis khusus jenjang {content.shortName}…</p>
           </div>
-        ) : (
+        ) : level === "TK" ? (
+          /* ========================================================================= */
+          /* EXPLICIT TK LEVEL REPORT (10 STRICT SECTIONS)                             */
+          /* ========================================================================= */
           <div className="grid gap-5">
-            {/* 🟢 Status Perkembangan */}
+            {/* 1. 📋 Status Perkembangan */}
             <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 shadow-soft text-center print:border-emerald-600 print:bg-transparent">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">🟢 Status Perkembangan</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">📋 Status Perkembangan</span>
               <h2 className="mt-1 text-xl font-extrabold text-emerald-800 dark:text-emerald-300 print:text-black">
                 {c.status_perkembangan || "Berkembang Sesuai Usia (Normal)"}
               </h2>
             </div>
 
-            <Section title={content.sections.s1}><p>{c.ringkasan}</p></Section>
-            
-            {/* ⭐ Kekuatan */}
-            <Section title="⭐ Kekuatan"><List items={c.kekuatan || c.kelebihan} /></Section>
+            {/* 2. ⭐ Kekuatan Anak */}
+            <Section title="⭐ Kekuatan Anak">
+              <List items={c.kekuatan_anak || c.kekuatan || c.kelebihan} />
+            </Section>
 
-            {/* 📈 Area yang Perlu Ditingkatkan */}
-            <Section title="📈 Area yang Perlu Ditingkatkan"><List items={c.area_perlu_ditingkatkan || c.area_pengembangan} /></Section>
+            {/* 3. 📈 Area yang Perlu Ditingkatkan */}
+            <Section title="📈 Area yang Perlu Ditingkatkan">
+              <List items={c.area_perlu_ditingkatkan || c.area_pengembangan} />
+            </Section>
 
-            {/* 🌱 Potensi yang Dapat Dikembangkan */}
+            {/* 4. 🌱 Potensi yang Dapat Dikembangkan */}
             <Section title="🌱 Potensi yang Dapat Dikembangkan">
               <List items={Array.isArray(c.potensi_dikembangkan) ? c.potensi_dikembangkan : (Array.isArray(c.potensi) ? c.potensi : [c.potensi || c.potensi_dikembangkan])} />
             </Section>
 
-            {/* 📋 Analisis per Aspek */}
-            {Array.isArray(c.analisis_per_aspek) && c.analisis_per_aspek.length > 0 && (
-              <Section title="📋 Analisis per Aspek">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {c.analisis_per_aspek.map((asp: any, idx: number) => (
-                    <div key={idx} className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-foreground print:text-black">{asp.aspek}</span>
-                        <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary print:text-black">
-                          {asp.status || "Sesuai Usia"}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-xs text-muted-foreground print:text-gray-800">{asp.temuan}</p>
-                    </div>
-                  ))}
+            {/* 5. 📚 Kemampuan Akademik */}
+            <Section title="📚 Kemampuan Akademik">
+              <div className="space-y-4">
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 print:border-gray-300">
+                  <span className="text-xs font-bold text-primary uppercase print:text-black">Status Akademik</span>
+                  <p className="mt-1 text-base font-bold text-foreground print:text-black">
+                    {c.kemampuan_akademik?.status_akademik ?? (typeof c.kemampuan_akademik === "string" ? c.kemampuan_akademik : "Sesuai Usia (Baik)")}
+                  </p>
                 </div>
-              </Section>
-            )}
 
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground print:text-black">Kekuatan Akademik</h4>
+                  <div className="mt-2">
+                    <List items={c.kemampuan_akademik?.kekuatan_akademik || (Array.isArray(c.kekuatan_akademik) ? c.kekuatan_akademik : [typeof c.kemampuan_akademik === "string" ? c.kemampuan_akademik : "Mengenal huruf dasar, angka 1-10, warna, dan bentuk geometri."])} />
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground print:text-black">Area Akademik yang Perlu Dikembangkan</h4>
+                  <div className="mt-2">
+                    <List items={c.kemampuan_akademik?.area_akademik_dikembangkan || (Array.isArray(c.area_akademik_dikembangkan) ? c.area_akademik_dikembangkan : ["Pengenalan bunyi fonik awal dan membilang benda harian."])} />
+                  </div>
+                </div>
+              </div>
+            </Section>
+
+            {/* 6. 🎯 Prioritas Stimulasi */}
+            <Section title="🎯 Prioritas Stimulasi">
+              <List items={c.prioritas_stimulasi || (Array.isArray(c.treatment) ? c.treatment.map((t: any) => `${t.kategori}: ${t.aktivitas}`) : [c.treatment])} />
+            </Section>
+
+            {/* 7. 👨‍👩‍👧 Rekomendasi untuk Orang Tua */}
+            <Section title="👨‍👩‍👧 Rekomendasi untuk Orang Tua">
+              <List items={c.rekomendasi_orangtua || c.perhatian_orangtua} />
+            </Section>
+
+            {/* 8. 👩‍🏫 Rekomendasi untuk Guru */}
+            <Section title="👩‍🏫 Rekomendasi untuk Guru">
+              <List items={Array.isArray(c.rekomendasi_guru) ? c.rekomendasi_guru : [c.rekomendasi_guru || c.rekomendasi_akademik]} />
+            </Section>
+
+            {/* 9. 💡 Rekomendasi Pengembangan Akademik */}
+            <Section title="💡 Rekomendasi Pengembangan Akademik">
+              <List items={Array.isArray(c.rekomendasi_pengembangan_akademik) ? c.rekomendasi_pengembangan_akademik : [c.rekomendasi_pengembangan_akademik || c.rekomendasi_akademik || "Gunakan sarana permainan edukatif berbasis visual dan sensori."]} />
+            </Section>
+
+            {/* 10. 📝 Catatan */}
+            <Section title="📝 Catatan">
+              <p className="italic font-medium text-foreground print:text-black">
+                {c.catatan || c.kesimpulan || "Perkembangan dan kesiapan sekolah TK anak berjalan sangat baik."}
+              </p>
+            </Section>
+
+            <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">
+              <Link to="/" className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-accent">
+                <Home className="h-4 w-4" /> Kembali ke Beranda
+              </Link>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-hero px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-95"
+              >
+                <Printer className="h-4 w-4" /> Cetak / Export PDF ({content.shortName})
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* ========================================================================= */
+          /* GENERIC / SD / SMP / SMA / SMK REPORT                                     */
+          /* ========================================================================= */
+          <div className="grid gap-5">
+            <Section title={content.sections.s1}><p>{c.ringkasan}</p></Section>
+            <Section title={content.sections.s2}><List items={c.kelebihan} /></Section>
+            <Section title={content.sections.s3}><List items={c.area_pengembangan} /></Section>
             <Section title={content.sections.s4}><p>{c.kemampuan_akademik ?? c.kemampuan_belajar}</p></Section>
             <Section title={content.sections.s5}><p>{c.kecerdasan_sosial}</p></Section>
             <Section title={content.sections.s6}><p>{c.kecerdasan_emosional}</p></Section>
             <Section title={content.sections.s7}><p>{c.karakter ?? "Memiliki karakter pembelajar yang jujur, disiplin, dan bertanggung jawab."}</p></Section>
+            <Section title={content.sections.s8}><p>{c.potensi}</p></Section>
             <Section title={content.sections.s9}><p>{c.minat_bakat ?? "Terlihat minat pada pemecahan masalah dan eksplorasi ilmu pengetahuan."}</p></Section>
-
-            {/* 🎯 Prioritas Stimulasi */}
-            <Section title="🎯 Prioritas Stimulasi">
-              {Array.isArray(c.prioritas_stimulasi) ? (
-                <List items={c.prioritas_stimulasi} />
-              ) : Array.isArray(c.treatment) ? (
+            <Section title={content.sections.s10}><List items={c.perhatian_orangtua} /></Section>
+            <Section title={content.sections.s11}>
+              {Array.isArray(c.treatment) ? (
                 <ul className="space-y-3">
                   {c.treatment.map((t: any, i: number) => (
                     <li key={i} className="rounded-xl border border-border/60 bg-muted/30 p-3 print:border-gray-300">
@@ -190,17 +247,7 @@ function ResultPage() {
                 <p>{String(c.treatment ?? "")}</p>
               )}
             </Section>
-
-            {/* 👨‍👩‍👧 Rekomendasi untuk Orang Tua */}
-            <Section title="👨‍👩‍👧 Rekomendasi untuk Orang Tua">
-              <List items={c.rekomendasi_orangtua || c.perhatian_orangtua} />
-            </Section>
-
-            {/* 👩‍🏫 Rekomendasi untuk Guru */}
-            <Section title="👩‍🏫 Rekomendasi untuk Guru">
-              <List items={Array.isArray(c.rekomendasi_guru) ? c.rekomendasi_guru : [c.rekomendasi_guru || c.rekomendasi_akademik]} />
-            </Section>
-
+            <Section title={content.sections.s12}><p>{c.rekomendasi_akademik ?? c.kemampuan_akademik}</p></Section>
             <Section title={content.sections.s13}><p className="italic font-medium text-foreground print:text-black">{c.kesimpulan}</p></Section>
 
             <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">
@@ -217,6 +264,7 @@ function ResultPage() {
             </div>
           </div>
         )}
+      </div>
       </div>
 
       <div className="print:hidden">
