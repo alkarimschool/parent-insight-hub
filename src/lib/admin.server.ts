@@ -599,7 +599,7 @@ export async function deleteAssessmentServer(targetId: string) {
   try {
     await supabaseAdmin.from("activity_logs").insert({
       action: "DELETE DATA",
-      details: {
+      payload: {
         target_id: targetId,
         timestamp: new Date().toISOString(),
       },
