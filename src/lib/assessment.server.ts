@@ -220,206 +220,429 @@ export const LEVEL_TITLES_MAP: Record<EducationLevel, string> = {
   SMK: getAssessmentContent("SMK").title,
 };
 
-function generateFallbackResult(childName: string, parentName: string, avgScore: number, level: EducationLevel) {
-  const isHigh = avgScore >= 3.8;
+function generateFallbackResult(childName: string, parentName: string, avgScore: number, level: EducationLevel, answers: any[] = [], questions: any[] = []) {
   const safeLevel = getEducationLevel(level);
 
+  // 1. Ekstrak & Analisis Pola Jawaban Orang Tua (Q1-Q15)
+  const parsedAnswers = (answers || []).map((ans, idx) => {
+    let text = `Aspek evaluasi ke-${idx + 1}`;
+    let category = "Umum";
+    const score = Number(ans?.score ?? ans?.value ?? 3);
+
+    const foundQ = (questions || []).find((q: any) => (q.id && q.id === ans?.question_id) || q.order_index === idx + 1) || (questions || [])[idx];
+    if (foundQ) {
+      text = foundQ.text || text;
+      category = foundQ.question_categories?.name || foundQ.category || foundQ.category_name || "Umum";
+    }
+    return { text, category, score };
+  });
+
+  const highAnswers = parsedAnswers.filter(a => a.score >= 4);
+  const lowAnswers = parsedAnswers.filter(a => a.score <= 2);
+  const midAnswers = parsedAnswers.filter(a => a.score === 3);
+
+  // Tentukan Pola Evaluasi Aktual (Positif vs Kurang vs Campuran)
+  const isPositif = avgScore >= 4.0 || (highAnswers.length >= 10 && lowAnswers.length === 0);
+  const isKurang = avgScore <= 2.5 || (lowAnswers.length >= 8);
+  const isCampuran = !isPositif && !isKurang;
+
+  const formatBullet = (item: { text: string; category: string; score: number }, prefix: string = "") => {
+    return `[${item.category}] ${prefix}${item.text} (Skor: ${item.score}/5)`;
+  };
+
   if (safeLevel === "SD") {
+    let kelebihan: string[] = [];
+    let area_ditingkatkan: string[] = [];
+    let status_sd = "Baik Sesuai Usia";
+    let status_litnum = "Baik Sesuai Usia";
+
+    if (isPositif) {
+      status_sd = "Sangat Baik & Mandiri";
+      status_litnum = "Sangat Baik";
+      kelebihan = highAnswers.slice(0, 5).map(a => formatBullet(a, "Sangat mandiri dan mampu: "));
+      if (kelebihan.length < 3) {
+        kelebihan.push("Mampu membaca lancar, menulis kalimat rapi, dan memahami cerita/tugas SD.");
+        kelebihan.push("Menguasai perhitungan matematika dasar dan penalaran angka seusianya.");
+      }
+      area_ditingkatkan = [
+        "Mempertahankan konsistensi kebiasaan belajar dan fokus di rumah maupun di sekolah.",
+        "Memberikan tantangan proyek membaca dan matematika yang lebih kompleks untuk mengoptimalkan potensi anak."
+      ];
+    } else if (isKurang) {
+      status_sd = "Perlu Bimbingan Belajar";
+      status_litnum = "Perlu Pendampingan Numerasi";
+      kelebihan = [
+        "Menunjukkan minat dasar untuk mengikuti kegiatan belajar dengan bimbingan langsung dari orang tua.",
+        "Memiliki kemauan dan potensi berkembang yang besar melalui pendampingan terstruktur di rumah."
+      ];
+      area_ditingkatkan = lowAnswers.slice(0, 5).map(a => formatBullet(a, "Membutuhkan bimbingan intensif untuk mengatasi kesulitan: "));
+      if (area_ditingkatkan.length < 3) {
+        area_ditingkatkan.push("Meningkatkan konsentrasi belajar dan mengurangi durasi bermain gadget/screen time.");
+        area_ditingkatkan.push("Melatih pemahaman bacaan dasar dan penyelesaian soal matematika harian.");
+      }
+    } else {
+      status_sd = "Baik Sesuai Usia";
+      status_litnum = "Baik Sesuai Usia";
+      const top = [...highAnswers, ...midAnswers].slice(0, 4);
+      const bot = [...lowAnswers, ...midAnswers].slice(0, 3);
+      kelebihan = top.length > 0 ? top.map(a => formatBullet(a, "Sudah mampu dan baik pada: ")) : [
+        "Mampu mengikuti pelajaran Sekolah Dasar dengan bimbingan dan dukungan proporsional."
+      ];
+      area_ditingkatkan = bot.length > 0 ? bot.map(a => formatBullet(a, "Perlu latihan tambahan pada: ")) : [
+        "Meningkatkan konsentrasi belajar 20-30 menit tanpa terdistraksi gadget."
+      ];
+    }
+
     return {
       judul: "Laporan Assessment Potensi Akademik & Karakter SD",
-      status_perkembangan_sd: isHigh ? "Sangat Baik & Mandiri" : "Baik Sesuai Usia",
-      ringkasan_profil_sd: `Berdasarkan asesmen potensi akademik dan karakter Sekolah Dasar (SD), Ananda ${childName} menunjukkan kesiapan belajar, literasi, numerasi, dan kebiasaan positif yang ${isHigh ? "sangat mandiri dan unggul" : "baik dan berkembang positif"}.`,
-      kelebihan_pembelajaran: [
-        `Mampu membaca lancar, menulis kalimat dengan rapi, dan memahami cerita/tugas SD.`,
-        `Menguasai perhitungan matematika dasar dan penalaran angka seusianya.`,
-        `Bertanggung jawab merapikan jadwal sekolah dan perlengkapan belajar.`,
-        `Memiliki rasa percaya diri saat berbicara di depan kelas atau kelompok bermain.`
-      ],
-      area_belajar_ditingkatkan: [
-        `Meningkatkan konsentrasi belajar (20–30 menit) tanpa terdistraksi TV/gadget.`,
-        `Mempertajam pemecahan soal cerita matematika dan pemahaman bacaan kompleks.`,
-        `Melatih kemandirian mengerjakan PR sekolah tanpa harus selalu ditagih.`
-      ],
+      status_perkembangan_sd: status_sd,
+      ringkasan_profil_sd: `Berdasarkan analisis jawaban orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5 - Pola ${isPositif ? "Sangat Baik/Positif" : isKurang ? "Perlu Perhatian/Kurang" : "Campuran/Normal"}), Ananda ${childName} menunjukkan kondisi belajar dan pembetukan karakter SD yang ${isPositif ? "sangat mandiri dan unggul di hampir seluruh aspek" : isKurang ? "membutuhkan pendampingan belajar dan kedisiplinan secara intensif" : "seimbang dan berkembang sesuai tahap usia Sekolah Dasar"}.`,
+      kelebihan_pembelajaran: kelebihan,
+      area_belajar_ditingkatkan: area_ditingkatkan,
       literasi_dan_numerasi: {
-        status_literasi_numerasi: isHigh ? "Sangat Baik" : "Baik Sesuai Usia",
-        kemampuan_literasi: [
-          `Membaca teks cerita SD dengan intonasi dan kelancaran yang baik.`,
-          `Mampu menulis kalimat dengan tata bahasa dasar dan kerapian yang rapi.`
+        status_literasi_numerasi: status_litnum,
+        kemampuan_literasi: isPositif ? [
+          "Membaca teks cerita SD dengan intonasi, pemahaman, dan kelancaran yang sangat baik.",
+          "Mampu menulis kalimat dengan tata bahasa dasar dan kerapian tinggi."
+        ] : isKurang ? [
+          "Masih memerlukan bimbingan mengeja, memahami isi teks cerita SD, dan kerapian menulis.",
+          "Perlu dikaitkan dengan bahan bacaan visual bergambar agar menarik minat anak."
+        ] : [
+          "Membaca teks cerita SD dengan kelancaran cukup dan perlu ditingkatkan pemahaman alasannya.",
+          "Menulis dengan tata bahasa dasar yang wajar seusia SD."
         ],
-        kemampuan_numerasi: [
-          `Menguasai penjumlahan, pengurangan, dan perkalian/pembagian dasar.`,
-          `Mampu memecahkan soal matematika sederhana berorientasi aktivitas harian.`
+        kemampuan_numerasi: isPositif ? [
+          "Menguasai penjumlahan, pengurangan, serta penalaran angka dasar dengan konsisten.",
+          "Mampu memecahkan soal cerita matematika berorientasi kehidupan sehari-hari."
+        ] : isKurang ? [
+          "Masih membutuhkan bantuan konkrit (seperti benda nyata) untuk memahami penalaran matematika dasar.",
+          "Perlu latihan berulang pada konsep operasi bilangan sederhana."
+        ] : [
+          "Menguasai perhitungan matematika dasar dan memerlukan latihan rutin pada soal cerita rumit."
         ]
       },
       kebiasaan_dan_fokus_belajar: [
-        `Mampu fokus memperhatikan penjelasan pelajaran 20–30 menit.`,
-        `Mampu membatasi waktu bermain gadget sesuai kesepakatan aturan rumah.`
+        isKurang ? "Konsentrasi mudah terpecah (kurang dari 15 menit); sangat memerlukan pembatasan ketat terhadap gadget/screen time." : "Mampu mempertahankan fokus belajar 20-30 menit dengan regulasi gadget yang sesuai kesepakatan rumah."
       ],
       karakter_dan_interaksi_sosial: [
-        `Disiplin mematuhi aturan rumah dan sekolah secara konsisten.`,
-        `Mudah berteman, bekerja sama dalam kelompok, dan mengendalikan emosi saat kecewa.`
+        isKurang ? "Membutuhkan teladan dan pengingat konsisten dari orang tua dalam merapikan jadwal dan mematuhi aturan rumah." : "Disiplin mematuhi aturan sekolah, mau memikul tanggung jawab tugas, dan berteman dengan positif."
       ],
       potensi_dan_kreativitas: [
-        `Potensi ekspresi karya seni, eksperimen sains sekolah, dan kreativitas mandiri.`,
-        `Jiwa kepemimpinan dalam kelompok belajar seusianya.`
+        "Potensi eksplorasi minat visual, proyek sekolah, dan partisipasi aktif dalam kegiatan SD."
       ],
-      hal_perhatian_orangtua: [
-        `Batasi penggunaan layar (screen time) gadget sesuai aturan rumah.`,
-        `Sediakan area belajar rumah yang tenang dan bebas gangguan TV.`
+      hal_perhatian_orangtua: isKurang ? [
+        "Jadwal rutin harian harus ditegakkan dengan konsisten namun penuh kedekatan emosional.",
+        "Batasi waktu bermain gadget maksimal 1 jam sehari pada akhir pekan saja.",
+        "Dampingi anak secara langsung saat pengerjaan PR dan berikan apresiasi kecil saat anak mau mencoba."
+      ] : [
+        "Tetap berikan apresiasi dan jadilah teman pendengar bagi anak di rumah.",
+        "Sediakan area belajar rumah yang tenang dan bebas dari gangguan audiovisual (TV/Gadget)."
       ],
-      rekomendasi_treatment_rumah: [
-        { kategori: "Penguatan Literasi & Numerasi SD", aktivitas: "Latihan membaca 1 bab buku cerita dan 5 soal cerita matematika harian bersama orang tua." },
-        { kategori: "Manajemen Belajar Rumah", aktivitas: "Dampingi jadwal belajar teratur (30-45 menit) di ruang belajar khusus di rumah." }
+      rekomendasi_treatment_rumah: isKurang ? [
+        { kategori: "Pendampingan Intensif Literasi & Numerasi", aktivitas: "Dampingi 15 menit membaca bersuara bersama setiap malam dan latihan 3 soal numerasi dengan benda nyata." },
+        { kategori: "Regulasi Disiplin & Screen Time", aktivitas: "Buat papan jadwal visual bersama anak dan lakukan kontrak pengurangan penggunaan HP secara tegas & positif." }
+      ] : [
+        { kategori: "Pengayaan Akademik SD", aktivitas: "Latihan membaca buku pengetahuan baru dan diskusi soal cerita matematika aplikatif bersama orang tua." },
+        { kategori: "Manajemen Waktu Belajar Mandiri", aktivitas: "Berikan kepercayaan anak mengatur urutan pengerjaan PR dengan pengawasan ringan." }
       ],
       catatan_perkembangan_sd: [
-        `Sangat mengapresiasi kebiasaan belajar dan semangat Ananda ${childName} di Sekolah Dasar.`,
-        `Laporan ini dirancang sebagai panduan pendampingan karakter dan strategi belajar di rumah.`
+        `Sangat mengapresiasi kerja keras dan keterlibatan Ibu/Bapak ${parentName} dalam mendampingi tumbuh kembang Ananda ${childName}.`,
+        `Laporan ini bersumber langsung dari evaluasi jawaban orang tua sebagai acuan strategi belajar di rumah.`
       ]
     };
   }
 
   if (safeLevel === "SMP") {
+    let keunggulan_smp: string[] = [];
+    let pengembangan_smp: string[] = [];
+    let status_smp = "Baik Sesuai Usia Remaja";
+    let status_kritis = "Baik";
+
+    if (isPositif) {
+      status_smp = "Sangat Optimal & Berdaya";
+      status_kritis = "Sangat Tajam";
+      keunggulan_smp = highAnswers.slice(0, 5).map(a => formatBullet(a, "Sangat optimal dan konsisten pada: "));
+      if (keunggulan_smp.length < 3) {
+        keunggulan_smp.push("Mampu berpikir analitis, memecahkan masalah pelajaran, dan berargumen logis.");
+        keunggulan_smp.push("Memiliki inisiatif mandiri untuk mempersiapkan materi sebelum pekan ujian.");
+      }
+      pengembangan_smp = [
+        "Memperdalam ketegasan dan stabilitas emosi saat menghadapi tugas kolaborasi atau proyek sekolah yang sangat kompleks.",
+        "Eksplorasi olimpiade atau organisasi untuk mengasah jiwa kepemimpinan remaja."
+      ];
+    } else if (isKurang) {
+      status_smp = "Perlu Inisiatif Belajar";
+      status_kritis = "Perlu Latihan Analisis";
+      keunggulan_smp = [
+        "Memiliki kepekaan emosional usia remaja awal yang dapat dioptimalkan melalui pendekatan komunikasi empatik.",
+        "Menunjukkan kesediaan dasar untuk berkembang jika didorong dengan komunikasi yang hangat tanpa langsung menghakimi."
+      ];
+      pengembangan_smp = lowAnswers.slice(0, 5).map(a => formatBullet(a, "Membutuhkan perhatian & arahan khusus pada: "));
+      if (pengembangan_smp.length < 3) {
+        pengembangan_smp.push("Meningkatkan motivasi belajar dan inisiatif mengerjakan tugas SMP tanpa dipaksa.");
+        pengembangan_smp.push("Mengatur durasi bermain game online dan penggunaan media sosial yang berlebihan.");
+      }
+    } else {
+      status_smp = "Baik Sesuai Usia Remaja";
+      status_kritis = "Baik";
+      const top = [...highAnswers, ...midAnswers].slice(0, 4);
+      const bot = [...lowAnswers, ...midAnswers].slice(0, 3);
+      keunggulan_smp = top.length > 0 ? top.map(a => formatBullet(a, "Berprestasi baik pada: ")) : [
+        "Mampu beradaptasi dengan dinamika akademik SMP dan menunjukkan kemandirian belajar proporsional."
+      ];
+      pengembangan_smp = bot.length > 0 ? bot.map(a => formatBullet(a, "Perlu konsistensi lebih pada: ")) : [
+        "Manajemen waktu antara rutinitas belajar sekolah, media sosial, dan hobi."
+      ];
+    }
+
     return {
       judul: "Laporan Assessment Potensi Belajar & Dinamika Remaja SMP",
-      status_perkembangan_smp: isHigh ? "Sangat Optimal & Berdaya" : "Baik Sesuai Usia Remaja",
-      ringkasan_dinamika_smp: `Berdasarkan asesmen perkembangan remaja awal dan akademik SMP, Ananda ${childName} menunjukkan motivasi belajar, pemikiran kritis, dan pergaulan positif yang ${isHigh ? "sangat menonjol & mandiri" : "baik dan terus berkembang"}.`,
-      kekuatan_akademik_smp: [
-        `Mampu berpikir kritis, menganalisis materi SMP, dan memberikan argumen logis.`,
-        `Memiliki inisiatif mandiri mempelajari materi sebelum ujian atau tugas proyek.`,
-        `Mampu memilih pergaulan positif dan tegas menolak pengaruh negatif teman sebaya.`
-      ],
-      area_pengembangan_smp: [
-        `Manajemen waktu yang seimbang antara target akademik, media sosial, dan hobi.`,
-        `Melatih resiliensi (daya tahan emosi) saat menghadapi tugas kelompok rumit.`
-      ],
+      status_perkembangan_smp: status_smp,
+      ringkasan_dinamika_smp: `Berdasarkan analisis jawaban aktual orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5 - Pola ${isPositif ? "Sangat Optimal/Positif" : isKurang ? "Kurang/Perlu Bimbingan" : "Campuran/Seimbang"}), Ananda ${childName} menunjukkan dinamika remaja awal usia 12-15 tahun yang ${isPositif ? "sangat berdaya, mandiri dalam belajar, dan tajam dalam pemikiran kritis" : isKurang ? "membutuhkan pendampingan motivasi belajar dan komunikasi terbuka untuk mengatasi kendala emosi serta durasi screen time" : "berjalan positif dengan beberapa area kemandirian yang masih perlu dikokohkan"}.`,
+      kekuatan_akademik_smp: keunggulan_smp,
+      area_pengembangan_smp: pengembangan_smp,
       kemampuan_berpikir_kritis: {
-        status_pemikiran_kritis: isHigh ? "Sangat Tajam" : "Baik",
-        kekuatan_analisis: [
-          `Mampu menganalisis masalah pelajaran SMP secara sistematis.`,
-          `Mampu menyusun tugas proyek sekolah dengan pemikiran logis mandiri.`
+        status_pemikiran_kritis: status_kritis,
+        kekuatan_analisis: isPositif ? [
+          "Mampu menganalisis hubungan sebab-akibat pada mata pelajaran sains maupun sosial SMP.",
+          "Berani dan tepat dalam menyampaikan argumen logis secara konstruktif."
+        ] : isKurang ? [
+          "Masih terbiasa mengharapkan jawaban cepat dan kesulitan dalam menjawab pertanyaan konseptual yang menuntut analisis mandiri.",
+          "Perlu distimulasi dengan diskusi santai mengenai isu-isu ilmu pengetahuan."
+        ] : [
+          "Mampu memahami konsep pelajaran SMP dengan baik dan sedang terus mengembangkan penalaran logis lanjutan."
         ],
-        area_latihan_kritis: [
-          `Pengembangan peta konsep (mind mapping) untuk materi pelajaran yang luas.`
+        area_latihan_kritis: isKurang ? [
+          "Latihan melatih cara menyimpulkan buku bacaan atau artikel digital dengan bahasa sendiri."
+        ] : [
+          "Pengembangan pemetaan mind map dan analisis kritis literatur pendukung tugas sekolah."
         ]
       },
       pergaulan_dan_media_sosial: [
-        `Pergaulan sekolah yang positif dan bersikap santun dalam kelompok teman sebaya.`,
-        `Penggunaan media sosial dan gadget yang terkontrol dengan baik.`
+        isKurang ? "Sangat perlu pendampingan terhadap batasan media sosial & game online, serta pemantauan pengaruh lingkungan pergaulan teman sebaya (peer pressure)." : "Memiliki ketegasan untuk memilih pergaulan positif dan tidak mudah terseret pengaruh buruk dari lingkungan sebaya."
       ],
       manajemen_emosi_dan_sosial: [
-        `Mampu mengelola emosi perubahan usia remaja awal (12–15 tahun).`,
-        `Tetap bersikap sopan, komunikatif, dan menghormati bimbingan orang tua.`
+        isKurang ? "Suasana hati (mood) usia remaja awal sering terdiskon sehingga berpengaruh pada kejenuhan belajar; perlu empati orang tua tanpa penghakiman." : "Mampu mengelola emosi pubertas dengan dewasa, santun dalam berbicara kepada orang tua."
       ],
       kepemimpinan_dan_minat: [
-        `Menunjukkan minat kuat pada bidang studi spesifik (IPA/IPS/Bahasa/Seni/Teknologi).`,
-        `Inisiatif aktif dalam kegiatan ekstrakurikuler atau organisasi sekolah.`
+        "Eksplorasi minat bidang studi (Sains, Sosial, Seni, Bahasa, atau Teknologi) sebagai ancang-ancang kesiapan masuk SMA."
       ],
-      perhatian_orangtua_smp: [
-        `Jaga komunikasi terbuka dua arah tanpa langsung menghakimi perasaan anak.`,
-        `Dukung diskusi eksplorasi cita-cita dan minat sekolah lanjutan (SMA).`
+      perhatian_orangtua_smp: isKurang ? [
+        "Bangun komunikasi dua arah di waktu santai TANPA mengritik atau langsung menyalahkan anak.",
+        "Buat kesepakatandan bersama (bukan paksaan sepihak) terkait jadwal bermain smartphone vs jam istirahat.",
+        "Dampingi anak menemukan cara belajar baru yang tidak membosankan."
+      ] : [
+        "Jaga ruang komunikasi yang hangat, berikan kepercayaan proporsional saat anak mengerjakan tugas proyek.",
+        "Fasilitasi minat anak pada organisasi sekolah atau hobi produktif."
       ],
-      rekomendasi_pendampingan_remaja: [
-        { kategori: "Pengembangan Berpikir Kritis SMP", aktivitas: "Diskusi isu-isu sains/sosial terkini bersama keluarga dan latihan pemetaan mind map." },
-        { kategori: "Manajemen Waktu Remaja", aktivitas: "Penyusunan skala prioritas antara pelajaran sekolah, organisasi, dan waktu santai." }
+      rekomendasi_pendampingan_remaja: isKurang ? [
+        { kategori: "Pendampingan Komunikasi Remaja", aktivitas: "Lakukan percakapan terbuka dari hati ke hati minimal 15 menit sebelum tidur untuk mendengarkan curhatan anak tanpa penghakiman." },
+        { kategori: "Bimbingan Motivasi & Jadwal Belajar", aktivitas: "Bagi target belajar SMP ke dalam potongan kecil (25 menit belajar, 5 menit istirahat) untuk mencegah jenuh." }
+      ] : [
+        { kategori: "Pengembangan Berpikir Kritis & Cita-Cita", aktivitas: "Diskusi tentang profesi masa depan dan teladani analisis studi kasus ringan di rumah." },
+        { kategori: "Otonomi Manajemen Waktu Remaja", aktivitas: "Dorong penyusunan agenda mandiri yang seimbang antara ekskul, sekolah, dan hobi." }
       ],
       catatan_kesiapan_smp: [
-        `Apresiasi atas tingkat kemandirian dan kesiapan belajar Ananda ${childName} di SMP.`,
-        `Laporan ini dirancang sebagai acuan pendampingan tumbuh kembang remaja awal.`
+        `Apresiasi yang tinggi kepada Ibu/Bapak ${parentName} atas dedikasi memantau dinamika remaja Ananda ${childName}.`,
+        `Laporan ini diracik berdasarkan respons evaluasi orang tua sebagai kompas pendampingan remaja yang penuh pengertian.`
       ]
     };
   }
 
   if (safeLevel === "SMA") {
+    let keunggulan_sma: string[] = [];
+    let perbaikan_sma: string[] = [];
+    let status_sma = "Baik & Berprospek Tinggi";
+    let status_ptn = "Siap";
+
+    if (isPositif) {
+      status_sma = "Sangat Matang & Siap Kuliah/Karier";
+      status_ptn = "Sangat Siap";
+      keunggulan_sma = highAnswers.slice(0, 5).map(a => formatBullet(a, "Sangat unggul dan matang dalam: "));
+      if (keunggulan_sma.length < 3) {
+        keunggulan_sma.push("Pemikiran analitis tingkat tinggi, riset mandiri, dan penarikan kesimpulan berbasis data.");
+        keunggulan_sma.push("Kesiapan seleksi Perguruan Tinggi (PTN/PTS) serta kepastian orientasi jurusan masa depan.");
+      }
+      perbaikan_sma = [
+        "Mengelola keseimbangan stamina fisik dan kesehatan mental di tengah padatnya jadwal tryout maupun seleksi PTN.",
+        "Mempertajam networking dan kolaborasi kepemimpinan lintas disiplin."
+      ];
+    } else if (isKurang) {
+      status_sma = "Perlu Strategi Akademik Mandiri";
+      status_ptn = "Perlu Matangkan Pilihan Jurusan";
+      keunggulan_sma = [
+        "Memiliki bakat dasar dan potensi kecerdasan yang siap diasah apabila kemandirian dan fokus belajar ditegakkan kembali.",
+        "Menunjukkan kesiapan untuk dieksplorasi minat dan bakatnya menuju jurusan yang sesuai dengan passion aslinya."
+      ];
+      perbaikan_sma = lowAnswers.slice(0, 5).map(a => formatBullet(a, "Membutuhkan fokus pematangan pada: "));
+      if (perbaikan_sma.length < 3) {
+        perbaikan_sma.push("Meningkatkan otonomi belajar mandiri tanpa tergantung pada instruksi berulang orang tua.");
+        perbaikan_sma.push("Mematangkan strategi belajar tryout SNBT dan kepastian orientasi jurusan perguruan tinggi.");
+      }
+    } else {
+      status_sma = "Baik & Berprospek Tinggi";
+      status_ptn = "Siap";
+      const top = [...highAnswers, ...midAnswers].slice(0, 4);
+      const bot = [...lowAnswers, ...midAnswers].slice(0, 3);
+      keunggulan_sma = top.length > 0 ? top.map(a => formatBullet(a, "Unggul dan konsisten pada: ")) : [
+        "Konsistensi akademik yang baik dan berprospek tinggi menuju seleksi perguruan tinggi."
+      ];
+      perbaikan_sma = bot.length > 0 ? bot.map(a => formatBullet(a, "Perlu strategi optimal pada: ")) : [
+        "Manajemen waktu akademik seimbang antara tryout ujian seleksi, kegiatan organisasi, dan relaksasi."
+      ];
+    }
+
     return {
       judul: "Laporan Assessment Kesiapan Perguruan Tinggi & Karier SMA",
-      status_kesiapan_sma: isHigh ? "Sangat Matang & Siap Kuliah/Karier" : "Baik & Berprospek Tinggi",
-      ringkasan_eksekutif_sma: `Berdasarkan asesmen kesiapan perguruan tinggi, minat karier, dan pemikiran analitis SMA, Ananda ${childName} menunjukkan kemandirian belajar, riset, dan kepemimpinan yang ${isHigh ? "sangat matang & unggul" : "baik dan siap dikembangkan"}.`,
-      keunggulan_akademik_sma: [
-        `Pemikiran analitis tingkat tinggi, kemampuan riset/studi literatur mandiri, dan penarikan kesimpulan berbasis data.`,
-        `Public speaking dan penyampaian ide presentasi yang percaya diri di depan umum.`,
-        `Kesiapan matang dan strategi persiapan Perguruan Tinggi (PTN/PTS) serta karier masa depan.`
-      ],
-      area_akademik_perlu_ditingkatkan: [
-        `Manajemen waktu akademik seimbang antara tryout ujian seleksi PTN, organisasi, dan kesehatan.`,
-        `Mempertajam keterampilan jejaring (networking) dan manajemen konflik tim.`
-      ],
+      status_kesiapan_sma: status_sma,
+      ringkasan_eksekutif_sma: `Berdasarkan analisis evaluasi aktual dari orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5 - Pola ${isPositif ? "Sangat Matang/Positif" : isKurang ? "Perlu Strategi/Kurang" : "Prospektif/Campuran"}), Ananda ${childName} menunjukkan kematangan kesiapan Perguruan Tinggi dan karier masa depan yang ${isPositif ? "sangat matang, siap kuliah, dan memiliki otonomi akademik luar biasa" : isKurang ? "membutuhkan pendampingan orientasi jurusan dan pemahaman strategi belajar intensif untuk menyongsong seleksi PTN/PTS" : "siap dan berkembang baik dengan perlunya penguatan fokus strategi seleksi kuliah"}.`,
+      keunggulan_akademik_sma: keunggulan_sma,
+      area_akademik_perlu_ditingkatkan: perbaikan_sma,
       kesiapan_kuliah_dan_perencanaan_karier: {
-        status_kesiapan_ptn: isHigh ? "Sangat Siap" : "Siap",
-        potensi_jurusan_kuliah: [
-          `Teknologi Informasi / Computer Science / Data Science`,
-          `Teknik & Ilmu Pengetahuan Alam (Saintek)`,
-          `Manajemen Bisnis / Ekonomi / Soshum`
+        status_kesiapan_ptn: status_ptn,
+        potensi_jurusan_kuliah: isPositif ? [
+          "Teknologi Informasi, Computer Science & Data Science (Saintek Unggul)",
+          "Manajemen Bisnis Ekonomi & Kepemimpinan Organisasi (Soshum)",
+          "Teknik & Ilmu Pengetahuan Alam Terapan"
+        ] : isKurang ? [
+          "Perlu tes minat bakat mendalam untuk mengeksplorasi jurusan vokasi/akademik yang senada dengan kepribadian anak.",
+          "Jurusan kreatif atau aplikatif yang sesuai dengan gaya belajar praktis siswa."
+        ] : [
+          "Bidang Sains, Teknologi, Manajemen, atau Ilmu Sosial yang selaras dengan nilai mata pelajaran terkuat anak."
         ],
-        strategi_seleksi_perguruan_tinggi: [
-          `Mengikuti latihan soal tryout SNBT / Ujian Mandiri secara teratur.`,
-          `Penyusunan portofolio prestasi dan riset profil kampus impian.`
+        strategi_seleksi_perguruan_tinggi: isKurang ? [
+          "Mulailah menyusun jadwal latihan tryout rutin dengan target realistis.",
+          "Lakukan diskusi bedah kampus dan jurusan secara konsisten tanpa memberikan tekanan mental berlebih."
+        ] : [
+          "Mengikuti tryout SNBT / Ujian Mandiri terstruktur serta mengasah portofolio prestasi.",
+          "Riset mendalam mengenai passing grade dan karakteristik kampus target utama dan alternatif."
         ]
       },
       public_speaking_dan_leadership: [
-        `Kemampuan menyampaikan gagasan terstruktur dan meyakinkan di depan umum.`,
-        `Inisiatif kepemimpinan dalam mengarahkan tim proyek dan mengelola konflik.`
+        isKurang ? "Rasa percaya diri dalam mengemukakan ide presentasi atau memegang kepemimpinan tim masih perlu distimulasi dengan memberi kesempatan bernarasi di rumah." : "Mampu presentasi gagasan secara meyakinkan dan memegang peran leadership kolaboratif."
       ],
       problem_solving_dan_resiliensi: [
-        `Memiliki resiliensi (daya tahan) yang baik saat menghadapi tekanan persaingan tinggi.`,
-        `Pertimbangan keputusan jangka panjang berbasis evaluasi risiko yang matang.`
+        isKurang ? "Resilience (daya tahan menghadapi soal susah atau kejenuhan tryout) perlu dikuatkan melalui manajemen emosi dan dukungan mental keluarga." : "Memiliki daya tahan (resilience) tinggi saat menghadapi tantangan seleksi perguruan tinggi."
       ],
       pengembangan_soft_hard_skills: [
-        `Pengembangan bahasa asing, sertifikasi keahlian digital, dan tanggung jawab pribadi.`
+        "Penguasaan teknologi digital, bahasa asing, serta pematangan kedewasaan tanggung jawab pribadi."
       ],
-      perhatian_orangtua_dan_otonomi: [
-        `Berikan otonomi penuh dalam menentukan jurusan kuliah dan rencana karier pilihan anak.`,
-        `Fasilitasi tryout kampus dan bimbingan persiapan perguruan tinggi.`
+      perhatian_orangtua_dan_otonomi: isKurang ? [
+        "Hindari memaksa jurusan impian orang tua bila tidak sepadan dengan minat dan kesiapan mental anak.",
+        "Berikan bimbingan terpadu (misal kursus persiapan atau mentor) untuk mengatasi defisit kemampuan analisis.",
+        "Dukung otonomi anak dalam pengelolaan tanggung jawab belajarnya sendiri."
+      ] : [
+        "Berikan otonomi penuh dalam menentukan rancangan karier dan pilihan jurusan kuliah anak.",
+        "Jadilah support system emosional di masa persaingan ujian seleksi PTN yang menegangkan."
       ],
-      rekomendasi_strategi_masa_depan: [
-        { kategori: "Persiapan Perguruan Tinggi (SMA)", aktivitas: "Fasilitasi tryout SNBT/Mandiri dan konsultasi berkala pemilihan jurusan kuliah." },
-        { kategori: "Riset & Portofolio Karya", aktivitas: "Dorong pembuatan proyek karya mandiri atau sertifikasi keahlian digital/bahasa." }
+      rekomendasi_strategi_masa_depan: isKurang ? [
+        { kategori: "Pendampingan Orientasi Jurusan & Karier", aktivitas: "Jalani konseling karier atau tes minat bakat untuk memetakan arah jurusan kuliah yang sesuai dengan anak." },
+        { kategori: "Strategi Intensif Persiapan PTN/PTS", aktivitas: "Fokus pada latihan rutin soal tryout SNBT dari tingkat dasar untuk menumbuhkan kembali kepercayaan diri anak." }
+      ] : [
+        { kategori: "Persiapan Strategis PTN/PTS", aktivitas: "Fasilitasi partisipasi tryout akurat dan konsultasi seleksi penentuan pilihan 1 & pilihan 2 di PTN impian." },
+        { kategori: "Pengayaan Portofolio Masa Depan", aktivitas: "Dorong anak mengambil sertifikasi bahasa asing (TOEFL/IELTS) atau proyek portofolio kepemimpinan/karya nyata." }
       ],
       catatan_kelulusan_sma: [
-        `Apresiasi atas kedewasaan dan tanggung jawab pribadi Ananda ${childName}.`,
-        `Laporan ini disusun sebagai peta jalan menuju sukses di Perguruan Tinggi & Dunia Karier.`
+        `Sangat menghargai pendampingan tulus dari Ibu/Bapak ${parentName} di fase kritis peralihan dari SMA menuju masa dewasa.`,
+        `Laporan ini dirumuskan langsung berdasarkan pola respons orang tua sebagai kompas strategis menembus perguruan tinggi & karier impian.`
       ]
     };
   }
 
   // DEFAULT TK / PAUD
+  let keunggulan_tk: string[] = [];
+  let stimulasi_tk: string[] = [];
+  let status_tk = "Berkembang Sesuai Usia (Normal)";
+  let status_akademik_tk = "Sesuai Usia";
+
+  if (isPositif) {
+    status_tk = "Berkembang Sangat Baik";
+    status_akademik_tk = "Sangat Baik";
+    keunggulan_tk = highAnswers.slice(0, 5).map(a => formatBullet(a, "Sudah mampu dengan sangat baik: "));
+    if (keunggulan_tk.length < 3) {
+      keunggulan_tk.push("Mampu menyampaikan keinginan dan berkomunikasi verbal dengan lancar dan jelas.");
+      keunggulan_tk.push("Mengenal huruf dasar, angka 1-10, warna, bentuk geometri, dan instruksi sederhana.");
+      keunggulan_tk.push("Antusias mencoba aktivitas baru serta percaya diri saat bermain bersama teman sebaya.");
+    }
+    stimulasi_tk = [
+      "Memberikan pengayaan permainan eksploratif yang kreatif untuk menyongsong kesiapan masuk Sekolah Dasar.",
+      "Mempertahankan kebiasaan mandiri harian di rumah dengan apresiasi positif."
+    ];
+  } else if (isKurang) {
+    status_tk = "Perlu Pendampingan Intensif";
+    status_akademik_tk = "Perlu Stimulasi Intensif";
+    keunggulan_tk = [
+      "Anak senantiasa memiliki rasa ingin tahu alamiah usia dini yang dapat dimaksimalkan dengan stimulasi berulang.",
+      "Menunjukkan respons positif jika disertai pendampingan sabar dan penuh kasih sayang di lingkungan rumah."
+    ];
+    stimulasi_tk = lowAnswers.slice(0, 5).map(a => formatBullet(a, "Perlu stimulasi dan latihan teratur untuk: "));
+    if (stimulasi_tk.length < 3) {
+      stimulasi_tk.push("Melatih kemandirian dasar (makan sendiri, memakai sepatu, merapikan mainan).");
+      stimulasi_tk.push("Meningkatkan fokus dan konsentrasi dalam permainan sederhana berdurasi 10-15 menit.");
+      stimulasi_tk.push("Mengajarkan ekspresi komunikasi verbal tanpa mudah rewel/menangis saat kecewa.");
+    }
+  } else {
+    status_tk = "Berkembang Sesuai Usia (Normal)";
+    status_akademik_tk = "Sesuai Usia";
+    const top = [...highAnswers, ...midAnswers].slice(0, 4);
+    const bot = [...lowAnswers, ...midAnswers].slice(0, 3);
+    keunggulan_tk = top.length > 0 ? top.map(a => formatBullet(a, "Berkembang positif pada: ")) : [
+      "Mampu berkomunikasi dan berinteraksi secara wajar sesuai tahapan usia dini."
+    ];
+    stimulasi_tk = bot.length > 0 ? bot.map(a => formatBullet(a, "Perlu peningkatan pengawasan pada: ")) : [
+      "Melatih konsentrasi bermain dan kemandirian merapikan peralatan pribadi."
+    ];
+  }
+
   return {
     judul: "Laporan Assessment Perkembangan Anak TK",
-    status_perkembangan: isHigh ? "Berkembang Sangat Baik" : "Berkembang Sesuai Usia (Normal)",
-    penjelasan_status: `Berdasarkan asesmen perkembangan anak usia dini (TK / PAUD), Ananda ${childName} menunjukkan kesiapan tumbuh kembang, komunikasi, dan calistung awal yang ${isHigh ? "sangat optimal" : "baik dan berkembang positif"}.`,
-    kekuatan_anak: [
-      `Mampu menyampaikan keinginan dan berkomunikasi verbal dengan jelas.`,
-      `Mengenal huruf dasar, angka, warna, bentuk, dan membilang benda harian.`,
-      `Antusias mencoba permainan baru dan beradaptasi dengan teman seusianya.`
-    ],
-    area_perlu_ditingkatkan: [
-      `Meningkatkan konsentrasi dan ketekunan saat menyelesaikan permainan (10–15 menit).`,
-      `Melatih kemandirian merapikan mainan dan peralatan pribadi setelah digunakan.`
-    ],
+    status_perkembangan: status_tk,
+    penjelasan_status: `Berdasarkan analisis observasi aktual orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5 - Pola ${isPositif ? "Sangat Baik/Positif" : isKurang ? "Perlu Pendampingan/Kurang" : "Normal/Campuran"}), Ananda ${childName} menunjukkan kesiapan tumbuh kembang anak usia dini yang ${isPositif ? "sangat optimal, komunikatif, dan mandiri melebihi ekspektasi usianya" : isKurang ? "membutuhkan perhatian serta stimulasi konsisten dari orang tua di rumah pada beberapa tahapan dasar motorik, komunikasi, dan kemandirian" : "berkembang positif sesuai jenjang usianya dengan perlunya sedikit pemantauan pada konsentrasi harian"}.`,
+    kekuatan_anak: keunggulan_tk,
+    area_perlu_ditingkatkan: stimulasi_tk,
     potensi_dikembangkan: [
-      `Potensi komunikasi verbal dan ekspresi bahasa anak.`,
-      `Kreativitas eksplorasi visual, seni, dan daya ingat permainan.`
+      "Potensi ekspresi bahasa verbal, daya kreativitas, dan rasa percaya diri sosial anak.",
+      "Kemandirian serta ketekunan bereksplorasi secara gembira dalam belajar sambil bermain."
     ],
     kemampuan_akademik: {
-      status_akademik: isHigh ? "Sangat Baik" : "Sesuai Usia",
-      kekuatan_akademik: [
-        `Mengenal huruf dasar alfabet dan angka 1–10 secara visual.`,
-        `Mengenal warna primer, sekunder, dan bentuk geometri dasar.`
+      status_akademik: status_akademik_tk,
+      kekuatan_akademik: isPositif ? [
+        "Mengenal abjad alfabet dasar dan angka 1-10 secara visual dan kuantitas sederhana.",
+        "Mengenal beragam warna, bentuk benda, dan mampu mendengarkan cerita sampai selesai."
+      ] : isKurang ? [
+        "Pengenalan angka dan huruf masih membutuhkan media bermain visual yang menarik (seperti puzzle atau lagu).",
+        "Perlu didampingi bernyanyi dan membilang benda nyata di sekitar rumah."
+      ] : [
+        "Mengenal lambang bilangan dasar dan huruf awal sesuai kurikulum PAUD/TK wajar."
       ],
-      area_akademik_dikembangkan: [
-        `Pengenalan bunyi fonik huruf awal untuk persiapan membaca.`
+      area_akademik_dikembangkan: isKurang ? [
+        "Latih kebiasaan menyimak cerita pendek 5-10 menit sebelum tidur untuk memperkaya kosakata dan fokus anak."
+      ] : [
+        "Pengenalan bunyi fonik abjad secara menyenangkan sebagai landasan awal membaca tanpa paksaan."
       ]
     },
-    prioritas_stimulasi: [
-      `Stimulasi Calistung TK: Bermain flashcard huruf/angka 10–15 menit bersama orang tua.`,
-      `Kemandirian & Motorik: Latih anak memakai sepatu, makan sendiri, dan merapikan mainan.`
+    prioritas_stimulasi: isKurang ? [
+      "Stimulasi Kemandirian Harian: Libatkan anak dalam aktivitas ringan di rumah (membereskan mainan, meletakkan sepatu).",
+      "Stimulasi Komunikasi Emosional: Latih anak mengungkapkan emosi 'aku marah' atau 'aku sedih' lewat kata-kata, bukan jeritan.",
+      "Stimulasi Fokus: Dampingi bermain puzzle atau mewarnai 10 menit tanpa gangguan HP/TV."
+    ] : [
+      "Stimulasi Calistung Gembira: Bermain flashcard huruf & angka 15 menit dengan metode permainan suportif.",
+      "Penguatan Kemandirian Sekolah: Biarkan anak menuntaskan rutinitas pagi (memakai tas dan pakaian) secara mandiri."
     ],
-    rekomendasi_orangtua: [
-      `Berikan stimulasi calistung berbasis permainan gembira tanpa paksaan.`,
-      `Sediakan ruang eksplorasi positif di rumah dan beri apresiasi atas setiap usaha anak.`
+    rekomendasi_orangtua: isKurang ? [
+      "Berikan teladan kesabaran dan berikan pujian konkret saat anak menunjukkan sedikit kemajuan (misal: 'Hebat, kamu mau merapikan buku!').",
+      "Hindari membanding-bandingkan perkembangan anak dengan saudara atau temannya karena setiap anak unik.",
+      "Konsistensi stimulasi harian selama 15 menit jauh lebih efektif dibandingkan 2 jam sekali seminggu.",
+      "Jika tantangan konsentrasi, komunikasi, dan regulasi emosi berlarut-larut melebihi batas wajar usia 5-6 tahun, disarankan konsultasi observasi lanjutan dengan Psikolog Anak atau Dokter Spesialis Tumbuh Kembang."
+    ] : [
+      "Sediakan ruang bermain yang aman dan merdeka di rumah untuk mendukung eksplorasi positif anak.",
+      "Beri apresiasi nyata pada usaha keras anak, bukan hanya pada hasil akhirnya.",
+      "Jaga keseimbangan antara bermain aktif fisik di luar ruangan dan aktivitas literasi tenang di dalam rumah."
     ],
     catatan: [
-      `Sangat mengapresiasi keaktifan dan semangat belajar Ananda ${childName}.`,
-      `Laporan ini merupakan interpretasi profesional berdasarkan asesmen orang tua.`
+      `Sangat menghargai kepedulian Ibu/Bapak ${parentName} yang senantiasa memprioritaskan tumbuh kembang Ananda ${childName}.`,
+      `Laporan ini merupakan hasil interpretasi evaluasi jujur orang tua (bukan diagnosis medis maupun klinis) sebagai kompas stimulasi optimal di rumah.`,
+      isKurang ? "Disarankan melakukan pemantauan berkala dan konsultasi dengan ahli psikolog anak jika kelainan regulasi emosi atau kemandirian menetap." : "Anak menunjukkan kesiapan positif yang layak dipertahankan menuju transisi tahapan sekolah selanjutnya."
     ]
   };
 }
@@ -704,20 +927,21 @@ export async function submitAndAnalyze(data: SubmitInput) {
       }
     }
 
+    const scoreVal = Number(ans?.score ?? (ans as any)?.value ?? 3);
     if (qUuid && isUUID(qUuid)) {
       answerRows.push({
         assessment_id: assessment.id,
         question_id: qUuid,
-        score: ans.score,
+        score: scoreVal,
       });
     }
 
     const textVal = ans.text_answer || (ans as any).textAnswer;
     if (textVal) {
-      answersFormattedText.push(`[${catName}] ${qText} → "${textVal}"`);
+      answersFormattedText.push(`Q${idx + 1}. [${catName}] ${qText} → "${textVal}"`);
     } else {
-      const label = ["Tidak Pernah", "Jarang", "Kadang-kadang", "Sering", "Selalu"][ans.score - 1] ?? "Cukup";
-      answersFormattedText.push(`[${catName}] ${qText} → ${ans.score}/5 (${label})`);
+      const label = ["Tidak Pernah / Belum Mampu", "Jarang / Kurang Mampu", "Kadang-kadang / Cukup", "Sering / Mampu", "Selalu / Sangat Mampu"][Math.max(0, Math.min(4, scoreVal - 1))] ?? "Cukup Mampu";
+      answersFormattedText.push(`Q${idx + 1}. [${catName}] ${qText} → Skor: ${scoreVal}/5 (${label})`);
     }
   });
 
@@ -734,7 +958,15 @@ export async function submitAndAnalyze(data: SubmitInput) {
     }
   }
 
-  const answersText = answersFormattedText.join("\n");
+  const totalScoreCalc = data.answers.reduce((acc, curr) => acc + Number(curr?.score ?? (curr as any)?.value ?? 3), 0);
+  const avgScoreCalc = totalScoreCalc / (data.answers.length || 1);
+  const highCountCalc = data.answers.filter(a => Number(a?.score ?? (a as any)?.value ?? 3) >= 4).length;
+  const lowCountCalc = data.answers.filter(a => Number(a?.score ?? (a as any)?.value ?? 3) <= 2).length;
+  const patternTypeCalc = avgScoreCalc >= 4.0 ? "POSITIF / SANGAT BAIK" : (avgScoreCalc <= 2.5 ? "KURANG / PERLU PENDAMPINGAN INTENSIF" : "CAMPURAN / BERKEMBANG SESUAI USIA");
+
+  const analyticalHeader = `\n\n--- RINGKASAN & POLA JAWABAN AKTUAL ORANG TUA ---\n- Rata-rata Skor Keseluruhan: ${avgScoreCalc.toFixed(2)} / 5.00\n- Status Pola Jawaban: ${patternTypeCalc}\n- Jumlah Jawaban Skor Tinggi (4-5): ${highCountCalc} aspek\n- Jumlah Jawaban Skor Rendah (1-2): ${lowCountCalc} aspek\n\n[INSTRUKSI WAJIB POLA ANALISIS]: Pola jawaban orang tua adalah "${patternTypeCalc}". Sesuai Aturan Wajib Interpretasi Jawaban Orang Tua, rancangan laporan (status, penjelasan status, keunggulan, area perbaikan, dan rekomendasi treatment) HARUS mencerminkan secara proporsional pola skoring ini! Dilarang membuat laporan generik!`;
+
+  const answersText = answersFormattedText.join("\n") + analyticalHeader;
 
   // ==========================================
   // STAGE 3: PROMPT BUILD & CALL AI CLIENT
@@ -796,7 +1028,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .replace(/\{\{answers\}\}/g, answersText);
 
   const levelContentObj = getAssessmentContent(dbEducationLevel);
-  const totalScore = data.answers.reduce((acc, curr) => acc + curr.score, 0);
+  const totalScore = data.answers.reduce((acc, curr) => acc + Number(curr?.score ?? (curr as any)?.value ?? 3), 0);
   const avgScore = totalScore / (data.answers.length || 1);
 
   let parsedResult: any = null;
@@ -826,8 +1058,9 @@ export async function submitAndAnalyze(data: SubmitInput) {
     console.warn("[PROMPT_AUDIT:STATUS]", "Gagal memanggil AI Gateway:", aiErr?.message);
   }
 
-  if (!parsedResult || typeof parsedResult !== "object" || (!parsedResult.ringkasan && !parsedResult.status_perkembangan && !parsedResult.kekuatan_anak)) {
-    parsedResult = generateFallbackResult(data.child.name, parentName, avgScore, dbEducationLevel);
+  if (!parsedResult || typeof parsedResult !== "object" || (!parsedResult.ringkasan && !parsedResult.status_perkembangan && !parsedResult.kekuatan_anak && !parsedResult.status_perkembangan_sd && !parsedResult.status_perkembangan_smp && !parsedResult.status_kesiapan_sma)) {
+    console.log("[PROMPT_AUDIT:STATUS]", "Menggunakan fallback generator interaktif berbasis jawaban aktual orang tua...");
+    parsedResult = generateFallbackResult(data.child.name, parentName, avgScore, dbEducationLevel, data.answers, dbQuestions);
     rawText = JSON.stringify(parsedResult);
   }
 
