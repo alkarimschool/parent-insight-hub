@@ -106,7 +106,7 @@ function QuestionsPage() {
   const categoryName = useMemo(() => {
     if (!current) return "";
     if (current.category_name) return current.category_name;
-    const cat = cats.find((c) => c.id === current.category_id);
+    const cat = cats.find((c) => c.id === (current as QRow).category_id);
     return cat?.name ?? "Umum";
   }, [cats, current]);
 

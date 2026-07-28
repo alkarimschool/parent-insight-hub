@@ -19,7 +19,7 @@ async function testParentInsertProof() {
   // 2. QUERY RLS POLICIES FOR 'parents' TABLE VIA RPC / METADATA
   console.log("2. AUDITING RLS POLICIES ON 'parents' TABLE:");
   try {
-    const { data: policies, error: polErr } = await supabaseAdmin.rpc("exec_sql", {
+    const { data: policies, error: polErr } = await (supabaseAdmin as any).rpc("exec_sql", {
       sql_query: "SELECT policyname, roles, cmd, qual, with_check FROM pg_policies WHERE tablename = 'parents';"
     });
     if (!polErr && policies) {
