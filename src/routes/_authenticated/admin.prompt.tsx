@@ -149,9 +149,15 @@ function PromptAdmin() {
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await runTest({ data: { sample: "test" } });
-      setTestResult(res.sample ?? "Koneksi OK");
-      toast.success("Tes Koneksi AI Berhasil!");
+      const res = await runTest({
+        data: {
+          level: activeLevel,
+          system_prompt: form?.system_prompt,
+          user_template: form?.user_template,
+        },
+      });
+      setTestResult((res as any)?.sample ?? "Koneksi OK");
+      toast.success(`Tes AI Prompt Jenjang ${activeLevel} Berhasil!`);
     } catch (e: any) {
       toast.error("Gagal tes AI: " + (e?.message ?? "Terjadi kesalahan"));
     } finally {

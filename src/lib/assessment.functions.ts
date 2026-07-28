@@ -83,8 +83,9 @@ export const getAssessmentResultFn = createServerFn({ method: "POST" })
   });
 
 export const testAiPrompt = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({ sample: z.string().optional() }).parse(d))
-  .handler(async () => {
+  .inputValidator((d: unknown) => d)
+  .handler(async ({ data }) => {
     const { runTestPrompt } = await import("./assessment.server");
-    return runTestPrompt();
+    const payload = typeof data === "object" && data !== null ? (data as any).data ?? data : {};
+    return runTestPrompt(payload);
   });

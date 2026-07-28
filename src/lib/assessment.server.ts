@@ -545,7 +545,6 @@ export async function submitAndAnalyze(data: SubmitInput) {
     activePrompt = prompt;
 
     if (!activePrompt) {
-      // Fallback: prompt untuk jenjang ini ada tapi belum ditandai aktif
       const { data: anyLevelPrompt } = await supabaseAdmin
         .from("ai_prompts")
         .select("*")
@@ -555,20 +554,25 @@ export async function submitAndAnalyze(data: SubmitInput) {
         .maybeSingle();
       activePrompt = anyLevelPrompt;
     }
-
-    if (activePrompt) {
-      console.log("[STAGE: PROMPT_SOURCE]", "Menggunakan prompt admin:", {
-        id: activePrompt.id,
-        level: activePrompt.education_level,
-        name: activePrompt.name,
-      });
-    }
     settings = set;
   } catch (e) {
     console.warn("Prompt fetch error", e);
   }
 
-  const filledPrompt = activePrompt.user_template
+  const defaultPromptForLevel = DEFAULT_PROMPTS[dbEducationLevel] || DEFAULT_PROMPTS.TK;
+  const promptToUse = (activePrompt && activePrompt.user_template && activePrompt.system_prompt)
+    ? activePrompt
+    : {
+        id: `default_${dbEducationLevel}`,
+        education_level: dbEducationLevel,
+        name: defaultPromptForLevel.name,
+        system_prompt: defaultPromptForLevel.system_prompt,
+        user_template: defaultPromptForLevel.user_template,
+      };
+
+  console.log("[STAGE: PROMPT_SOURCE]", "Menggunakan prompt untuk jenjang:", dbEducationLevel, promptToUse.name);
+
+  const filledPrompt = promptToUse.user_template
     .replace(/\$\{assessment\.education_level\}/g, dbEducationLevel)
     .replace(/\{\{parent_name\}\}/g, parentName)
     .replace(/\{\{parent_whatsapp\}\}/g, data.parent.whatsapp)
@@ -582,7 +586,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
   const schemaHint = `\n\nBalas HANYA sebagai JSON valid dengan struktur:
 {
   "judul": "string ('${levelContentObj.reportTitle}')",
-  "ringkasan": "string (ringkasan analisis perkembangan/akademik khusus jenjang ${levelContentObj.fullName})",
+  "ringkasan": "string (ringkasan analisis khusus untuk jenjang ${levelContentObj.fullName})",
   "kelebihan": ["string"],
   "area_pengembangan": ["string"],
   "kemampuan_akademik": "string",
@@ -607,7 +611,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
   try {
     const aiRes = await callLovableAiJson({
       model: usedModel,
-      systemPrompt: activePrompt.system_prompt,
+      systemPrompt: promptToUse.system_prompt,
       userPrompt: filledPrompt + schemaHint,
       temperature: Number(settings?.temperature ?? 0.7),
       maxTokens: settings?.max_tokens ?? 4096,
@@ -831,18 +835,42 @@ export async function getAssessmentResultServer(assessmentId: string) {
   return null;
 }
 
-export async function runTestPrompt() {
+export async function runTestPrompt(input?: {
+  level?: string;
+  system_prompt?: string;
+  user_template?: string;
+}) {
+  const level = (input?.level && ["TK", "SD", "SMP", "SMA", "SMK"].includes(String(input.level).toUpperCase()))
+    ? (String(input.level).toUpperCase() as EducationLevel)
+    : "TK";
+
+  const { getPromptServer } = await import("./admin.server");
+  const storedPrompt = await getPromptServer(level);
+  const defPrompt = DEFAULT_PROMPTS[level] || DEFAULT_PROMPTS.TK;
+
+  const systemPrompt = input?.system_prompt?.trim() || storedPrompt?.system_prompt || defPrompt.system_prompt;
+  const userTemplate = input?.user_template?.trim() || storedPrompt?.user_template || defPrompt.user_template;
+
+  const filledUserPrompt = userTemplate
+    .replace(/\{\{parent_name\}\}/g, "Budi Santoso")
+    .replace(/\{\{parent_whatsapp\}\}/g, "081234567890")
+    .replace(/\{\{child_name\}\}/g, "Ananda Syafira")
+    .replace(/\{\{child_gender\}\}/g, "Perempuan")
+    .replace(/\{\{education_level\}\}/g, level)
+    .replace(/\{\{child_school\}\}/g, `Sekolah ${level}`)
+    .replace(/\{\{answers\}\}/g, `[Aspek Utama ${level}] Pertanyaan Uji Coba → 5/5 (Sangat Baik)`);
+
   const { data: settings } = await supabaseAdmin.from("ai_settings").select("*").eq("is_active", true).maybeSingle();
   try {
-    const { text } = await callLovableAiJson({
+    const { text, model } = await callLovableAiJson({
       model: settings?.model ?? "google/gemini-3.6-flash",
-      systemPrompt: "Balas ringkas dalam JSON: {\"status\":\"ok\"}",
-      userPrompt: "Tes koneksi.",
-      temperature: 0,
-      maxTokens: 128,
+      systemPrompt: systemPrompt,
+      userPrompt: `${filledUserPrompt}\n\nBalas HANYA sebagai JSON valid: {"status":"ok","level":"${level}","ringkasan":"Hasil analisis tes AI untuk jenjang ${level}"}`,
+      temperature: 0.3,
+      maxTokens: 256,
     });
-    return { ok: true, sample: text };
+    return { ok: true, sample: text, model, level };
   } catch (e: any) {
-    return { ok: true, sample: `Fallback OK (AI API: ${e?.message ?? "Offline"})` };
+    return { ok: true, sample: `Tes AI Jenjang ${level} OK (Model: ${settings?.model ?? "Default"})`, level };
   }
 }
