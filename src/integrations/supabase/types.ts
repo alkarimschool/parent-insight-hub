@@ -47,6 +47,7 @@ export type Database = {
       ai_prompts: {
         Row: {
           created_at: string
+          education_level: string
           id: string
           is_active: boolean
           name: string
@@ -56,6 +57,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          education_level?: string
           id?: string
           is_active?: boolean
           name: string
@@ -65,6 +67,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          education_level?: string
           id?: string
           is_active?: boolean
           name?: string
@@ -177,24 +180,33 @@ export type Database = {
       }
       assessments: {
         Row: {
+          ai_prompt: string | null
+          assessment_title: string | null
           child_id: string
           created_at: string
+          education_level: string
           id: string
           parent_id: string
           status: string
           updated_at: string
         }
         Insert: {
+          ai_prompt?: string | null
+          assessment_title?: string | null
           child_id: string
           created_at?: string
+          education_level?: string
           id?: string
           parent_id: string
           status?: string
           updated_at?: string
         }
         Update: {
+          ai_prompt?: string | null
+          assessment_title?: string | null
           child_id?: string
           created_at?: string
+          education_level?: string
           id?: string
           parent_id?: string
           status?: string
@@ -222,6 +234,7 @@ export type Database = {
           birth_date: string
           class_name: string | null
           created_at: string
+          education_level: string
           gender: string
           id: string
           name: string
@@ -232,6 +245,7 @@ export type Database = {
           birth_date: string
           class_name?: string | null
           created_at?: string
+          education_level?: string
           gender: string
           id?: string
           name: string
@@ -242,6 +256,7 @@ export type Database = {
           birth_date?: string
           class_name?: string | null
           created_at?: string
+          education_level?: string
           gender?: string
           id?: string
           name?: string
@@ -300,6 +315,7 @@ export type Database = {
       question_categories: {
         Row: {
           created_at: string
+          education_level: string
           id: string
           name: string
           order_index: number
@@ -307,6 +323,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          education_level?: string
           id?: string
           name: string
           order_index?: number
@@ -314,6 +331,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          education_level?: string
           id?: string
           name?: string
           order_index?: number
@@ -325,6 +343,7 @@ export type Database = {
         Row: {
           category_id: string | null
           created_at: string
+          education_level: string
           id: string
           is_active: boolean
           order_index: number
@@ -334,6 +353,7 @@ export type Database = {
         Insert: {
           category_id?: string | null
           created_at?: string
+          education_level?: string
           id?: string
           is_active?: boolean
           order_index?: number
@@ -343,6 +363,7 @@ export type Database = {
         Update: {
           category_id?: string | null
           created_at?: string
+          education_level?: string
           id?: string
           is_active?: boolean
           order_index?: number

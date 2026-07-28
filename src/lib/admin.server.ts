@@ -504,7 +504,7 @@ export async function getAdminParentsListServer() {
         resultList.push({
           id: p.id,
           status: "pending",
-          education_level: "TK",
+          education_level: getEducationLevel((foundC as any)?.education_level),
           created_at: p.created_at || new Date().toISOString(),
           parent_id: p.id,
           child_id: foundC?.id,
@@ -683,7 +683,7 @@ export async function deleteAssessmentServer(targetId: string) {
   try {
     await supabaseAdmin.from("activity_logs").insert({
       action: "DELETE DATA",
-      details: {
+      payload: {
         target_id: targetId,
         timestamp: new Date().toISOString(),
       },
