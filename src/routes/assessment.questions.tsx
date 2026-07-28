@@ -7,7 +7,7 @@ import { fetchWebsite } from "@/lib/settings";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Loader2, GraduationCap } from "lucide-react";
-import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 import { submitAssessment } from "@/lib/assessment.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { LEVEL_QUESTIONS, EducationLevel } from "@/lib/questions.data";
@@ -47,6 +47,7 @@ function QuestionsPage() {
   const questions = useQuery({
     queryKey: ["questions-active-level", level],
     queryFn: async () => {
+      const defaults = LEVEL_QUESTIONS[level] || LEVEL_QUESTIONS.TK;
       try {
         const [{ data: qs }, { data: cats }] = await Promise.all([
           supabase
@@ -61,15 +62,25 @@ function QuestionsPage() {
             .order("order_index"),
         ]);
 
-        if (qs && qs.length > 0) {
-          return { qs: qs as QRow[], cats: (cats ?? []) as CatRow[] };
+        if (qs && qs.length > 0 && qs.length === defaults.length) {
+          return {
+            qs: qs.map((q, idx) => ({
+              id: q.id,
+              text: q.text,
+              order_index: q.order_index,
+              category_name: defaults[idx]?.category_name || "Umum",
+              education_level: q.education_level,
+              type: defaults[idx]?.type || "scale",
+              options: defaults[idx]?.options,
+            })),
+            cats: (cats ?? []) as CatRow[],
+          };
         }
       } catch (e) {
         console.warn("Using default questions fallback for level: " + level, e);
       }
 
       // Fallback data for level
-      const defaults = LEVEL_QUESTIONS[level] || LEVEL_QUESTIONS.TK;
       return {
         qs: defaults.map((q) => ({
           id: q.id,
@@ -77,6 +88,8 @@ function QuestionsPage() {
           order_index: q.order_index,
           category_name: q.category_name,
           education_level: q.education_level,
+          type: q.type,
+          options: q.options,
         })),
         cats: [],
       };
@@ -86,7 +99,7 @@ function QuestionsPage() {
   const list = questions.data?.qs ?? [];
   const cats = questions.data?.cats ?? [];
   const [idx, setIdx] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [answers, setAnswers] = useState<Record<string, any>>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -102,7 +115,7 @@ function QuestionsPage() {
     } catch {}
   }, [answers, level]);
 
-  const current = list[idx];
+  const current = list[idx] as any;
   const categoryName = useMemo(() => {
     if (!current) return "";
     if (current.category_name) return current.category_name;
@@ -110,7 +123,11 @@ function QuestionsPage() {
     return cat?.name ?? "Umum";
   }, [cats, current]);
 
-  const answered = list.filter((q) => answers[q.id]).length;
+  const answered = list.filter((q: any) => {
+    const val = answers[q.id];
+    if (q.type === "textarea") return typeof val === "string" && val.trim().length > 0;
+    return val !== undefined && val !== null && val !== "";
+  }).length;
   const progress = list.length ? (answered / list.length) * 100 : 0;
 
   const handleSubmit = async () => {
@@ -140,7 +157,24 @@ function QuestionsPage() {
             class_name: formData.class_name || "",
             education_level: level,
           },
-          answers: list.map((q) => ({ question_id: String(q.id), score: Number(answers[q.id] ?? 3) })),
+          answers: list.map((q: any) => {
+            const isTextarea = q.type === "textarea";
+            const rawVal = answers[q.id];
+            if (isTextarea) {
+              return {
+                question_id: String(q.id),
+                score: 5,
+                text_answer: String(rawVal ?? "").trim(),
+              };
+            }
+            const scoreNum = typeof rawVal === "number" ? rawVal : 3;
+            const matchedOpt = q.options?.find((o: any) => o.v === scoreNum);
+            return {
+              question_id: String(q.id),
+              score: scoreNum,
+              text_answer: matchedOpt?.label || "",
+            };
+          }),
         },
       });
 
@@ -170,6 +204,9 @@ function QuestionsPage() {
   }
   if (!current) return null;
 
+  const currentOptions = current.options || SCALE;
+  const isCurrentTextarea = current.type === "textarea";
+
   return (
     <div className="min-h-screen bg-gradient-soft pb-24 md:pb-12">
       <PublicNav siteName={website.data?.site_name ?? "PAA"} logoText="PAA" />
@@ -189,22 +226,35 @@ function QuestionsPage() {
             Pertanyaan {idx + 1} ({level})
           </div>
           <h2 className="mt-2 text-xl font-semibold leading-relaxed text-foreground sm:text-2xl">{current.text}</h2>
-          <div className="mt-8 grid gap-3">
-            {SCALE.map((s) => {
-              const selected = answers[current.id] === s.v;
-              return (
-                <button
-                  key={s.v}
-                  type="button"
-                  onClick={() => setAnswers({ ...answers, [current.id]: s.v })}
-                  className={"flex items-center justify-between rounded-2xl border p-4 text-left transition " + (selected ? "border-primary bg-primary/5 shadow-soft" : "border-border/60 bg-background hover:border-primary/40 hover:bg-accent/40")}
-                >
-                  <span className="font-medium text-foreground">{s.label}</span>
-                  <span className={"grid h-8 w-8 place-items-center rounded-full text-sm font-bold " + (selected ? "bg-gradient-hero text-primary-foreground" : "bg-muted text-muted-foreground")}>{s.v}</span>
-                </button>
-              );
-            })}
-          </div>
+          
+          {isCurrentTextarea ? (
+            <div className="mt-6">
+              <Textarea
+                value={answers[current.id] ?? ""}
+                onChange={(e) => setAnswers({ ...answers, [current.id]: e.target.value })}
+                placeholder="Tuliskan pengamatan atau penjelasan Anda di sini..."
+                className="min-h-[140px] rounded-2xl border-border/60 bg-background p-4 text-base focus:border-primary"
+              />
+            </div>
+          ) : (
+            <div className="mt-8 grid gap-3">
+              {currentOptions.map((s: any, optIdx: number) => {
+                const selected = answers[current.id] === s.v;
+                return (
+                  <button
+                    key={optIdx}
+                    type="button"
+                    onClick={() => setAnswers({ ...answers, [current.id]: s.v })}
+                    className={"flex items-center justify-between rounded-2xl border p-4 text-left transition " + (selected ? "border-primary bg-primary/5 shadow-soft" : "border-border/60 bg-background hover:border-primary/40 hover:bg-accent/40")}
+                  >
+                    <span className="font-medium text-foreground">{s.label}</span>
+                    <span className={"grid h-8 w-8 place-items-center rounded-full text-sm font-bold " + (selected ? "bg-gradient-hero text-primary-foreground" : "bg-muted text-muted-foreground")}>{s.v}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <div className="mt-8 flex items-center justify-between gap-3">
             <Button type="button" variant="outline" onClick={() => setIdx(Math.max(0, idx - 1))} disabled={idx === 0} className="rounded-full">
               <ArrowLeft className="mr-1 h-4 w-4" /> Sebelumnya

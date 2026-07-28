@@ -52,6 +52,7 @@ const SubmitSchema = z.object({
     z.object({
       question_id: z.preprocess((v) => String(v ?? ""), z.string().min(1)),
       score: ScoreNumber,
+      text_answer: z.preprocess((v) => (v === null || v === undefined ? "" : String(v)), z.string()).optional(),
     })
   ).min(1, "Jawaban assessment tidak boleh kosong"),
 });

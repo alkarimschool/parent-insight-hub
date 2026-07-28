@@ -588,8 +588,13 @@ export async function submitAndAnalyze(data: SubmitInput) {
       });
     }
 
-    const label = ["Tidak Pernah", "Jarang", "Kadang-kadang", "Sering", "Selalu"][ans.score - 1] ?? "Cukup";
-    answersFormattedText.push(`[${catName}] ${qText} → ${ans.score}/5 (${label})`);
+    const textVal = ans.text_answer || (ans as any).textAnswer;
+    if (textVal) {
+      answersFormattedText.push(`[${catName}] ${qText} → "${textVal}"`);
+    } else {
+      const label = ["Tidak Pernah", "Jarang", "Kadang-kadang", "Sering", "Selalu"][ans.score - 1] ?? "Cukup";
+      answersFormattedText.push(`[${catName}] ${qText} → ${ans.score}/5 (${label})`);
+    }
   });
 
   if (answerRows.length > 0) {

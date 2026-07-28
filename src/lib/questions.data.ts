@@ -52,28 +52,221 @@ export function getEducationLevel(input: any): EducationLevel {
   return "TK";
 }
 
+export interface QuestionOption {
+  label: string;
+  v: number;
+}
+
 export interface QuestionData {
   id: string;
   education_level: EducationLevel;
   category_name: string;
   text: string;
   order_index: number;
+  type?: "scale" | "options" | "textarea";
+  options?: QuestionOption[];
 }
 
 export const LEVEL_QUESTIONS: Record<EducationLevel, QuestionData[]> = {
   TK: [
-    { id: "tk-q1", education_level: "TK", category_name: "Motorik & Fisik", text: "Apakah anak aktif bergerak, mampu melompat, serta lihai memegang pensil/sendok atau menggunting kertas?", order_index: 1 },
-    { id: "tk-q2", education_level: "TK", category_name: "Bahasa & Komunikasi", text: "Apakah anak mampu mengungkapkan keinginan, menceritakan pengalaman harian, atau menjawab pertanyaan dengan jelas?", order_index: 2 },
-    { id: "tk-q3", education_level: "TK", category_name: "Sosial & Emosional", text: "Apakah anak mudah berbaur dengan teman seusianya dan bersedia berbagi mainan atau bergantian?", order_index: 3 },
-    { id: "tk-q4", education_level: "TK", category_name: "Regulasi Emosi", text: "Saat merasa kecewa atau lelah, apakah anak dapat ditenangkan dan mulai belajar mengendalikan emosi?", order_index: 4 },
-    { id: "tk-q5", education_level: "TK", category_name: "Kemandirian Harian", text: "Apakah anak terbiasa melakukan aktivitas mandiri seperti makan, memakai sepatu, dan merapikan mainannya?", order_index: 5 },
-    { id: "tk-q6", education_level: "TK", category_name: "Daya Fokus & Konsentrasi", text: "Apakah anak mampu fokus mendengarkan cerita atau menyelesaikan aktivitas permainan selama 10–15 menit?", order_index: 6 },
-    { id: "tk-q7", education_level: "TK", category_name: "Eksplorasi & Ingin Tahu", text: "Apakah anak sering bertanya tentang hal-hal baru di sekitarnya dan antusias mencoba permainan baru?", order_index: 7 },
-    { id: "tk-q8", education_level: "TK", category_name: "Kemampuan Akademik Awal", text: "Apakah anak sudah mampu mengenali huruf dasar, menyebutkan angka, serta mengenal warna dan bentuk geometri?", order_index: 8 },
-    { id: "tk-q9", education_level: "TK", category_name: "Keterampilan Pra-Membaca", text: "Apakah anak tertarik membaca buku cerita bergambar, mencoret/menulis huruf, atau membilang benda?", order_index: 9 },
-    { id: "tk-q10", education_level: "TK", category_name: "Ketahanan Belajar", text: "Apakah anak tetap berusaha mencoba menyelesaikan tugas atau permainan meskipun mengalami sedikit kesulitan?", order_index: 10 },
-    { id: "tk-q11", education_level: "TK", category_name: "Kepatuhan Instruksi", text: "Apakah anak dapat memahami dan mengikuti instruksi sederhana dari guru di sekolah atau orang tua di rumah?", order_index: 11 },
-    { id: "tk-q12", education_level: "TK", category_name: "Kesiapan Tumbuh Kembang", text: "Secara umum, apakah perkembangan dan kesiapan sekolah TK anak saat ini berkembang sesuai usianya?", order_index: 12 },
+    {
+      id: "tk-q1",
+      education_level: "TK",
+      category_name: "Kemandirian",
+      text: "Apakah anak mampu melakukan kegiatan sehari-hari secara mandiri, seperti makan, memakai pakaian, memakai sepatu, atau merapikan mainannya?",
+      order_index: 1,
+      type: "options",
+      options: [
+        { label: "Selalu", v: 5 },
+        { label: "Sering", v: 4 },
+        { label: "Kadang-kadang", v: 3 },
+        { label: "Belum", v: 1 },
+      ],
+    },
+    {
+      id: "tk-q2",
+      education_level: "TK",
+      category_name: "Komunikasi",
+      text: "Apakah anak mampu menyampaikan keinginan, perasaan, atau menceritakan pengalamannya dengan kalimat yang mudah dipahami?",
+      order_index: 2,
+      type: "options",
+      options: [
+        { label: "Selalu", v: 5 },
+        { label: "Sering", v: 4 },
+        { label: "Kadang-kadang", v: 3 },
+        { label: "Belum", v: 1 },
+      ],
+    },
+    {
+      id: "tk-q3",
+      education_level: "TK",
+      category_name: "Interaksi Sosial",
+      text: "Bagaimana kemampuan anak saat bermain dan berinteraksi dengan teman sebaya atau orang lain?",
+      order_index: 3,
+      type: "options",
+      options: [
+        { label: "Sangat Baik", v: 5 },
+        { label: "Baik", v: 4 },
+        { label: "Cukup", v: 3 },
+        { label: "Masih Kesulitan", v: 1 },
+      ],
+    },
+    {
+      id: "tk-q4",
+      education_level: "TK",
+      category_name: "Pengendalian Emosi",
+      text: "Bagaimana kemampuan anak mengendalikan emosi ketika kecewa, marah, atau keinginannya tidak terpenuhi?",
+      order_index: 4,
+      type: "options",
+      options: [
+        { label: "Sangat Baik", v: 5 },
+        { label: "Baik", v: 4 },
+        { label: "Cukup", v: 3 },
+        { label: "Masih Kesulitan", v: 1 },
+      ],
+    },
+    {
+      id: "tk-q5",
+      education_level: "TK",
+      category_name: "Konsentrasi",
+      text: "Apakah anak mampu fokus menyelesaikan aktivitas atau permainan sesuai usianya tanpa mudah terdistraksi?",
+      order_index: 5,
+      type: "options",
+      options: [
+        { label: "Selalu", v: 5 },
+        { label: "Sering", v: 4 },
+        { label: "Kadang-kadang", v: 3 },
+        { label: "Belum", v: 1 },
+      ],
+    },
+    {
+      id: "tk-q6",
+      education_level: "TK",
+      category_name: "Motorik Kasar",
+      text: "Bagaimana kemampuan anak melakukan aktivitas fisik seperti berlari, melompat, memanjat, atau menjaga keseimbangan?",
+      order_index: 6,
+      type: "options",
+      options: [
+        { label: "Sangat Baik", v: 5 },
+        { label: "Baik", v: 4 },
+        { label: "Cukup", v: 3 },
+        { label: "Perlu Latihan", v: 1 },
+      ],
+    },
+    {
+      id: "tk-q7",
+      education_level: "TK",
+      category_name: "Motorik Halus",
+      text: "Bagaimana kemampuan anak menggunakan pensil, mewarnai, menggunting, meronce, atau menyusun balok?",
+      order_index: 7,
+      type: "options",
+      options: [
+        { label: "Sangat Baik", v: 5 },
+        { label: "Baik", v: 4 },
+        { label: "Cukup", v: 3 },
+        { label: "Perlu Latihan", v: 1 },
+      ],
+    },
+    {
+      id: "tk-q8",
+      education_level: "TK",
+      category_name: "Kemampuan Berpikir (Kognitif)",
+      text: "Apakah anak mampu memahami instruksi sederhana, mengenali warna, bentuk, pola, atau memecahkan masalah sederhana?",
+      order_index: 8,
+      type: "options",
+      options: [
+        { label: "Sangat Baik", v: 5 },
+        { label: "Baik", v: 4 },
+        { label: "Cukup", v: 3 },
+        { label: "Belum", v: 1 },
+      ],
+    },
+    {
+      id: "tk-q9",
+      education_level: "TK",
+      category_name: "Minat Belajar",
+      text: "Bagaimana minat anak terhadap kegiatan belajar, membaca buku, atau mencoba hal-hal baru?",
+      order_index: 9,
+      type: "options",
+      options: [
+        { label: "Sangat Tinggi", v: 5 },
+        { label: "Tinggi", v: 4 },
+        { label: "Cukup", v: 3 },
+        { label: "Rendah", v: 1 },
+      ],
+    },
+    {
+      id: "tk-q10",
+      education_level: "TK",
+      category_name: "Kemampuan Mengenal Huruf",
+      text: "Sejauh mana anak mengenal huruf alfabet?",
+      order_index: 10,
+      type: "options",
+      options: [
+        { label: "Mengenal hampir semua huruf", v: 5 },
+        { label: "Mengenal sebagian besar huruf", v: 4 },
+        { label: "Mengenal beberapa huruf", v: 3 },
+        { label: "Belum mengenal huruf", v: 1 },
+      ],
+    },
+    {
+      id: "tk-q11",
+      education_level: "TK",
+      category_name: "Kemampuan Mengenal Angka",
+      text: "Sejauh mana anak mengenal angka dan mampu berhitung sederhana sesuai usianya?",
+      order_index: 11,
+      type: "options",
+      options: [
+        { label: "Sangat Baik", v: 5 },
+        { label: "Baik", v: 4 },
+        { label: "Cukup", v: 3 },
+        { label: "Belum", v: 1 },
+      ],
+    },
+    {
+      id: "tk-q12",
+      education_level: "TK",
+      category_name: "Membaca dan Menulis Awal",
+      text: "Bagaimana kemampuan anak dalam membaca atau menulis sesuai tahap perkembangannya?",
+      order_index: 12,
+      type: "options",
+      options: [
+        { label: "Sudah berkembang baik", v: 5 },
+        { label: "Mulai berkembang", v: 4 },
+        { label: "Masih belajar", v: 3 },
+        { label: "Belum terlihat", v: 1 },
+      ],
+    },
+    {
+      id: "tk-q13",
+      education_level: "TK",
+      category_name: "Kesiapan Sekolah",
+      text: "Menurut Anda, seberapa siap anak mengikuti kegiatan belajar di sekolah secara mandiri?",
+      order_index: 13,
+      type: "options",
+      options: [
+        { label: "Sangat Siap", v: 5 },
+        { label: "Siap", v: 4 },
+        { label: "Cukup Siap", v: 3 },
+        { label: "Belum Siap", v: 1 },
+      ],
+    },
+    {
+      id: "tk-q14",
+      education_level: "TK",
+      category_name: "Kekuatan Anak",
+      text: "Menurut Anda, kemampuan atau kelebihan apa yang paling menonjol pada anak?",
+      order_index: 14,
+      type: "textarea",
+    },
+    {
+      id: "tk-q15",
+      education_level: "TK",
+      category_name: "Area yang Perlu Dibantu",
+      text: "Menurut Anda, kemampuan apa yang masih perlu lebih banyak latihan atau pendampingan?",
+      order_index: 15,
+      type: "textarea",
+    },
   ],
 
   SD: [
