@@ -549,6 +549,26 @@ export async function submitAndAnalyze(data: SubmitInput) {
     ]);
 
     activePrompt = prompt;
+
+    if (!activePrompt) {
+      // Fallback: prompt untuk jenjang ini ada tapi belum ditandai aktif
+      const { data: anyLevelPrompt } = await supabaseAdmin
+        .from("ai_prompts")
+        .select("*")
+        .eq("education_level", dbEducationLevel)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      activePrompt = anyLevelPrompt;
+    }
+
+    if (activePrompt) {
+      console.log("[STAGE: PROMPT_SOURCE]", "Menggunakan prompt admin:", {
+        id: activePrompt.id,
+        level: activePrompt.education_level,
+        name: activePrompt.name,
+      });
+    }
     settings = set;
   } catch (e) {
     console.warn("Prompt fetch error", e);
