@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "parent-insight-hub",
+  "name": "parentawereness",
   "compatibility_date": "2026-07-24",
   "compatibility_flags": [
     "nodejs_compat"
