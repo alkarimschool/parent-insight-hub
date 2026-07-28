@@ -1,0 +1,47 @@
+{
+  "TK": {
+    "id": "prompt_tk_1785231057615",
+    "education_level": "TK",
+    "name": "Prompt AI TK Version 2",
+    "system_prompt": "NEW UPDATED TK SYSTEM PROMPT 1785231058614",
+    "user_template": "NEW UPDATED TK USER TEMPLATE 1785231058614",
+    "is_active": true,
+    "updated_at": "2026-07-28T09:30:57.615Z"
+  },
+  "SD": {
+    "id": "prompt_sd_1785231056422",
+    "education_level": "SD",
+    "name": "Prompt AI Custom SD",
+    "system_prompt": "CUSTOM SYSTEM PROMPT SD TEST 1785231056025 - Konsultan Akademik SD",
+    "user_template": "CUSTOM USER TEMPLATE SD TEST 1785231056025 - Data Anak SD: {{child_name}}",
+    "is_active": true,
+    "updated_at": "2026-07-28T09:30:56.422Z"
+  },
+  "SMP": {
+    "id": "prompt_smp_1785231056583",
+    "education_level": "SMP",
+    "name": "Prompt AI Custom SMP",
+    "system_prompt": "CUSTOM SYSTEM PROMPT SMP TEST 1785231056025 - Psikolog Remaja SMP",
+    "user_template": "CUSTOM USER TEMPLATE SMP TEST 1785231056025 - Data Siswa SMP: {{child_name}}",
+    "is_active": true,
+    "updated_at": "2026-07-28T09:30:56.583Z"
+  },
+  "SMA": {
+    "id": "prompt_sma_1785231056721",
+    "education_level": "SMA",
+    "name": "Prompt AI Custom SMA",
+    "system_prompt": "CUSTOM SYSTEM PROMPT SMA TEST 1785231056025 - Konsultan Karir SMA",
+    "user_template": "CUSTOM USER TEMPLATE SMA TEST 1785231056025 - Data Siswa SMA: {{child_name}}",
+    "is_active": true,
+    "updated_at": "2026-07-28T09:30:56.721Z"
+  },
+  "SMK": {
+    "id": "prompt_smk_1785231056839",
+    "education_level": "SMK",
+    "name": "Prompt AI Custom SMK",
+    "system_prompt": "CUSTOM SYSTEM PROMPT SMK TEST 1785231056025 - Konsultan Vokasi SMK",
+    "user_template": "CUSTOM USER TEMPLATE SMK TEST 1785231056025 - Data Siswa SMK: {{child_name}}",
+    "is_active": true,
+    "updated_at": "2026-07-28T09:30:56.839Z"
+  }
+}

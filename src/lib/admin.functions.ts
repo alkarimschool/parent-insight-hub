@@ -29,6 +29,14 @@ export const saveHomepageSettingsFn = createServerFn({ method: "POST" })
     return updateHomepageSettingsServer(data);
   });
 
+export const getPromptFn = createServerFn({ method: "POST" })
+  .inputValidator((data: any) => data)
+  .handler(async ({ data }) => {
+    const { getPromptServer } = await import("./admin.server");
+    const lvl = typeof data === "string" ? data : (data?.level ?? data?.data?.level);
+    return getPromptServer(lvl);
+  });
+
 export const savePromptFn = createServerFn({ method: "POST" })
   .inputValidator((data: any) => data)
   .handler(async ({ data }) => {

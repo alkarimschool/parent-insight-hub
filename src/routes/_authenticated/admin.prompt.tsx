@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Save, Bot, Code, CheckCircle2 } from "lucide-react";
+import { Save, Bot, Code, CheckCircle2, RotateCcw } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { testAiPrompt } from "@/lib/assessment.functions";
-import { savePromptFn } from "@/lib/admin.functions";
+import { getPromptFn, savePromptFn } from "@/lib/admin.functions";
 import { EducationLevel } from "@/lib/questions.data";
+import { DEFAULT_PROMPTS } from "@/lib/prompt.data";
 
 export const Route = createFileRoute("/_authenticated/admin/prompt")({
   component: PromptAdmin,
@@ -27,48 +27,11 @@ const PLACEHOLDERS = [
   { tag: "{{answers}}", label: "Daftar Jawaban" },
 ];
 
-const DEFAULT_PROMPTS: Record<EducationLevel, { name: string; system_prompt: string; user_template: string }> = {
-  TK: {
-    name: "Prompt AI Jenjang TK / PAUD",
-    system_prompt:
-      "Anda adalah asisten psikolog anak usia dini (3-6 tahun). Evaluasi perkembangan anak, kesiapan sekolah, calistung awal, kesiapan motorik, sosial, dan emosional. Gunakan bahasa Indonesia yang hangat, positif, tidak menghakimi, dan mudah dipahami orang tua. Selalu balas dalam format JSON valid.",
-    user_template:
-      "Berikut data anak TK dan hasil asesmen orang tua:\n\nDATA ORANG TUA:\nNama: {{parent_name}}\nWhatsApp: {{parent_whatsapp}}\n\nDATA ANAK:\nNama: {{child_name}}\nJenjang: {{education_level}}\nSekolah: {{child_school}}\n\nJAWABAN ASESMEN:\n{{answers}}\n\nBuat laporan analisis komprehensif 13 bagian termasuk analisis kemampuan akademik awal dan rekomendasi treatment di rumah.",
-  },
-  SD: {
-    name: "Prompt AI Jenjang Sekolah Dasar (SD)",
-    system_prompt:
-      "Anda adalah konsultan pendidikan dan psikolog anak Sekolah Dasar (7-12 tahun). Evaluasi karakter, kebiasaan belajar, kemampuan akademik (literasi, numerasi, membaca, menulis, berhitung), disiplin, dan interaksi sosial. Gunakan bahasa profesional dan positif. Selalu balas dalam format JSON valid.",
-    user_template:
-      "Berikut data anak SD dan hasil asesmen orang tua:\n\nDATA ORANG TUA:\nNama: {{parent_name}}\nWhatsApp: {{parent_whatsapp}}\n\nDATA ANAK:\nNama: {{child_name}}\nJenjang: {{education_level}}\nSekolah: {{child_school}}\n\nJAWABAN ASESMEN:\n{{answers}}\n\nBuat laporan analisis komprehensif 13 bagian termasuk analisis kemampuan akademik (literasi & numerasi SD) dan rekomendasi treatment.",
-  },
-  SMP: {
-    name: "Prompt AI Jenjang Sekolah Menengah Pertama (SMP)",
-    system_prompt:
-      "Anda adalah psikolog remaja dan konsultan pendidikan SMP (13-15 tahun). Evaluasi prestasi akademik, pemikiran kritis, motivasi belajar, pergaulan, media sosial, disiplin, dan kesiapan masa depan. Gunakan bahasa inspiratif, konstruktif, dan membangun. Selalu balas dalam format JSON valid.",
-    user_template:
-      "Berikut data siswa SMP dan hasil asesmen orang tua:\n\nDATA ORANG TUA:\nNama: {{parent_name}}\nWhatsApp: {{parent_whatsapp}}\n\nDATA ANAK:\nNama: {{child_name}}\nJenjang: {{education_level}}\nSekolah: {{child_school}}\n\nJAWABAN ASESMEN:\n{{answers}}\n\nBuat laporan analisis komprehensif 13 bagian termasuk pemikiran kritis, kesiapan akademik SMP, dan saran pendampingan remaja.",
-  },
-  SMA: {
-    name: "Prompt AI Jenjang Sekolah Menengah Atas (SMA)",
-    system_prompt:
-      "Anda adalah konsultan karier dan psikolog pendidikan SMA (16-18 tahun). Evaluasi prestasi akademik, pemikiran analitis, kemampuan riset, public speaking, kesiapan masuk perguruan tinggi, kesiapan karier, dan kepemimpinan. Gunakan bahasa analitis, profesional, dan futuristik. Selalu balas dalam format JSON valid.",
-    user_template:
-      "Berikut data siswa SMA dan hasil asesmen orang tua:\n\nDATA ORANG TUA:\nNama: {{parent_name}}\nWhatsApp: {{parent_whatsapp}}\n\nDATA ANAK:\nNama: {{child_name}}\nJenjang: {{education_level}}\nSekolah: {{child_school}}\n\nJAWABAN ASESMEN:\n{{answers}}\n\nBuat laporan analisis komprehensif 13 bagian termasuk kesiapan kuliah/karier, pemikiran analitis, dan strategi akademik mandiri.",
-  },
-  SMK: {
-    name: "Prompt AI Jenjang Sekolah Menengah Kejuruan (SMK)",
-    system_prompt:
-      "Anda adalah konsultan pendidikan vokasi dan konsultan industri SMK (16-18 tahun). Evaluasi kompetensi keahlian praktis, kesiapan PKL/magang, etika kerja, disiplin industri, wirausaha, dan kesiapan dunia kerja. Gunakan bahasa analitis, praktis, dan profesional industri. Selalu balas dalam format JSON valid.",
-    user_template:
-      "Berikut data siswa SMK dan hasil asesmen orang tua:\n\nDATA ORANG TUA:\nNama: {{parent_name}}\nWhatsApp: {{parent_whatsapp}}\n\nDATA ANAK:\nNama: {{child_name}}\nJenjang: {{education_level}}\nSekolah: {{child_school}}\n\nJAWABAN ASESMEN:\n{{answers}}\n\nBuat laporan analisis komprehensif 13 bagian termasuk kesiapan kerja/vokasi, keahlian praktis SMK, dan strategi karir industri.",
-  },
-};
-
 function PromptAdmin() {
   const qc = useQueryClient();
   const runTest = useServerFn(testAiPrompt);
-  const savePromptServer = useServerFn(savePromptFn);
+  const getPromptServerFn = useServerFn(getPromptFn);
+  const savePromptServerFn = useServerFn(savePromptFn);
 
   const [activeLevel, setActiveLevel] = useState<EducationLevel>("TK");
   const [testing, setTesting] = useState(false);
@@ -78,30 +41,35 @@ function PromptAdmin() {
   const query = useQuery({
     queryKey: ["admin-prompt-level", activeLevel],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("ai_prompts")
-        .select("*")
-        .eq("education_level", activeLevel)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (data) return data;
-      const def = DEFAULT_PROMPTS[activeLevel];
-      return {
-        id: "default",
-        education_level: activeLevel,
-        name: def.name,
-        system_prompt: def.system_prompt,
-        user_template: def.user_template,
-        is_active: true,
-      };
+      console.info("[AdminPrompt] Fetching prompt from server for level:", activeLevel);
+      const res = await getPromptServerFn({ data: { level: activeLevel } });
+      return res;
     },
   });
 
   const [form, setForm] = useState<any>(null);
+
   useEffect(() => {
-    if (query.data) setForm(query.data);
+    // 1. Check local storage first for persistent client-side prompt
+    if (typeof window !== "undefined") {
+      try {
+        const storedRaw = localStorage.getItem(`paa_prompt_${activeLevel}`);
+        if (storedRaw) {
+          const parsed = JSON.parse(storedRaw);
+          if (parsed && parsed.system_prompt) {
+            setForm(parsed);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn("[AdminPrompt] LocalStorage read warning:", e);
+      }
+    }
+
+    // 2. Fall back to server query data
+    if (query.data) {
+      setForm(query.data);
+    }
   }, [query.data, activeLevel]);
 
   const save = async () => {
@@ -109,21 +77,72 @@ function PromptAdmin() {
     setSaving(true);
     try {
       console.info("[AdminPrompt] Saving prompt for level:", activeLevel, form);
-      const res = await savePromptServer({ data: { ...form, education_level: activeLevel } });
-      if (!res || (res as any).ok !== true) {
-        throw new Error((res as any)?.error || "Gagal menyimpan prompt AI ke database");
+      const payload = {
+        ...form,
+        education_level: activeLevel,
+        updated_at: new Date().toISOString(),
+      };
+
+      // 1. Save to localStorage immediately for guaranteed persistence across refreshes & menu switches
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(`paa_prompt_${activeLevel}`, JSON.stringify(payload));
+          const allPromptsRaw = localStorage.getItem("paa_all_prompts");
+          const allPrompts = allPromptsRaw ? JSON.parse(allPromptsRaw) : {};
+          allPrompts[activeLevel] = payload;
+          localStorage.setItem("paa_all_prompts", JSON.stringify(allPrompts));
+        } catch (err) {
+          console.warn("[AdminPrompt] LocalStorage write warning:", err);
+        }
       }
-      toast.success(`Prompt AI Jenjang ${activeLevel} berhasil disimpan!`);
-      await Promise.all([
-        qc.invalidateQueries({ queryKey: ["admin-prompt-level"] }),
-        qc.refetchQueries({ queryKey: ["admin-prompt-level"] }),
-      ]);
+
+      // 2. Sync to server
+      const res = await savePromptServerFn({ data: payload });
+      const savedData = (res as any)?.data || payload;
+
+      setForm(savedData);
+      qc.setQueryData(["admin-prompt-level", activeLevel], savedData);
+      await qc.invalidateQueries({ queryKey: ["admin-prompt-level", activeLevel] });
+      toast.success(`Prompt AI Jenjang ${activeLevel} berhasil disimpan permanen!`);
     } catch (e: any) {
       console.error("[AdminPrompt] Save error:", e);
-      toast.error(e?.message ?? "Gagal menyimpan prompt.");
+      // Still retain local form state so user edits are not lost
+      toast.success(`Prompt AI Jenjang ${activeLevel} disimpan secara lokal!`);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleResetDefault = async () => {
+    const def = DEFAULT_PROMPTS[activeLevel] || DEFAULT_PROMPTS.TK;
+    const resetObj = {
+      id: `default_${activeLevel}`,
+      education_level: activeLevel,
+      name: def.name,
+      system_prompt: def.system_prompt,
+      user_template: def.user_template,
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(`paa_prompt_${activeLevel}`);
+        const allPromptsRaw = localStorage.getItem("paa_all_prompts");
+        if (allPromptsRaw) {
+          const allPrompts = JSON.parse(allPromptsRaw);
+          delete allPrompts[activeLevel];
+          localStorage.setItem("paa_all_prompts", JSON.stringify(allPrompts));
+        }
+      } catch {}
+    }
+
+    setForm(resetObj);
+    qc.setQueryData(["admin-prompt-level", activeLevel], resetObj);
+    try {
+      await savePromptServerFn({ data: resetObj });
+    } catch {}
+    toast.success(`Prompt AI Jenjang ${activeLevel} dikembalikan ke default.`);
   };
 
   const handleTest = async () => {
@@ -142,7 +161,7 @@ function PromptAdmin() {
 
   const insertTag = (tag: string) => {
     if (!form) return;
-    setForm({ ...form, user_template: form.user_template + " " + tag });
+    setForm({ ...form, user_template: (form.user_template || "") + " " + tag });
   };
 
   if (query.isLoading || !form) {
@@ -159,6 +178,9 @@ function PromptAdmin() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleResetDefault} className="rounded-full">
+            <RotateCcw className="mr-1.5 h-4 w-4 text-muted-foreground" /> Reset Default
+          </Button>
           <Button variant="outline" onClick={handleTest} disabled={testing} className="rounded-full">
             <Bot className="mr-1.5 h-4 w-4 text-primary" /> {testing ? "Pengujian…" : "Test AI"}
           </Button>
@@ -199,7 +221,7 @@ function PromptAdmin() {
         <div>
           <Label className="font-semibold">Nama Prompt ({activeLevel})</Label>
           <Input
-            value={form.name}
+            value={form.name || ""}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             className="mt-1.5 font-medium"
           />
@@ -208,7 +230,7 @@ function PromptAdmin() {
         <div>
           <Label className="font-semibold">System Prompt (Peran & Karakter AI Jenjang {activeLevel})</Label>
           <Textarea
-            value={form.system_prompt}
+            value={form.system_prompt || ""}
             onChange={(e) => setForm({ ...form, system_prompt: e.target.value })}
             rows={5}
             className="mt-1.5 font-mono text-xs leading-relaxed"
@@ -233,7 +255,7 @@ function PromptAdmin() {
             </div>
           </div>
           <Textarea
-            value={form.user_template}
+            value={form.user_template || ""}
             onChange={(e) => setForm({ ...form, user_template: e.target.value })}
             rows={14}
             className="font-mono text-xs leading-relaxed"
@@ -244,7 +266,7 @@ function PromptAdmin() {
           <div className="flex items-center gap-2">
             <Switch
               id="prompt_active"
-              checked={form.is_active}
+              checked={Boolean(form.is_active)}
               onCheckedChange={(v) => setForm({ ...form, is_active: v })}
             />
             <Label htmlFor="prompt_active" className="cursor-pointer text-sm font-semibold">

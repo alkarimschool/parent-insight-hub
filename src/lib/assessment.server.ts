@@ -535,15 +535,9 @@ export async function submitAndAnalyze(data: SubmitInput) {
   let settings: any = null;
 
   try {
-    const [{ data: prompt }, { data: set }] = await Promise.all([
-      supabaseAdmin
-        .from("ai_prompts")
-        .select("*")
-        .eq("is_active", true)
-        .eq("education_level", dbEducationLevel)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+    const { getPromptServer } = await import("./admin.server");
+    const [prompt, { data: set }] = await Promise.all([
+      getPromptServer(dbEducationLevel),
       supabaseAdmin.from("ai_settings").select("*").eq("is_active", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
 
@@ -551,31 +545,6 @@ export async function submitAndAnalyze(data: SubmitInput) {
     settings = set;
   } catch (e) {
     console.warn("Prompt fetch error", e);
-  }
-
-  if (!activePrompt) {
-    const defaultSystemPrompts: Record<EducationLevel, string> = {
-      TK: "Anda adalah psikolog anak dan konsultan pendidikan usia dini (TK / PAUD). Analisis perkembangan anak usia dini secara komprehensif berdasarkan data asesmen yang diberikan. Fokus pada: perkembangan motorik, bahasa, sosial, emosi, akademik awal (calistung), kemandirian, dan kesiapan sekolah TK. JANGAN menggunakan istilah atau format untuk jenjang SD, SMP, atau SMA. Balas HANYA dalam format JSON valid.",
-      SD: "Anda adalah psikolog pendidikan dan konsultan akademik Sekolah Dasar (SD). Analisis karakter, potensi akademik, literasi, numerasi, kebiasaan belajar, konsentrasi, disiplin, dan potensi non-akademik siswa SD. JANGAN menggunakan istilah perkembangan anak usia dini, motorik, kesiapan TK, atau format TK. Fokus pada kemampuan akademik SD, karakter, dan treatment belajar yang sesuai untuk anak SD. Balas HANYA dalam format JSON valid.",
-      SMP: "Anda adalah psikolog remaja dan konsultan pendidikan Sekolah Menengah Pertama (SMP). Analisis prestasi akademik, motivasi belajar, berpikir kritis, pergaulan dan pengaruh teman sebaya, pengendalian emosi remaja, kepemimpinan, potensi, minat, dan rekomendasi pengembangan remaja SMP. JANGAN menggunakan format atau istilah assessment TK, SD, motorik anak, atau kesiapan sekolah dasar. Fokus pada dinamika remaja awal usia 12-15 tahun. Balas HANYA dalam format JSON valid.",
-      SMA: "Anda adalah konsultan pendidikan tinggi, psikolog karier, dan mentor pengembangan diri untuk siswa SMA. Analisis prestasi akademik, minat karier, potensi jurusan kuliah, kesiapan perguruan tinggi, public speaking, leadership, soft skill, hard skill, dan perencanaan masa depan siswa SMA. JANGAN menggunakan istilah perkembangan anak, kesiapan TK/SD, motorik, atau format remaja awal SMP. Fokus pada kesiapan masa depan, perguruan tinggi, dan karier siswa SMA. Balas HANYA dalam format JSON valid.",
-      SMK: "Anda adalah konsultan pendidikan vokasi, konsultan industri, dan mentor kesiapan kerja untuk siswa Sekolah Menengah Kejuruan (SMK). Analisis kompetensi keahlian praktis, kesiapan magang/PKL, etika kerja, disiplin industri, problem solving teknis, wirausaha, kesiapan dunia kerja, dan rekomendasi pengembangan karir vokasi. JANGAN menggunakan istilah atau format TK, SD, atau akademik umum SMA. Fokus pada kompetensi keahlian dan kesiapan industri siswa SMK. Balas HANYA dalam format JSON valid."
-    };
-
-    const defaultUserTemplates: Record<EducationLevel, string> = {
-      TK: "Jenjang Pendidikan:\n${assessment.education_level}\n\nData Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis perkembangan anak usia dini TK yang komprehensif.",
-      SD: "Jenjang Pendidikan:\n${assessment.education_level}\n\nData Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis karakter dan potensi akademik siswa SD yang komprehensif.",
-      SMP: "Jenjang Pendidikan:\n${assessment.education_level}\n\nData Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis potensi belajar dan akademik SMP yang komprehensif.",
-      SMA: "Jenjang Pendidikan:\n${assessment.education_level}\n\nData Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis minat, bakat, dan perencanaan pendidikan/karier siswa SMA yang komprehensif.",
-      SMK: "Jenjang Pendidikan:\n${assessment.education_level}\n\nData Orang Tua: {{parent_name}}\nData Anak: {{child_name}}\nSekolah: {{child_school}}\nJawaban Asesmen:\n{{answers}}\n\nBuat analisis kesiapan vokasi & karir siswa SMK yang komprehensif."
-    };
-
-    activePrompt = {
-      id: null,
-      education_level: dbEducationLevel,
-      system_prompt: defaultSystemPrompts[dbEducationLevel],
-      user_template: defaultUserTemplates[dbEducationLevel],
-    };
   }
 
   const filledPrompt = activePrompt.user_template
