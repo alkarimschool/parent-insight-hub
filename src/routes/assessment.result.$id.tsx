@@ -193,17 +193,7 @@ function ResultPage() {
               <List items={c.rekomendasi_orangtua || c.perhatian_orangtua} />
             </Section>
 
-            {/* 8. 👩‍🏫 Rekomendasi untuk Guru */}
-            <Section title="👩‍🏫 Rekomendasi untuk Guru">
-              <List items={Array.isArray(c.rekomendasi_guru) ? c.rekomendasi_guru : [c.rekomendasi_guru || c.rekomendasi_akademik]} />
-            </Section>
-
-            {/* 9. 💡 Rekomendasi Pengembangan Akademik */}
-            <Section title="💡 Rekomendasi Pengembangan Akademik">
-              <List items={Array.isArray(c.rekomendasi_pengembangan_akademik) ? c.rekomendasi_pengembangan_akademik : [c.rekomendasi_pengembangan_akademik || c.rekomendasi_akademik || "Gunakan sarana permainan edukatif berbasis visual dan sensori."]} />
-            </Section>
-
-            {/* 10. 📝 Catatan */}
+            {/* 8. 📝 Catatan */}
             <Section title="📝 Catatan">
               {Array.isArray(c.catatan) ? (
                 <List items={c.catatan} />
