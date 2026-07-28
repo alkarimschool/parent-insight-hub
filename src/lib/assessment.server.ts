@@ -33,6 +33,19 @@ function isUUID(str: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
+function generateUUID(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    try {
+      return crypto.randomUUID();
+    } catch {}
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 const LEVEL_PROFILES: Record<EducationLevel, {
   ringkasan: (name: string, isHigh: boolean) => string;
   kelebihan: (name: string) => string[];
@@ -423,7 +436,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
         console.log("[DB:UPSERT:PARENTS_FALLBACK_SUCCESS]", parent.id);
       } else {
         parent = {
-          id: `parent_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          id: generateUUID(),
           name: parentName,
           whatsapp: data.parent.whatsapp.trim(),
         };
@@ -449,7 +462,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     const { data: cInserted, error: cErr } = await supabaseAdmin
       .from("children")
       .insert({
-        parent_id: parent.id.startsWith("parent_") && isUUID(parent.id) ? parent.id : null,
+        parent_id: isUUID(parent.id) ? parent.id : null,
         name: data.child.name.trim(),
         gender: data.child.gender || "L",
         birth_date: data.child.birth_date || "2020-01-01",
@@ -458,7 +471,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
         education_level: submitLevel,
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (!cErr && cInserted) {
       child = cInserted;
@@ -469,7 +482,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
 
   if (!child) {
     child = {
-      id: `child_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: generateUUID(),
       parent_id: parent.id,
       name: data.child.name.trim(),
       gender: data.child.gender || "L",
@@ -507,7 +520,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
         status: "analyzing",
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (!aErr && aData) {
       assessment = aData;
@@ -521,7 +534,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
           status: "analyzing",
         })
         .select()
-        .single();
+        .maybeSingle();
       if (aMinimal) {
         assessment = { ...aMinimal, education_level: submitLevel, assessment_title: assTitle };
       }
@@ -530,7 +543,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
 
   if (!assessment) {
     assessment = {
-      id: `ass_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: generateUUID(),
       parent_id: parent.id,
       child_id: child.id,
       status: "analyzing",
@@ -724,7 +737,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     console.warn("[AI_CALL_FAIL]", aiErr?.message);
   }
 
-  if (!parsedResult || !parsedResult.ringkasan) {
+  if (!parsedResult || typeof parsedResult !== "object" || (!parsedResult.ringkasan && !parsedResult.status_perkembangan && !parsedResult.kekuatan_anak)) {
     parsedResult = generateFallbackResult(data.child.name, parentName, avgScore, dbEducationLevel);
     rawText = JSON.stringify(parsedResult);
   }
@@ -774,7 +787,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
     content: parsedResult,
     raw_text: rawText,
     model: usedModel,
-  }).select().single();
+  }).select().maybeSingle();
 
   console.log("[DB:INSERT:AI_RESULTS_RESULT]", { data: aiResInserted, error: aiResErr?.message });
   if (aiResErr) {

@@ -48,39 +48,6 @@ function QuestionsPage() {
     queryKey: ["questions-active-level", level],
     queryFn: async () => {
       const defaults = LEVEL_QUESTIONS[level] || LEVEL_QUESTIONS.TK;
-      try {
-        const [{ data: qs }, { data: cats }] = await Promise.all([
-          supabase
-            .from("questions")
-            .select("id,text,order_index,category_id,is_active,education_level")
-            .eq("is_active", true)
-            .eq("education_level", level)
-            .order("order_index"),
-          supabase
-            .from("question_categories")
-            .select("id,name,order_index,education_level")
-            .order("order_index"),
-        ]);
-
-        if (qs && qs.length > 0 && qs.length === defaults.length) {
-          return {
-            qs: qs.map((q, idx) => ({
-              id: q.id,
-              text: q.text,
-              order_index: q.order_index,
-              category_name: defaults[idx]?.category_name || "Umum",
-              education_level: q.education_level,
-              type: defaults[idx]?.type || "scale",
-              options: defaults[idx]?.options,
-            })),
-            cats: (cats ?? []) as CatRow[],
-          };
-        }
-      } catch (e) {
-        console.warn("Using default questions fallback for level: " + level, e);
-      }
-
-      // Fallback data for level
       return {
         qs: defaults.map((q) => ({
           id: q.id,
