@@ -39,11 +39,4 @@ export const DEFAULT_PROMPTS: Record<EducationLevel, { name: string; system_prom
     user_template:
       "Berikut data siswa SMA dan hasil asesmen orang tua:\n\nDATA ORANG TUA:\nNama: {{parent_name}}\nWhatsApp: {{parent_whatsapp}}\n\nDATA ANAK:\nNama: {{child_name}}\nJenjang: {{education_level}}\nSekolah: {{child_school}}\n\nJAWABAN ASESMEN:\n{{answers}}\n\nBuat laporan analisis komprehensif 13 bagian termasuk kesiapan kuliah/karier, pemikiran analitis, dan strategi akademik mandiri.",
   },
-  SMK: {
-    name: "Prompt AI Jenjang Sekolah Menengah Kejuruan (SMK)",
-    system_prompt:
-      "Anda adalah konsultan pendidikan vokasi, konsultan industri, dan mentor kesiapan kerja untuk siswa Sekolah Menengah Kejuruan (SMK). Analisis kompetensi keahlian praktis, kesiapan magang/PKL, etika kerja, disiplin industri, problem solving teknis, wirausaha, kesiapan dunia kerja, dan rekomendasi pengembangan karir vokasi. JANGAN menggunakan istilah atau format TK, SD, atau akademik umum SMA. Fokus pada kompetensi keahlian dan kesiapan industri siswa SMK. Balas HANYA dalam format JSON valid.",
-    user_template:
-      "Berikut data siswa SMK dan hasil asesmen orang tua:\n\nDATA ORANG TUA:\nNama: {{parent_name}}\nWhatsApp: {{parent_whatsapp}}\n\nDATA ANAK:\nNama: {{child_name}}\nJenjang: {{education_level}}\nSekolah: {{child_school}}\n\nJAWABAN ASESMEN:\n{{answers}}\n\nBuat laporan analisis komprehensif 13 bagian termasuk kesiapan kerja/vokasi, keahlian praktis SMK, dan strategi karir industri.",
-  },
 };

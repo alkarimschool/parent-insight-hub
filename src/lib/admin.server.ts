@@ -530,7 +530,7 @@ export async function getAdminStatsServer() {
   ]);
 
   const list = assessments ?? [];
-  let tk = 0, sd = 0, smp = 0, sma = 0, smk = 0, analyzed = 0;
+  let tk = 0, sd = 0, smp = 0, sma = 0, analyzed = 0;
 
   list.forEach((a) => {
     const lvl = extractTrueLevel(a);
@@ -538,7 +538,6 @@ export async function getAdminStatsServer() {
     else if (lvl === "SD") sd++;
     else if (lvl === "SMP") smp++;
     else if (lvl === "SMA") sma++;
-    else if (lvl === "SMK") smk++;
 
     if (a.status === "analyzed") analyzed++;
   });
@@ -551,7 +550,6 @@ export async function getAdminStatsServer() {
     sd,
     smp,
     sma,
-    smk,
     parents: parents ?? 0,
   };
 }

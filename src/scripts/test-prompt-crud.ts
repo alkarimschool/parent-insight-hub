@@ -6,7 +6,7 @@ async function testPromptCrud() {
   console.log("🚀 STARTING E2E AUDIT & TEST FOR AI PROMPTS ACROSS ALL EDUCATION LEVELS");
   console.log("==========================================================================\n");
 
-  const levels: EducationLevel[] = ["TK", "SD", "SMP", "SMA", "SMK"];
+  const levels: EducationLevel[] = ["TK", "SD", "SMP", "SMA"];
   const timestamp = Date.now();
 
   const customPrompts: Record<EducationLevel, { system: string; template: string }> = {
@@ -25,10 +25,6 @@ async function testPromptCrud() {
     SMA: {
       system: `CUSTOM SYSTEM PROMPT SMA TEST ${timestamp} - Konsultan Karir SMA`,
       template: `CUSTOM USER TEMPLATE SMA TEST ${timestamp} - Data Siswa SMA: {{child_name}}`,
-    },
-    SMK: {
-      system: `CUSTOM SYSTEM PROMPT SMK TEST ${timestamp} - Konsultan Vokasi SMK`,
-      template: `CUSTOM USER TEMPLATE SMK TEST ${timestamp} - Data Siswa SMK: {{child_name}}`,
     },
   };
 

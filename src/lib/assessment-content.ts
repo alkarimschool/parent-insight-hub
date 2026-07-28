@@ -1,4 +1,4 @@
-export type EducationLevel = "TK" | "SD" | "SMP" | "SMA" | "SMK";
+export type EducationLevel = "TK" | "SD" | "SMP" | "SMA";
 
 export interface SectionTitles {
   s1: string;
@@ -149,39 +149,11 @@ export const ASSESSMENT_CONTENT_MAP: Record<EducationLevel, AssessmentLevelConfi
       s13: "13. Kesimpulan Kesiapan Perguruan Tinggi & Masa Depan",
     },
   },
-  SMK: {
-    badge: "Laporan Assessment Kesiapan Vokasi & Karir SMK",
-    title: "Assessment Kesiapan Vokasi & Karir SMK",
-    description: "Hasil analisis kompetensi keahlian praktis, etika kerja industri, wirausaha, dan kesiapan dunia kerja peserta didik SMK.",
-    summaryTitle: "1. Ringkasan Assessment Kesiapan Vokasi & Karir SMK",
-    introText: "Hasil analisis kompetensi keahlian praktis, etika kerja industri, wirausaha, dan kesiapan dunia kerja peserta didik SMK.",
-    reportTitle: "Laporan Assessment Kesiapan Vokasi & Karir SMK",
-    metadataTitle: "Laporan Assessment Kesiapan Vokasi & Karir SMK",
-    metadataDescription: "Hasil analisis kompetensi keahlian praktis, etika kerja industri, wirausaha, dan kesiapan dunia kerja peserta didik SMK.",
-    fullName: "Sekolah Menengah Kejuruan (SMK)",
-    shortName: "SMK",
-    icon: "🛠️",
-    sections: {
-      s1: "1. Ringkasan Assessment Kesiapan Vokasi & Karir SMK",
-      s2: "2. Kelebihan & Keahlian Vokasional Siswa SMK",
-      s3: "3. Area Kompetensi Praktis yang Perlu Ditingkatkan",
-      s4: "4. Kesiapan Vokasional & Keahlian Praktis SMK",
-      s5: "5. Kemampuan Kerja Sama Tim & Komunikasi Industri",
-      s6: "6. Ketahanan Kerja & Kedewasaan Mental (Work Resilience)",
-      s7: "7. Etika Kerja, Disiplin, & Penerapan K3",
-      s8: "8. Potensi Keahlian & Inovasi Industri",
-      s9: "9. Minat Keahlian & Wirausaha Kejuruan",
-      s10: "10. Hal yang Perlu Diperhatikan dalam Persiapan PKL/Kerja",
-      s11: "11. Rekomendasi Development & Sertifikasi Industri",
-      s12: "12. Rekomendasi Pengembangan Kompetensi & Dunia Kerja",
-      s13: "13. Kesimpulan Kesiapan Kerja & Karir Vokasi",
-    },
-  },
 };
 
 export function getAssessmentContent(jenjang?: string | null): AssessmentContent {
   const raw = (jenjang?.trim() || "TK").toUpperCase();
-  const normalized = (["TK", "SD", "SMP", "SMA", "SMK"].includes(raw) ? raw : "TK") as EducationLevel;
+  const normalized = (["TK", "SD", "SMP", "SMA"].includes(raw) ? raw : "TK") as EducationLevel;
   const data = ASSESSMENT_CONTENT_MAP[normalized] || ASSESSMENT_CONTENT_MAP.TK;
 
   return {

@@ -85,12 +85,11 @@ function Dashboard() {
       {/* LEVEL STATS CARDS */}
       <div>
         <h2 className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wider">Statistik Responden Per Jenjang</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Card title="Total Assessment TK / PAUD" value={s?.tk ?? 0} icon={Baby} color="bg-cyan-500/10 text-cyan-600" to="/admin/parents" />
           <Card title="Total Assessment SD" value={s?.sd ?? 0} icon={BookOpen} color="bg-blue-500/10 text-blue-600" to="/admin/parents" />
           <Card title="Total Assessment SMP" value={s?.smp ?? 0} icon={School} color="bg-indigo-500/10 text-indigo-600" to="/admin/parents" />
           <Card title="Total Assessment SMA" value={s?.sma ?? 0} icon={GraduationCap} color="bg-emerald-500/10 text-emerald-600" to="/admin/parents" />
-          <Card title="Total Assessment SMK" value={s?.smk ?? 0} icon={Wrench} color="bg-amber-500/10 text-amber-600" to="/admin/parents" />
         </div>
       </div>
 
@@ -105,7 +104,7 @@ function Dashboard() {
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-xs text-muted-foreground mr-1">Filter Jenjang:</span>
-            {["ALL", "TK", "SD", "SMP", "SMA", "SMK"].map((lvl) => (
+            {["ALL", "TK", "SD", "SMP", "SMA"].map((lvl) => (
               <button
                 key={lvl}
                 type="button"

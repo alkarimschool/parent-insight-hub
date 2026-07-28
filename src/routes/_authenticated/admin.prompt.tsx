@@ -180,7 +180,7 @@ function PromptAdmin() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Kelola Prompt AI Per Jenjang</h1>
           <p className="text-sm text-muted-foreground">
-            Sesuaikan System Prompt dan User Template secara khusus untuk jenjang TK, SD, SMP, SMA, dan SMK.
+            Sesuaikan System Prompt dan User Template secara khusus untuk jenjang TK, SD, SMP, dan SMA.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -198,7 +198,7 @@ function PromptAdmin() {
 
       {/* LEVEL SELECTOR TABS */}
       <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-card p-1.5 shadow-soft">
-        {(["TK", "SD", "SMP", "SMA", "SMK"] as EducationLevel[]).map((lvl) => (
+        {(["TK", "SD", "SMP", "SMA"] as EducationLevel[]).map((lvl) => (
           <button
             key={lvl}
             type="button"

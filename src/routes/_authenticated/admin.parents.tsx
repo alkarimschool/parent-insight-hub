@@ -286,7 +286,6 @@ function ParentsList() {
                   <option value="SD">📘 Sekolah Dasar (SD)</option>
                   <option value="SMP">📗 Sekolah Menengah Pertama (SMP)</option>
                   <option value="SMA">🎓 Sekolah Menengah Atas (SMA)</option>
-                  <option value="SMK">🛠️ Sekolah Menengah Kejuruan (SMK)</option>
                 </select>
               </div>
 

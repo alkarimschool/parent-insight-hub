@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { fetchWebsite } from "@/lib/settings";
 import { PublicNav, PublicFooter } from "@/components/site/PublicNav";
-import { Baby, BookOpen, GraduationCap, School, Wrench, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
+import { Baby, BookOpen, GraduationCap, School, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
 import { EducationLevel } from "@/lib/questions.data";
 import { getAssessmentContent } from "@/lib/assessment-content";
 
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/assessment/level")({
   head: () => ({
     meta: [
       { title: "Pilih Jenjang Pendidikan — Parent Awareness Assessment" },
-      { name: "description", content: "Pilih jenjang pendidikan anak (TK/PAUD, SD, SMP, SMA, SMK) untuk memulai asesmen khusus berbasis AI." },
+      { name: "description", content: "Pilih jenjang pendidikan anak (TK/PAUD, SD, SMP, SMA) untuk memulai asesmen khusus berbasis AI." },
     ],
   }),
   component: SelectLevelPage,
@@ -60,15 +60,6 @@ const LEVELS: Array<{
     icon: GraduationCap,
     color: "from-sky-500/20 to-emerald-500/10 border-sky-500/30 text-sky-600 dark:text-sky-400",
     features: ["Kesiapan Kuliah & Karier", "Pemikiran Analitis & Riset", "Public Speaking & Kepemimpinan"],
-  },
-  {
-    key: "SMK",
-    title: getAssessmentContent("SMK").fullName,
-    badge: "Usia 16–18 Tahun",
-    desc: getAssessmentContent("SMK").description,
-    icon: Wrench,
-    color: "from-amber-500/20 to-orange-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400",
-    features: ["Kompetensi Keahlian Praktis", "Kesiapan PKL & Dunia Kerja", "Disiplin Industri & Wirausaha"],
   },
 ];
 

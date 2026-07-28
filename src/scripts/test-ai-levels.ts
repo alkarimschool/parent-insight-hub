@@ -6,7 +6,7 @@ async function testAiLevelPrompts() {
   console.log("🧪 TESTING AI PROMPT & CONTENT FOR ALL 5 LEVELS");
   console.log("=================================================\n");
 
-  const levels: EducationLevel[] = ["TK", "SD", "SMP", "SMA", "SMK"];
+  const levels: EducationLevel[] = ["TK", "SD", "SMP", "SMA"];
 
   for (const level of levels) {
     const content = getAssessmentContent(level);

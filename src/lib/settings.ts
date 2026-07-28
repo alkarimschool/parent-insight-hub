@@ -63,7 +63,7 @@ export const DEFAULT_HOMEPAGE_DATA: HomepageData = {
   how_title: "Cara Kerja Asesmen",
   how_subtitle: "Langkah mudah memulai asesmen tumbuh kembang anak.",
   how_items: [
-    { step: "1", title: "Pilih Jenjang", desc: "Pilih jenjang pendidikan anak (TK, SD, SMP, SMA/SMK)." },
+    { step: "1", title: "Pilih Jenjang", desc: "Pilih jenjang pendidikan anak (TK, SD, SMP, SMA)." },
     { step: "2", title: "Isi Asesmen", desc: "Jawab pertanyaan seputar aktivitas dan kebiasaan anak." },
     { step: "3", title: "Proses AI", desc: "Sistem menganalisis pola jawaban secara mendalam." },
     { step: "4", title: "Terima Laporan", desc: "Dapatkan hasil analisis dan panduan lengkap." },
