@@ -668,7 +668,11 @@ export async function submitAndAnalyze(data: SubmitInput) {
         user_template: defaultPromptForLevel.user_template,
       };
 
-  console.log("[STAGE: PROMPT_SOURCE]", "Menggunakan prompt untuk jenjang:", dbEducationLevel, promptToUse.name);
+  console.log("[PROMPT_AUDIT:LEVEL]", dbEducationLevel);
+  console.log("[PROMPT_AUDIT:ID]", promptToUse.id || `prompt_${dbEducationLevel}`);
+  console.log("[PROMPT_AUDIT:SYSTEM_PROMPT]", `(Len: ${promptToUse.system_prompt.length})`, promptToUse.system_prompt);
+  console.log("[PROMPT_AUDIT:USER_PROMPT]", `(Len: ${promptToUse.user_template.length})`, promptToUse.user_template);
+  console.log("[PROMPT_AUDIT:TIMESTAMP]", promptToUse.updated_at || new Date().toISOString());
 
   const filledPrompt = promptToUse.user_template
     .replace(/\$\{assessment\.education_level\}/g, dbEducationLevel)
@@ -681,34 +685,6 @@ export async function submitAndAnalyze(data: SubmitInput) {
     .replace(/\{\{answers\}\}/g, answersText);
 
   const levelContentObj = getAssessmentContent(dbEducationLevel);
-  const schemaHint = `\n\nBalas HANYA sebagai JSON valid dengan struktur:
-{
-  "judul": "string ('${levelContentObj.reportTitle}')",
-  "status_perkembangan": "string ('Berkembang Sesuai Usia (Normal)' atau 'Sangat Optimal')",
-  "kekuatan": ["string (daftar poin kekuatan utama)"],
-  "area_perlu_ditingkatkan": ["string (daftar poin area yang perlu ditingkatkan)"],
-  "potensi_dikembangkan": ["string (daftar poin potensi yang dapat dikembangkan)"],
-  "analisis_per_aspek": [
-    {"aspek": "string (misal: Motorik Kasar & Halus / Bahasa & Komunikasi)", "status": "string", "temuan": "string"}
-  ],
-  "prioritas_stimulasi": ["string (daftar prioritas stimulasi)"],
-  "rekomendasi_orangtua": ["string (daftar rekomendasi untuk orang tua)"],
-  "rekomendasi_guru": ["string (daftar rekomendasi untuk guru)"],
-  "ringkasan": "string (ringkasan analisis khusus jenjang ${levelContentObj.fullName})",
-  "kelebihan": ["string"],
-  "area_pengembangan": ["string"],
-  "kemampuan_akademik": "string",
-  "kecerdasan_sosial": "string",
-  "kecerdasan_emosional": "string",
-  "karakter": "string",
-  "potensi": "string",
-  "minat_bakat": "string",
-  "perhatian_orangtua": ["string"],
-  "treatment": [{"kategori": "string", "aktivitas": "string"}],
-  "rekomendasi_akademik": "string",
-  "kesimpulan": "string"
-}`;
-
   const totalScore = data.answers.reduce((acc, curr) => acc + curr.score, 0);
   const avgScore = totalScore / (data.answers.length || 1);
 
@@ -717,15 +693,17 @@ export async function submitAndAnalyze(data: SubmitInput) {
   let usedModel: string = settings?.model ?? "google/gemini-3.6-flash";
 
   try {
+    console.log("[PROMPT_AUDIT:STATUS]", "Mengirim ke AI dengan System Prompt & User Prompt dari Admin Dashboard...");
     const aiRes = await callLovableAiJson({
       model: usedModel,
       systemPrompt: promptToUse.system_prompt,
-      userPrompt: filledPrompt + schemaHint,
+      userPrompt: filledPrompt,
       temperature: Number(settings?.temperature ?? 0.7),
       maxTokens: settings?.max_tokens ?? 4096,
     });
     rawText = aiRes.text;
     usedModel = aiRes.model;
+    console.log("[PROMPT_AUDIT:STATUS]", "Berhasil menerima respon AI. Length:", rawText.length);
 
     try {
       parsedResult = JSON.parse(rawText);
@@ -734,7 +712,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
       parsedResult = match ? JSON.parse(match[0]) : null;
     }
   } catch (aiErr: any) {
-    console.warn("[AI_CALL_FAIL]", aiErr?.message);
+    console.warn("[PROMPT_AUDIT:STATUS]", "Gagal memanggil AI Gateway:", aiErr?.message);
   }
 
   if (!parsedResult || typeof parsedResult !== "object" || (!parsedResult.ringkasan && !parsedResult.status_perkembangan && !parsedResult.kekuatan_anak)) {
