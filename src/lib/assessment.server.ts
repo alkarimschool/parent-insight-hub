@@ -378,6 +378,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
       birth_date: data.child.birth_date || "2020-01-01",
       school: data.child.school || null,
       class_name: data.child.class_name || null,
+      education_level: submitLevel,
     })
     .select()
     .single();
