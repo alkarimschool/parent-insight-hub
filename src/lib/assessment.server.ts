@@ -378,6 +378,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
       birth_date: data.child.birth_date || "2020-01-01",
       school: data.child.school || null,
       class_name: data.child.class_name || null,
+      education_level: submitLevel,
     })
     .select()
     .single();
@@ -702,7 +703,6 @@ export async function submitAndAnalyze(data: SubmitInput) {
       education_level: dbEducationLevel,
       assessment_title: levelContentObj.reportTitle,
       ai_prompt: filledPrompt,
-      ai_result: parsedResult,
       updated_at: new Date().toISOString(),
     })
     .eq("id", assessment.id)
@@ -742,9 +742,9 @@ export async function getAssessmentResultServer(assessmentId: string) {
   if (assessment || cached) {
     const level: EducationLevel = getEducationLevel(
       assessment?.education_level ||
-      aiRes?.content?.shortName ||
-      aiRes?.content?.education_level ||
-      aiRes?.content?.level ||
+      (aiRes?.content as any)?.shortName ||
+      (aiRes?.content as any)?.education_level ||
+      (aiRes?.content as any)?.level ||
       cached?.education_level ||
       assessment
     );
@@ -759,7 +759,7 @@ export async function getAssessmentResultServer(assessmentId: string) {
         : Promise.resolve({ data: null }),
     ]);
 
-    let content = (assessment?.ai_result || aiRes?.content || cached?.content) as any;
+    let content = (aiRes?.content || cached?.content) as any;
     const assessmentContent = getAssessmentContent(level);
 
     const childName = child?.name || cached?.child_name || "Anak";
@@ -805,13 +805,14 @@ export async function getAssessmentResultServer(assessmentId: string) {
   }
 
   // 2. Fallback to in-memory cache if DB query returned null during serverless propagation
-  if (cached) {
-    const level = getEducationLevel(cached.education_level);
+  const cachedFallback = inMemoryAssessmentCache.get(assessmentId);
+  if (cachedFallback) {
+    const level = getEducationLevel(cachedFallback.education_level);
     console.log("[STAGE: VIEW_RENDER_CACHE]", "Education Level View Cache:", level);
 
     const assessmentContent = getAssessmentContent(level);
     const content = {
-      ...cached.content,
+      ...cachedFallback.content,
       education_level: level,
       shortName: level,
       badge: assessmentContent.badge,
@@ -831,9 +832,9 @@ export async function getAssessmentResultServer(assessmentId: string) {
       status: "analyzed",
       education_level: level,
       assessment_title: assessmentContent.reportTitle,
-      child_name: cached.child_name || "Anak",
-      parent_name: cached.parent_name || "Orang Tua",
-      created_at: cached.created_at || new Date().toISOString(),
+      child_name: cachedFallback.child_name || "Anak",
+      parent_name: cachedFallback.parent_name || "Orang Tua",
+      created_at: cachedFallback.created_at || new Date().toISOString(),
       content,
     };
   }

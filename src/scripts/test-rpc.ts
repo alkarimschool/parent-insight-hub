@@ -5,7 +5,7 @@ async function testRpc() {
   const rpcs = ["exec_sql", "execute_sql", "run_sql", "query", "sql"];
 
   for (const rpcName of rpcs) {
-    const { data, error } = await supabaseAdmin.rpc(rpcName, { sql: "SELECT 1" });
+    const { data, error } = await (supabaseAdmin as any).rpc(rpcName, { sql: "SELECT 1" });
     console.log(`RPC '${rpcName}':`, error ? error.message : "AVAILABLE!");
   }
 }
