@@ -127,18 +127,57 @@ function ResultPage() {
           </div>
         ) : (
           <div className="grid gap-5">
+            {/* 🟢 Status Perkembangan */}
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 shadow-soft text-center print:border-emerald-600 print:bg-transparent">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">🟢 Status Perkembangan</span>
+              <h2 className="mt-1 text-xl font-extrabold text-emerald-800 dark:text-emerald-300 print:text-black">
+                {c.status_perkembangan || "Berkembang Sesuai Usia (Normal)"}
+              </h2>
+            </div>
+
             <Section title={content.sections.s1}><p>{c.ringkasan}</p></Section>
-            <Section title={content.sections.s2}><List items={c.kelebihan} /></Section>
-            <Section title={content.sections.s3}><List items={c.area_pengembangan} /></Section>
+            
+            {/* ⭐ Kekuatan */}
+            <Section title="⭐ Kekuatan"><List items={c.kekuatan || c.kelebihan} /></Section>
+
+            {/* 📈 Area yang Perlu Ditingkatkan */}
+            <Section title="📈 Area yang Perlu Ditingkatkan"><List items={c.area_perlu_ditingkatkan || c.area_pengembangan} /></Section>
+
+            {/* 🌱 Potensi yang Dapat Dikembangkan */}
+            <Section title="🌱 Potensi yang Dapat Dikembangkan">
+              <List items={Array.isArray(c.potensi_dikembangkan) ? c.potensi_dikembangkan : (Array.isArray(c.potensi) ? c.potensi : [c.potensi || c.potensi_dikembangkan])} />
+            </Section>
+
+            {/* 📋 Analisis per Aspek */}
+            {Array.isArray(c.analisis_per_aspek) && c.analisis_per_aspek.length > 0 && (
+              <Section title="📋 Analisis per Aspek">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {c.analisis_per_aspek.map((asp: any, idx: number) => (
+                    <div key={idx} className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-foreground print:text-black">{asp.aspek}</span>
+                        <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary print:text-black">
+                          {asp.status || "Sesuai Usia"}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground print:text-gray-800">{asp.temuan}</p>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+
             <Section title={content.sections.s4}><p>{c.kemampuan_akademik ?? c.kemampuan_belajar}</p></Section>
             <Section title={content.sections.s5}><p>{c.kecerdasan_sosial}</p></Section>
             <Section title={content.sections.s6}><p>{c.kecerdasan_emosional}</p></Section>
             <Section title={content.sections.s7}><p>{c.karakter ?? "Memiliki karakter pembelajar yang jujur, disiplin, dan bertanggung jawab."}</p></Section>
-            <Section title={content.sections.s8}><p>{c.potensi}</p></Section>
             <Section title={content.sections.s9}><p>{c.minat_bakat ?? "Terlihat minat pada pemecahan masalah dan eksplorasi ilmu pengetahuan."}</p></Section>
-            <Section title={content.sections.s10}><List items={c.perhatian_orangtua} /></Section>
-            <Section title={content.sections.s11}>
-              {Array.isArray(c.treatment) ? (
+
+            {/* 🎯 Prioritas Stimulasi */}
+            <Section title="🎯 Prioritas Stimulasi">
+              {Array.isArray(c.prioritas_stimulasi) ? (
+                <List items={c.prioritas_stimulasi} />
+              ) : Array.isArray(c.treatment) ? (
                 <ul className="space-y-3">
                   {c.treatment.map((t: any, i: number) => (
                     <li key={i} className="rounded-xl border border-border/60 bg-muted/30 p-3 print:border-gray-300">
@@ -151,7 +190,17 @@ function ResultPage() {
                 <p>{String(c.treatment ?? "")}</p>
               )}
             </Section>
-            <Section title={content.sections.s12}><p>{c.rekomendasi_akademik ?? c.kemampuan_akademik}</p></Section>
+
+            {/* 👨‍👩‍👧 Rekomendasi untuk Orang Tua */}
+            <Section title="👨‍👩‍👧 Rekomendasi untuk Orang Tua">
+              <List items={c.rekomendasi_orangtua || c.perhatian_orangtua} />
+            </Section>
+
+            {/* 👩‍🏫 Rekomendasi untuk Guru */}
+            <Section title="👩‍🏫 Rekomendasi untuk Guru">
+              <List items={Array.isArray(c.rekomendasi_guru) ? c.rekomendasi_guru : [c.rekomendasi_guru || c.rekomendasi_akademik]} />
+            </Section>
+
             <Section title={content.sections.s13}><p className="italic font-medium text-foreground print:text-black">{c.kesimpulan}</p></Section>
 
             <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">

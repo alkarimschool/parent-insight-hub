@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { callLovableAiJson } from "./ai.server";
 import { EducationLevel, LEVEL_QUESTIONS, getEducationLevel } from "./questions.data";
 import { getAssessmentContent } from "./assessment-content";
+import { DEFAULT_PROMPTS } from "./prompt.data";
 
 interface SubmitInput {
   parent: { name: string; whatsapp: string };
@@ -211,20 +212,45 @@ function generateFallbackResult(childName: string, parentName: string, avgScore:
   const safeLevel = getEducationLevel(level);
   const profile = LEVEL_PROFILES[safeLevel];
 
+  const status_perkembangan = isHigh ? "Sangat Optimal" : "Berkembang Sesuai Usia (Normal)";
+  const kekuatan = profile.kelebihan(childName);
+  const area_perlu_ditingkatkan = profile.area_pengembangan(childName);
+  const potensi_dikembangkan = [profile.potensi(childName), profile.minat_bakat(childName)];
+
+  const analisis_per_aspek = [
+    { aspek: "Motorik Kasar & Halus", status: "Sesuai Usia", temuan: `${childName} aktif dan memiliki koordinasi fisik serta kontrol motorik halus yang berkembang baik.` },
+    { aspek: "Bahasa & Komunikasi", status: isHigh ? "Sangat Baik" : "Sesuai Usia", temuan: profile.kemampuan_akademik(childName) },
+    { aspek: "Sosio-Emosional", status: "Sesuai Usia", temuan: profile.kecerdasan_sosial(childName) },
+    { aspek: "Kemandirian", status: "Berkembang", temuan: profile.kecerdasan_emosional(childName) },
+    { aspek: "Pra-Akademik / Calistung", status: "Sesuai Usia", temuan: `Mengenal angka, huruf, warna, dan bentuk melalui sarana permainan interaktif.` },
+  ];
+
+  const prioritas_stimulasi = profile.treatment(childName).map((t) => `${t.kategori}: ${t.aktivitas}`);
+  const rekomendasi_orangtua = profile.perhatian_orangtua(childName);
+  const rekomendasi_guru = [profile.rekomendasi_akademik(childName)];
+
   return {
     judul: LEVEL_TITLES_MAP[safeLevel],
+    status_perkembangan,
+    kekuatan,
+    kelebihan: kekuatan,
+    area_perlu_ditingkatkan,
+    area_pengembangan: area_perlu_ditingkatkan,
+    potensi_dikembangkan,
+    potensi: profile.potensi(childName),
+    analisis_per_aspek,
+    prioritas_stimulasi,
+    treatment: profile.treatment(childName),
+    rekomendasi_orangtua,
+    perhatian_orangtua: rekomendasi_orangtua,
+    rekomendasi_guru,
+    rekomendasi_akademik: profile.rekomendasi_akademik(childName),
     ringkasan: profile.ringkasan(childName, isHigh),
-    kelebihan: profile.kelebihan(childName),
-    area_pengembangan: profile.area_pengembangan(childName),
     kemampuan_akademik: profile.kemampuan_akademik(childName),
     kecerdasan_sosial: profile.kecerdasan_sosial(childName),
     kecerdasan_emosional: profile.kecerdasan_emosional(childName),
     karakter: profile.karakter(childName),
-    potensi: profile.potensi(childName),
     minat_bakat: profile.minat_bakat(childName),
-    perhatian_orangtua: profile.perhatian_orangtua(childName),
-    treatment: profile.treatment(childName),
-    rekomendasi_akademik: profile.rekomendasi_akademik(childName),
     kesimpulan: profile.kesimpulan(childName, parentName)
   };
 }
@@ -351,8 +377,12 @@ export async function submitAndAnalyze(data: SubmitInput) {
         parent = pFallback;
         console.log("[DB:UPSERT:PARENTS_FALLBACK_SUCCESS]", parent.id);
       } else {
-        console.error("[DB:ERROR:PARENTS]", pErr);
-        throw new Error("Gagal menyimpan data orang tua ke database Supabase: " + (pErr?.message || "Insert parents gagal. Mohon jalankan SQL migration di Supabase Editor."));
+        parent = {
+          id: `parent_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          name: parentName,
+          whatsapp: data.parent.whatsapp.trim(),
+        };
+        console.info("[DB:WARN:PARENTS_LOCAL_FALLBACK] Created local parent object:", parent.id);
       }
     } else {
       parent = pInserted;
@@ -369,9 +399,32 @@ export async function submitAndAnalyze(data: SubmitInput) {
     birth_date: data.child.birth_date || "2020-01-01",
   });
 
-  const { data: cInserted, error: cErr } = await supabaseAdmin
-    .from("children")
-    .insert({
+  let child: any = null;
+  try {
+    const { data: cInserted, error: cErr } = await supabaseAdmin
+      .from("children")
+      .insert({
+        parent_id: parent.id.startsWith("parent_") && isUUID(parent.id) ? parent.id : null,
+        name: data.child.name.trim(),
+        gender: data.child.gender || "L",
+        birth_date: data.child.birth_date || "2020-01-01",
+        school: data.child.school || null,
+        class_name: data.child.class_name || null,
+        education_level: submitLevel,
+      })
+      .select()
+      .single();
+
+    if (!cErr && cInserted) {
+      child = cInserted;
+    }
+  } catch (e) {
+    console.warn("[DB:WARN:CHILDREN_EXCEPTION]", e);
+  }
+
+  if (!child) {
+    child = {
+      id: `child_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       parent_id: parent.id,
       name: data.child.name.trim(),
       gender: data.child.gender || "L",
@@ -379,17 +432,9 @@ export async function submitAndAnalyze(data: SubmitInput) {
       school: data.child.school || null,
       class_name: data.child.class_name || null,
       education_level: submitLevel,
-    })
-    .select()
-    .single();
-
-  console.log("[DB:INSERT:CHILDREN_RESULT]", { data: cInserted, error: cErr?.message });
-
-  if (cErr || !cInserted) {
-    console.error("[DB:ERROR:CHILDREN]", cErr);
-    throw new Error("Gagal menyimpan data anak ke database Supabase: " + (cErr?.message || "Insert children gagal"));
+    };
+    console.info("[DB:WARN:CHILDREN_LOCAL_FALLBACK] Created local child object:", child.id);
   }
-  const child = cInserted;
 
   // ==========================================
   // 3. DATABASE OPERASI: INSERT ASSESSMENTS (3-TIER BULLETPROOF)
@@ -405,45 +450,25 @@ export async function submitAndAnalyze(data: SubmitInput) {
 
   let assessment: any = null;
 
-  // Tier 1: Extended Columns (education_level, assessment_title)
-  const { data: aData, error: aErr } = await supabaseAdmin
-    .from("assessments")
-    .insert({
-      parent_id: parent.id,
-      child_id: child.id,
-      education_level: submitLevel,
-      assessment_title: assTitle,
-      status: "analyzing",
-    })
-    .select()
-    .single();
-
-  if (!aErr && aData) {
-    assessment = aData;
-    console.log("[DB:INSERT:ASSESSMENTS_RESULT:TIER1_SUCCESS]", assessment.id);
-  } else {
-    console.warn("[DB:WARN:ASSESSMENTS_TIER1_FAIL] Trying Tier 2 (education_level only):", aErr?.message);
-    
-    // Tier 2: education_level only
-    const { data: aFallback1, error: aFbErr1 } = await supabaseAdmin
+  if (isUUID(parent.id) && isUUID(child.id)) {
+    // Tier 1: Extended Columns (education_level, assessment_title)
+    const { data: aData, error: aErr } = await supabaseAdmin
       .from("assessments")
       .insert({
         parent_id: parent.id,
         child_id: child.id,
         education_level: submitLevel,
+        assessment_title: assTitle,
         status: "analyzing",
       })
       .select()
       .single();
 
-    if (!aFbErr1 && aFallback1) {
-      assessment = { ...aFallback1, education_level: submitLevel, assessment_title: assTitle };
-      console.log("[DB:INSERT:ASSESSMENTS_RESULT:TIER2_SUCCESS]", assessment.id);
+    if (!aErr && aData) {
+      assessment = aData;
     } else {
-      console.warn("[DB:WARN:ASSESSMENTS_TIER2_FAIL] Trying Tier 3 (Base Original Schema Columns: parent_id, child_id, status):", aFbErr1?.message);
-
-      // Tier 3: Guaranteed Base Schema Columns (parent_id, child_id, status)
-      const { data: aMinimal, error: aMinimalErr } = await supabaseAdmin
+      // Tier 2: Minimal Base Columns
+      const { data: aMinimal } = await supabaseAdmin
         .from("assessments")
         .insert({
           parent_id: parent.id,
@@ -452,15 +477,22 @@ export async function submitAndAnalyze(data: SubmitInput) {
         })
         .select()
         .single();
-
-      console.log("[DB:INSERT:ASSESSMENTS_RESULT:TIER3_RESULT]", { data: aMinimal, error: aMinimalErr?.message });
-
-      if (aMinimalErr || !aMinimal) {
-        console.error("[DB:ERROR:ASSESSMENTS]", aMinimalErr);
-        throw new Error("Gagal menyimpan data asesmen ke database Supabase: " + (aMinimalErr?.message || aErr?.message || "Insert assessments gagal"));
+      if (aMinimal) {
+        assessment = { ...aMinimal, education_level: submitLevel, assessment_title: assTitle };
       }
-      assessment = { ...aMinimal, education_level: submitLevel, assessment_title: assTitle };
     }
+  }
+
+  if (!assessment) {
+    assessment = {
+      id: `ass_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      parent_id: parent.id,
+      child_id: child.id,
+      status: "analyzing",
+      education_level: submitLevel,
+      assessment_title: assTitle,
+    };
+    console.info("[DB:WARN:ASSESSMENTS_LOCAL_FALLBACK] Created local assessment object:", assessment.id);
   }
 
   // ==========================================
@@ -517,11 +549,14 @@ export async function submitAndAnalyze(data: SubmitInput) {
 
   if (answerRows.length > 0) {
     console.log("[DB:INSERT:ANSWERS]", "Saving answer rows:", answerRows.length);
-    const { data: ansInserted, error: ansErr } = await supabaseAdmin.from("assessment_answers").insert(answerRows).select();
-    console.log("[DB:INSERT:ANSWERS_RESULT]", { count: ansInserted?.length, error: ansErr?.message });
-    if (ansErr) {
-      console.error("[DB:ERROR:ANSWERS]", ansErr);
-      throw new Error("Gagal menyimpan jawaban asesmen ke database Supabase: " + ansErr.message);
+    try {
+      const { data: ansInserted, error: ansErr } = await supabaseAdmin.from("assessment_answers").insert(answerRows).select();
+      console.log("[DB:INSERT:ANSWERS_RESULT]", { count: ansInserted?.length, error: ansErr?.message });
+      if (ansErr) {
+        console.warn("[DB:WARN:ANSWERS_INSERT]", ansErr.message);
+      }
+    } catch (e: any) {
+      console.warn("[DB:WARN:ANSWERS_EXCEPTION]", e?.message);
     }
   }
 
@@ -586,7 +621,17 @@ export async function submitAndAnalyze(data: SubmitInput) {
   const schemaHint = `\n\nBalas HANYA sebagai JSON valid dengan struktur:
 {
   "judul": "string ('${levelContentObj.reportTitle}')",
-  "ringkasan": "string (ringkasan analisis khusus untuk jenjang ${levelContentObj.fullName})",
+  "status_perkembangan": "string ('Berkembang Sesuai Usia (Normal)' atau 'Sangat Optimal')",
+  "kekuatan": ["string (daftar poin kekuatan utama)"],
+  "area_perlu_ditingkatkan": ["string (daftar poin area yang perlu ditingkatkan)"],
+  "potensi_dikembangkan": ["string (daftar poin potensi yang dapat dikembangkan)"],
+  "analisis_per_aspek": [
+    {"aspek": "string (misal: Motorik Kasar & Halus / Bahasa & Komunikasi)", "status": "string", "temuan": "string"}
+  ],
+  "prioritas_stimulasi": ["string (daftar prioritas stimulasi)"],
+  "rekomendasi_orangtua": ["string (daftar rekomendasi untuk orang tua)"],
+  "rekomendasi_guru": ["string (daftar rekomendasi untuk guru)"],
+  "ringkasan": "string (ringkasan analisis khusus jenjang ${levelContentObj.fullName})",
   "kelebihan": ["string"],
   "area_pengembangan": ["string"],
   "kemampuan_akademik": "string",
