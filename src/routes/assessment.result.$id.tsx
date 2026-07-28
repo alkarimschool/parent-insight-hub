@@ -135,6 +135,11 @@ function ResultPage() {
               <h2 className="mt-1 text-xl font-extrabold text-emerald-800 dark:text-emerald-300 print:text-black">
                 {c.status_perkembangan || "Berkembang Sesuai Usia (Normal)"}
               </h2>
+              {c.penjelasan_status && (
+                <p className="mt-3 text-sm leading-relaxed text-emerald-900/80 dark:text-emerald-200 print:text-black">
+                  {c.penjelasan_status}
+                </p>
+              )}
             </div>
 
             {/* 2. ⭐ Kekuatan Anak */}
@@ -200,9 +205,13 @@ function ResultPage() {
 
             {/* 10. 📝 Catatan */}
             <Section title="📝 Catatan">
-              <p className="italic font-medium text-foreground print:text-black">
-                {c.catatan || c.kesimpulan || "Perkembangan dan kesiapan sekolah TK anak berjalan sangat baik."}
-              </p>
+              {Array.isArray(c.catatan) ? (
+                <List items={c.catatan} />
+              ) : (
+                <p className="italic font-medium text-foreground print:text-black">
+                  {c.catatan || c.kesimpulan || "Perkembangan dan kesiapan sekolah TK anak berjalan sangat baik."}
+                </p>
+              )}
             </Section>
 
             <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">

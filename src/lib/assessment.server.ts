@@ -212,46 +212,91 @@ function generateFallbackResult(childName: string, parentName: string, avgScore:
   const safeLevel = getEducationLevel(level);
   const profile = LEVEL_PROFILES[safeLevel];
 
-  const status_perkembangan = isHigh ? "Sangat Optimal" : "Berkembang Sesuai Usia (Normal)";
-  const kekuatan = profile.kelebihan(childName);
-  const area_perlu_ditingkatkan = profile.area_pengembangan(childName);
-  const potensi_dikembangkan = [profile.potensi(childName), profile.minat_bakat(childName)];
+  const status_perkembangan = isHigh ? "Berkembang Sangat Baik" : "Berkembang Sesuai Usia (Normal)";
+  const penjelasan_status = `Berdasarkan asesmen perkembangan anak usia dini (TK / PAUD), Ananda ${childName} menunjukkan kesiapan tumbuh kembang, komunikasi, dan calistung awal yang ${isHigh ? "sangat optimal" : "baik dan berkembang positif"}. Anak aktif, memiliki rasa ingin tahu tinggi, dan siap mengikuti kegiatan sekolah.`;
 
-  const analisis_per_aspek = [
-    { aspek: "Motorik Kasar & Halus", status: "Sesuai Usia", temuan: `${childName} aktif dan memiliki koordinasi fisik serta kontrol motorik halus yang berkembang baik.` },
-    { aspek: "Bahasa & Komunikasi", status: isHigh ? "Sangat Baik" : "Sesuai Usia", temuan: profile.kemampuan_akademik(childName) },
-    { aspek: "Sosio-Emosional", status: "Sesuai Usia", temuan: profile.kecerdasan_sosial(childName) },
-    { aspek: "Kemandirian", status: "Berkembang", temuan: profile.kecerdasan_emosional(childName) },
-    { aspek: "Pra-Akademik / Calistung", status: "Sesuai Usia", temuan: `Mengenal angka, huruf, warna, dan bentuk melalui sarana permainan interaktif.` },
+  const kekuatan_anak = [
+    `Mampu menyampaikan keinginan dan berkomunikasi verbal dengan jelas.`,
+    `Mengenal huruf dasar, angka, warna, bentuk, dan membilang benda harian.`,
+    `Antusias mencoba permainan baru dan beradaptasi dengan teman seusianya.`,
+    `Mampu mengikuti instruksi 2 langkah dari guru atau orang tua di rumah.`,
+    `Menunjukkan sikap empati dan bersedia berbagi mainan.`
   ];
 
-  const prioritas_stimulasi = profile.treatment(childName).map((t) => `${t.kategori}: ${t.aktivitas}`);
-  const rekomendasi_orangtua = profile.perhatian_orangtua(childName);
-  const rekomendasi_guru = [profile.rekomendasi_akademik(childName)];
+  const area_perlu_ditingkatkan = [
+    `Meningkatkan konsentrasi dan ketekunan saat menyelesaikan permainan (10–15 menit).`,
+    `Melatih kemandirian merapikan mainan dan peralatan pribadi setelah digunakan.`,
+    `Mengasah regulasi emosi mandiri saat mengalami kelelahan atau dinamika bermain.`
+  ];
+
+  const potensi_dikembangkan = [
+    `Potensi komunikasi verbal dan ekspresi bahasa anak.`,
+    `Kreativitas eksplorasi visual, seni, dan daya ingat permainan.`,
+    `Kemampuan bekerja sama dan sosialisasi aktif dengan teman sebaya.`,
+    `Potensi pemecahan masalah sederhana melalui aktivitas bermain.`
+  ];
+
+  const kemampuan_akademik = {
+    status_akademik: isHigh ? "Sangat Baik" : "Sesuai Usia",
+    kekuatan_akademik: [
+      `Mengenal huruf dasar alfabet dan angka 1–10 secara visual.`,
+      `Mengenal warna primer, sekunder, dan bentuk geometri dasar.`,
+      `Mampu membilang benda harian dan menyimak cerita dongeng pendek.`
+    ],
+    area_akademik_dikembangkan: [
+      `Pengenalan bunyi fonik huruf awal untuk persiapan membaca.`,
+      `Latihan mengelompokkan benda berdasarkan pola dan jumlah.`
+    ]
+  };
+
+  const prioritas_stimulasi = [
+    `Stimulasi Calistung TK: Bermain flashcard huruf/angka dan membilang benda harian 10–15 menit bersama orang tua.`,
+    `Kemandirian & Motorik: Latih anak memakai sepatu, makan sendiri, dan merapikan mainannya.`,
+    `Sosialisasi & Emosi: Fasilitasi waktu bermain (playdate) bersama teman seusianya.`
+  ];
+
+  const rekomendasi_orangtua = [
+    `Berikan stimulasi calistung berbasis permainan gembira tanpa paksaan.`,
+    `Dampingi rutinitas tidur dan membaca dongeng sebelum tidur.`,
+    `Sediakan ruang eksplorasi positif di rumah dan beri apresiasi atas setiap usaha anak.`,
+    `Ajak anak mengobrol tentang pengalamannya di sekolah setiap hari.`,
+    `Batasi penggunaan gadget dan ganti dengan permainan edukatif interaktif.`
+  ];
+
+  const rekomendasi_guru = [
+    `Bacakan cerita dongeng interaktif setiap hari dan ajak anak aktif berdiskusi.`,
+    `Gunakan metode belajar berbasis bermain (play-based learning).`,
+    `Berikan apresiasi positif atas setiap usaha mandiri yang ditunjukkan anak.`
+  ];
+
+  const catatan = [
+    `Sangat mengapresiasi keaktifan dan semangat belajar Ananda ${childName}.`,
+    `Hasil laporan ini merupakan interpretasi profesional berdasarkan asesmen orang tua.`,
+    `Bukan merupakan diagnosis medis maupun psikologis medis.`,
+    `Jika terdapat indikator yang belum berkembang secara konsisten, disarankan berkonsultasi dengan Psikolog Anak atau Dokter Tumbuh Kembang.`
+  ];
 
   return {
     judul: LEVEL_TITLES_MAP[safeLevel],
     status_perkembangan,
-    kekuatan,
-    kelebihan: kekuatan,
+    penjelasan_status,
+    kekuatan_anak,
+    kekuatan: kekuatan_anak,
+    kelebihan: kekuatan_anak,
     area_perlu_ditingkatkan,
     area_pengembangan: area_perlu_ditingkatkan,
     potensi_dikembangkan,
-    potensi: profile.potensi(childName),
-    analisis_per_aspek,
+    potensi: potensi_dikembangkan,
+    kemampuan_akademik,
     prioritas_stimulasi,
     treatment: profile.treatment(childName),
     rekomendasi_orangtua,
     perhatian_orangtua: rekomendasi_orangtua,
     rekomendasi_guru,
     rekomendasi_akademik: profile.rekomendasi_akademik(childName),
-    ringkasan: profile.ringkasan(childName, isHigh),
-    kemampuan_akademik: profile.kemampuan_akademik(childName),
-    kecerdasan_sosial: profile.kecerdasan_sosial(childName),
-    kecerdasan_emosional: profile.kecerdasan_emosional(childName),
-    karakter: profile.karakter(childName),
-    minat_bakat: profile.minat_bakat(childName),
-    kesimpulan: profile.kesimpulan(childName, parentName)
+    catatan,
+    ringkasan: penjelasan_status,
+    kesimpulan: catatan.join(" ")
   };
 }
 
