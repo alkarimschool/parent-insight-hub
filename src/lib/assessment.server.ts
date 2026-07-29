@@ -626,6 +626,13 @@ async function getOrSeedQuestionsForLevel(level: EducationLevel) {
       .order("order_index");
 
     if (existingQs && existingQs.length >= 15) {
+      const firstText = existingQs[0]?.text || "";
+      if (safeLevel === "SMA" && !firstText.includes("Anak saya mampu memahami materi")) {
+        return LEVEL_QUESTIONS.SMA.map((q) => ({
+          ...q,
+          question_categories: { name: q.category_name },
+        }));
+      }
       return existingQs;
     }
 

@@ -64,7 +64,13 @@ function QuestionsPage() {
   });
 
   const list = useMemo(() => {
-    if (dbQs && dbQs.length > 0) return dbQs;
+    if (dbQs && dbQs.length > 0) {
+      const firstQText = dbQs[0]?.text || "";
+      if (level === "SMA" && !firstQText.includes("Anak saya mampu memahami materi")) {
+        return LEVEL_QUESTIONS.SMA;
+      }
+      return dbQs;
+    }
     return LEVEL_QUESTIONS[level] || LEVEL_QUESTIONS.TK;
   }, [dbQs, level]);
 
