@@ -1161,8 +1161,11 @@ export async function getAssessmentResultServer(assessmentId: string) {
     const childName = child?.name || cached?.child_name || "Anak";
     const parentName = parent?.name || cached?.parent_name || "Orang Tua";
 
-    if (!content || typeof content !== "object" || (!content.ringkasan && !content.status_perkembangan && !content.kekuatan_anak)) {
-      content = generateFallbackResult(childName, parentName, 4.0, level);
+    if (!content || typeof content !== "object" || (!content.ringkasan && !content.status_perkembangan && !content.kekuatan_anak && !content.status_perkembangan_sd && !content.status_perkembangan_smp && !content.status_kesiapan_sma)) {
+      const { data: dbAns } = await supabaseAdmin.from("assessment_answers").select("score, question_id").eq("assessment_id", assessmentId);
+      const scores = (dbAns || []).map((a: any) => Number(a.score ?? 3));
+      const calcAvg = scores.length > 0 ? scores.reduce((sum: number, s: number) => sum + s, 0) / scores.length : 3.0;
+      content = generateFallbackResult(childName, parentName, calcAvg, level, dbAns || [], []);
     }
     if (!content.ringkasan) {
       content.ringkasan = content.penjelasan_status || "Perkembangan dan kesiapan anak berkembang positif.";
