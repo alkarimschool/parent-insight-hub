@@ -29,18 +29,15 @@ async function runTestScenarios() {
     const sub1 = await submitAndAnalyze({
       child: {
         name: `Budi Agung (${lvl} - Sangat Baik)`,
-        date_of_birth: "2015-05-15",
+        birth_date: "2015-05-15",
         gender: "L",
-        school: `Sekolah Unggul ${lvl}`
+        school: `Sekolah Unggul ${lvl}`,
+        education_level: lvl,
       },
       parent: {
         name: "Bpk. Hendro Prajekti",
         whatsapp: "081234567890",
-        email: "hendro@example.com",
-        city: "Jakarta",
-        info_source: "Instagram"
       },
-      education_level: lvl,
       answers: answersTest1
     });
 
@@ -70,18 +67,15 @@ async function runTestScenarios() {
     const sub2 = await submitAndAnalyze({
       child: {
         name: `Dina Rindu (${lvl} - Perlu Perhatian)`,
-        date_of_birth: "2015-05-15",
+        birth_date: "2015-05-15",
         gender: "P",
-        school: `Sekolah Harapan ${lvl}`
+        school: `Sekolah Harapan ${lvl}`,
+        education_level: lvl,
       },
       parent: {
         name: "Ibu Rina Lestari",
         whatsapp: "081987654321",
-        email: "rina@example.com",
-        city: "Surabaya",
-        info_source: "Rekomendasi"
       },
-      education_level: lvl,
       answers: answersTest2
     });
 
@@ -113,18 +107,15 @@ async function runTestScenarios() {
     const sub3 = await submitAndAnalyze({
       child: {
         name: `Coki Seimbang (${lvl} - Campuran)`,
-        date_of_birth: "2015-05-15",
+        birth_date: "2015-05-15",
         gender: "L",
-        school: `Sekolah Bakti ${lvl}`
+        school: `Sekolah Bakti ${lvl}`,
+        education_level: lvl,
       },
       parent: {
         name: "Bpk. Surya",
         whatsapp: "085611223344",
-        email: "surya@example.com",
-        city: "Bandung",
-        info_source: "Google"
       },
-      education_level: lvl,
       answers: answersTest3
     });
 

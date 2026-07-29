@@ -14,7 +14,7 @@ interface SubmitInput {
     class_name?: string;
     education_level?: EducationLevel;
   };
-  answers: Array<{ question_id: string; score: number }>;
+  answers: Array<{ question_id: string; score?: number; text_answer?: string }>;
 }
 
 interface CachedAssessment {
@@ -179,36 +179,6 @@ const LEVEL_PROFILES: Record<EducationLevel, {
     ],
     rekomendasi_akademik: (name) => `Fasilitasi latihan soal analitis tingkat lanjut, ikuti tryout PTN/PTS secara konsisten, dan tingkatkan keterampilan komunikasi publik serta riset literatur mandiri.`,
     kesimpulan: (c, p) => `Kedewasaan dan kesiapan akademik ananda ${c} dalam menghadapi Perguruan Tinggi & Dunia Karier sudah sangat optimal. Dukungan dan doa dari Ibu/Bapak ${p} akan mengantarkannya meraih cita-cita besarnya.`
-  },
-
-  SMK: {
-    ringkasan: (name, isHigh) => `Berdasarkan asesmen kesiapan vokasional dan keahlian Sekolah Menengah Kejuruan (SMK), ${name} menunjukkan kesiapan kerja, kompetensi praktis, dan disiplin industri yang ${isHigh ? "sangat matang & siap kerja/wirausaha" : "baik dan berkembang positif"}. Anak memiliki fondasi keterampilan kejuruan yang solid.`,
-    kelebihan: (name) => [
-      `Menguasai teori dan keterampilan praktis kejuruan di bidang pilihannya.`,
-      `Kesiapan tinggi dalam mengikuti Praktik Kerja Lapangan (PKL) dan budaya kerja industri.`,
-      `Disiplin, berorientasi hasil, dan tanggap menyelesaikan proyek teknis.`
-    ],
-    area_pengembangan: (name) => [
-      `Meningkatkan penguasaan literasi digital dan istilah teknis bahasa Inggris industri.`,
-      `Melatih komunikasi profesional dan kerja sama tim lintas keahlian.`
-    ],
-    kemampuan_akademik: (name) => `${name} memiliki penguasaan kompetensi keahlian SMK yang baik: mampu menerapkan konsep teknis dalam praktik langsung serta mengoperasikan perangkat kejuruan secara terstruktur.`,
-    kecerdasan_sosial: (name) => `${name} mampu bekerja sama dengan baik dalam tim proyek industri dan menghargai etika komunikasi kerja.`,
-    kecerdasan_emosional: (name) => `${name} memiliki ketahanan kerja (work resilience) dan tanggung jawab tinggi saat menghadapi tenggat waktu pengerjaan proyek kejuruan.`,
-    karakter: (name) => `Karakter vokasional yang disiplin, jujur, cekatan, dan berintegritas tinggi.`,
-    potensi: (name) => `Potensi keahlian praktis vokasional, inovasi produk kejuruan, wirausaha mandiri, dan kepemimpinan teknis.`,
-    minat_bakat: (name) => `Terorientasi jelas pada bidang keahlian pilihan serta kesiapan kerja industri maupun studi lanjut vokasi.`,
-    perhatian_orangtua: (name) => [
-      `Dukung anak dalam penyusunan portofolio karya dan persiapan sertifikasi keahlian.`,
-      `Fasilitasi bimbingan PKL dan konsultasi arah karir vokasi.`
-    ],
-    treatment: (name) => [
-      { kategori: "Pengembangan Kompetensi SMK", aktivitas: "Fasilitasi pembuatan portofolio proyek kejuruan dan persiapan uji kompetensi industri." },
-      { kategori: "Keterampilan Wirausaha & Industri", aktivitas: "Latih perencanaan proyek bisnis kejuruan dan simulasi wawancara kerja profesional." },
-      { kategori: "Pengembangan Diri & Bahasa", aktivitas: "Tingkatkan penguasaan istilah teknis berbahasa Inggris dan perangkat lunak industri." }
-    ],
-    rekomendasi_akademik: (name) => `Pertajam keterampilan praktis kejuruan, selesaikan sertifikasi kompetensi industri, dan susun portofolio karya terbaik untuk persiapan melangkah ke dunia kerja atau kuliah vokasi.`,
-    kesimpulan: (c, p) => `Kompetensi keahlian dan kesiapan dunia kerja SMK ananda ${c} berjalan sangat optimal. Pendampingan dan dorongan dari Ibu/Bapak ${p} di rumah akan mengantarkannya meraih kesuksesan karir.`
   }
 };
 
@@ -217,7 +187,6 @@ export const LEVEL_TITLES_MAP: Record<EducationLevel, string> = {
   SD: getAssessmentContent("SD").title,
   SMP: getAssessmentContent("SMP").title,
   SMA: getAssessmentContent("SMA").title,
-  SMK: getAssessmentContent("SMK").title,
 };
 
 function generateFallbackResult(childName: string, parentName: string, avgScore: number, level: EducationLevel, answers: any[] = [], questions: any[] = []) {

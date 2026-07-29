@@ -7,7 +7,7 @@ async function runE2ETests() {
   console.log("🚀 STARTING E2E AUTOMATED ASSESSMENT VERIFICATION");
   console.log("=================================================\n");
 
-  const levelsToTest: EducationLevel[] = ["TK", "SD", "SMP", "SMA", "SMK"];
+  const levelsToTest: EducationLevel[] = ["TK", "SD", "SMP", "SMA"];
   let passedCount = 0;
 
   for (const level of levelsToTest) {

@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { submitAssessment } from "@/lib/assessment.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { LEVEL_QUESTIONS, EducationLevel } from "@/lib/questions.data";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/assessment/questions")({
   head: () => ({ meta: [{ title: "Pertanyaan Assessment" }] }),
@@ -39,40 +40,47 @@ function QuestionsPage() {
       const raw = sessionStorage.getItem("paa_form");
       if (!raw) { navigate({ to: "/assessment/level" }); return; }
       setFormData(JSON.parse(raw));
-    } catch { navigate({ to: "/assessment/level" }); }
+    } catch {
+      navigate({ to: "/assessment/level" });
+    }
   }, [navigate]);
 
-  const level: EducationLevel = (formData?.education_level as EducationLevel) || "TK";
+  const level: EducationLevel = (formData?.education_level || "TK") as EducationLevel;
 
-  const questions = useQuery({
-    queryKey: ["questions-active-level", level],
+  const { data: dbCats } = useQuery({
+    queryKey: ["assessment_categories", level],
     queryFn: async () => {
-      const defaults = LEVEL_QUESTIONS[level] || LEVEL_QUESTIONS.TK;
-      return {
-        qs: defaults.map((q) => ({
-          id: q.id,
-          text: q.text,
-          order_index: q.order_index,
-          category_name: q.category_name,
-          education_level: q.education_level,
-          type: q.type,
-          options: q.options,
-        })),
-        cats: [],
-      };
+      const { data } = await supabase.from("question_categories").select("*").eq("education_level", level).order("order_index");
+      return (data || []) as CatRow[];
     },
   });
 
-  const list = questions.data?.qs ?? [];
-  const cats = questions.data?.cats ?? [];
+  const { data: dbQs, isLoading } = useQuery({
+    queryKey: ["assessment_questions", level],
+    queryFn: async () => {
+      const { data } = await supabase.from("questions").select("*").eq("education_level", level).order("order_index");
+      return (data || []) as QRow[];
+    },
+  });
+
+  const list = useMemo(() => {
+    if (dbQs && dbQs.length > 0) return dbQs;
+    return LEVEL_QUESTIONS[level] || LEVEL_QUESTIONS.TK;
+  }, [dbQs, level]);
+
+  const cats = useMemo(() => {
+    return dbCats || [];
+  }, [dbCats]);
+
   const [idx, setIdx] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, number | string>>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(`paa_answers_${level}`);
-      if (raw) setAnswers(JSON.parse(raw));
+      if (!level) return;
+      const saved = localStorage.getItem(`paa_answers_${level}`);
+      if (saved) setAnswers(JSON.parse(saved));
     } catch {}
   }, [level]);
 
@@ -86,7 +94,7 @@ function QuestionsPage() {
   const categoryName = useMemo(() => {
     if (!current) return "";
     if (current.category_name) return current.category_name;
-    const cat = cats.find((c) => c.id === (current as QRow).category_id);
+    const cat = (cats as CatRow[]).find((c) => c.id === (current as QRow).category_id);
     return cat?.name ?? "Umum";
   }, [cats, current]);
 
@@ -180,7 +188,7 @@ function QuestionsPage() {
     }
   };
 
-  if (questions.isLoading || !formData) {
+  if (isLoading || !formData) {
     return (
       <div className="min-h-screen bg-gradient-soft">
         <PublicNav siteName={website.data?.site_name ?? "PAA"} logoText="PAA" />

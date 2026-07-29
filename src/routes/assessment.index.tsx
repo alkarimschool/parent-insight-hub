@@ -26,7 +26,6 @@ const LEVEL_NAMES: Record<EducationLevel, string> = {
   SD: `${getAssessmentContent("SD").icon} ${getAssessmentContent("SD").fullName}`,
   SMP: `${getAssessmentContent("SMP").icon} ${getAssessmentContent("SMP").fullName}`,
   SMA: `${getAssessmentContent("SMA").icon} ${getAssessmentContent("SMA").fullName}`,
-  SMK: `${getAssessmentContent("SMK").icon} ${getAssessmentContent("SMK").fullName}`,
 };
 
 function AssessmentFormPage() {
