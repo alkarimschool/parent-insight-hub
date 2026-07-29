@@ -419,93 +419,80 @@ function ResultPage() {
           </div>
         ) : (
           /* ========================================================================= */
-          /* EXPLICIT SMA LEVEL REPORT                                                 */
+          /* EXPLICIT SMA LEVEL REPORT (10 STRICT CLASS X CAPABILITY SECTIONS)         */
           /* ========================================================================= */
           <div className="grid gap-5">
-            {/* 1. Status Kesiapan SMA */}
+            {/* 1. 📋 Ringkasan Kemampuan Awal */}
             <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 shadow-soft text-center print:border-emerald-600 print:bg-transparent">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">🎓 Status Kesiapan Perguruan Tinggi & Masa Depan</span>
-              <h2 className="mt-1 text-xl font-extrabold text-emerald-800 dark:text-emerald-300 print:text-black">
-                {c.status_kesiapan_sma || c.status_perkembangan || "Sangat Matang & Siap Kuliah/Karier"}
-              </h2>
-              {(c.ringkasan_eksekutif_sma || c.ringkasan) && (
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">🎓 Pemetaan Kemampuan Awal Siswa Kelas X SMA</span>
+              {(c.ringkasan_kemampuan_awal || c.ringkasan_eksekutif_sma || c.ringkasan) && (
                 <p className="mt-3 text-sm leading-relaxed text-emerald-900/80 dark:text-emerald-200 print:text-black">
-                  {c.ringkasan_eksekutif_sma || c.ringkasan}
+                  {c.ringkasan_kemampuan_awal || c.ringkasan_eksekutif_sma || c.ringkasan}
                 </p>
               )}
             </div>
 
-            {/* 2. Keunggulan Akademik & Riset */}
-            <Section title={content.sections.s2}>
-              <List items={c.keunggulan_akademik_sma || c.kelebihan} />
-            </Section>
+            {/* 2. ⚠️ Area yang Perlu Diperhatikan (Fokus Utama Laporan) */}
+            <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-6 shadow-soft print:border-amber-600 print:bg-transparent">
+              <h3 className="flex items-center gap-2 text-lg font-bold text-amber-900 dark:text-amber-300 print:text-black">
+                <Sparkles className="h-5 w-5 text-amber-600 print:hidden" />
+                {content.sections.s2}
+              </h3>
+              <p className="mt-1 text-xs text-amber-800/80 dark:text-amber-300/80 print:text-gray-700 mb-3">
+                Fokus utama pembinaan: Aspek yang memerlukan pendampingan orang tua selama anak belajar di SMA.
+              </p>
+              <List items={c.area_yang_perlu_diperhatikan || c.area_akademik_perlu_ditingkatkan || c.area_pengembangan} />
+            </div>
 
-            {/* 3. Area Akademik Perlu Ditingkatkan */}
+            {/* 3. 📚 Kemampuan Awal Akademik */}
             <Section title={content.sections.s3}>
-              <List items={c.area_akademik_perlu_ditingkatkan || c.area_pengembangan} />
+              <List items={c.kemampuan_awal_akademik || c.keunggulan_akademik_sma || c.kelebihan} />
             </Section>
 
-            {/* 4. Kesiapan Kuliah & Perencanaan Karier */}
-            <Section title={content.sections.s9}>
-              {c.kesiapan_kuliah_dan_perencanaan_karier ? (
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 print:border-gray-300">
-                    <span className="text-xs font-bold text-primary uppercase print:text-black">Status Kesiapan PTN / Kuliah</span>
-                    <p className="mt-1 text-base font-bold text-foreground print:text-black">{c.kesiapan_kuliah_dan_perencanaan_karier.status_kesiapan_ptn}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground print:text-black">Rekomendasi Potensi Jurusan Kuliah</h4>
-                    <div className="mt-2"><List items={c.kesiapan_kuliah_dan_perencanaan_karier.potensi_jurusan_kuliah} /></div>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground print:text-black">Strategi Seleksi & Persiapan Kampus</h4>
-                    <div className="mt-2"><List items={c.kesiapan_kuliah_dan_perencanaan_karier.strategi_seleksi_perguruan_tinggi} /></div>
-                  </div>
-                </div>
-              ) : (
-                <p>{c.minat_bakat ?? c.kemampuan_akademik}</p>
-              )}
+            {/* 4. 🧠 Kemampuan Berpikir */}
+            <Section title={content.sections.s4}>
+              <List items={c.kemampuan_berpikir || c.problem_solving_dan_resiliensi} />
             </Section>
 
-            {/* 5. Public Speaking & Leadership */}
+            {/* 5. 🗣️ Kemampuan Komunikasi dan Sosial */}
             <Section title={content.sections.s5}>
-              <List items={c.public_speaking_dan_leadership || (Array.isArray(c.kecerdasan_sosial) ? c.kecerdasan_sosial : [c.kecerdasan_sosial])} />
+              <List items={c.kemampuan_komunikasi_dan_sosial || c.public_speaking_dan_leadership} />
             </Section>
 
-            {/* 6. Problem Solving & Resiliensi */}
+            {/* 6. 🛡️ Karakter dan Kemandirian */}
             <Section title={content.sections.s6}>
-              <List items={c.problem_solving_dan_resiliensi || (Array.isArray(c.kecerdasan_emosional) ? c.kecerdasan_emosional : [c.kecerdasan_emosional])} />
+              <List items={c.karakter_dan_kemandirian || c.pengembangan_soft_hard_skills} />
             </Section>
 
-            {/* 7. Soft & Hard Skills */}
+            {/* 7. 🏫 Kesiapan Mengikuti Pembelajaran SMA */}
+            <Section title={content.sections.s7}>
+              <List items={c.kesiapan_mengikuti_pembelajaran_SMA || c.kesiapan_mengikuti_pembelajaran_sma || (c.kesiapan_kuliah_dan_perencanaan_karier ? [c.kesiapan_kuliah_dan_perencanaan_karier.status_kesiapan_ptn] : ["Siap mengikuti ritme & tuntutan pembelajaran SMA."])} />
+            </Section>
+
+            {/* 8. 🌱 Potensi Pengembangan */}
             <Section title={content.sections.s8}>
-              <List items={c.pengembangan_soft_hard_skills || (Array.isArray(c.potensi) ? c.potensi : [c.potensi])} />
+              <List items={c.potensi_pengembangan || (Array.isArray(c.potensi) ? c.potensi : [c.potensi])} />
             </Section>
 
-            {/* 8. Perhatian Orang Tua & Otonomi */}
+            {/* 9. ⭐ Potensi dan Kelebihan (Penguatan Singkat) */}
+            <Section title={content.sections.s9}>
+              <List items={c.potensi_dan_kelebihan || c.keunggulan_akademik_sma} />
+            </Section>
+
+            {/* 10. 👨‍👩‍👧 Rekomendasi untuk Orang Tua */}
             <Section title={content.sections.s10}>
-              <List items={c.perhatian_orangtua_dan_otonomi || c.perhatian_orangtua} />
-            </Section>
-
-            {/* 9. Rekomendasi Strategi Masa Depan */}
-            <Section title={content.sections.s11}>
-              {Array.isArray(c.rekomendasi_strategi_masa_depan || c.treatment) ? (
+              {Array.isArray(c.rekomendasi_untuk_orang_tua || c.rekomendasi_strategi_masa_depan || c.perhatian_orangtua_dan_otonomi) ? (
                 <ul className="space-y-3">
-                  {(c.rekomendasi_strategi_masa_depan || c.treatment).map((t: any, i: number) => (
+                  {(c.rekomendasi_untuk_orang_tua || c.rekomendasi_strategi_masa_depan || c.perhatian_orangtua_dan_otonomi).map((t: any, i: number) => (
                     <li key={i} className="rounded-xl border border-border/60 bg-muted/30 p-3 print:border-gray-300">
-                      <div className="text-sm font-semibold text-foreground print:text-black">{t.kategori || `Strategi ${i + 1}`}</div>
-                      <div className="mt-1 text-sm text-muted-foreground print:text-gray-800">{t.aktivitas || t}</div>
+                      <div className="text-sm font-semibold text-foreground print:text-black">{typeof t === "object" ? (t.kategori || `Rekomendasi ${i + 1}`) : `Rekomendasi ${i + 1}`}</div>
+                      <div className="mt-1 text-sm text-muted-foreground print:text-gray-800">{typeof t === "object" ? (t.aktivitas || JSON.stringify(t)) : t}</div>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p>{String(c.rekomendasi_strategi_masa_depan || c.treatment || "")}</p>
+                <p>{String(c.rekomendasi_untuk_orang_tua || c.rekomendasi_strategi_masa_depan || c.treatment || "")}</p>
               )}
-            </Section>
-
-            {/* 10. Catatan Kelulusan SMA */}
-            <Section title={content.sections.s13}>
-              <List items={Array.isArray(c.catatan_kelulusan_sma) ? c.catatan_kelulusan_sma : [c.catatan_kelulusan_sma || c.kesimpulan || "Kedewasaan dan kesiapan melangkah ke perguruan tinggi/karier sangat matang."]} />
             </Section>
 
             <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">

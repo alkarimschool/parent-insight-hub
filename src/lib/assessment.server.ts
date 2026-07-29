@@ -419,101 +419,87 @@ function generateFallbackResult(childName: string, parentName: string, avgScore:
   }
 
   if (safeLevel === "SMA") {
-    let keunggulan_sma: string[] = [];
-    let perbaikan_sma: string[] = [];
-    let status_sma = "Baik & Berprospek Tinggi";
-    let status_ptn = "Siap";
+    let areaPerhatian: string[] = [];
+    let kelebihan: string[] = [];
 
     if (isPositif) {
-      status_sma = "Sangat Matang & Siap Kuliah/Karier";
-      status_ptn = "Sangat Siap";
-      keunggulan_sma = highAnswers.slice(0, 5).map(a => formatBullet(a, "Sangat unggul dan matang dalam: "));
-      if (keunggulan_sma.length < 3) {
-        keunggulan_sma.push("Pemikiran analitis tingkat tinggi, riset mandiri, dan penarikan kesimpulan berbasis data.");
-        keunggulan_sma.push("Kesiapan seleksi Perguruan Tinggi (PTN/PTS) serta kepastian orientasi jurusan masa depan.");
+      kelebihan = highAnswers.slice(0, 3).map(a => formatBullet(a, "Telah menunjukkan kemampuan awal yang baik pada: "));
+      if (kelebihan.length === 0) {
+        kelebihan = ["Memahami materi pelajaran baru dengan cepat dan memiliki kemandirian belajar yang matang."];
       }
-      perbaikan_sma = [
-        "Mengelola keseimbangan stamina fisik dan kesehatan mental di tengah padatnya jadwal tryout maupun seleksi PTN.",
-        "Mempertajam networking dan kolaborasi kepemimpinan lintas disiplin."
+      areaPerhatian = [
+        "Konsistensi Manajemen Waktu: Perlu menjaga keseimbangan jadwal antara belajar mandiri, aktivitas sosial, dan istirahat agar tidak mengalami kelelahan mental saat beban pelajaran SMA meningkat.",
+        "Pengembangan Portofolio Masa Depan: Membutuhkan pendampingan untuk mengarahkan minat akademik ke proyek nyata atau sertifikasi keterampilan awal."
       ];
     } else if (isKurang) {
-      status_sma = "Perlu Strategi Akademik Mandiri";
-      status_ptn = "Perlu Matangkan Pilihan Jurusan";
-      keunggulan_sma = [
-        "Memiliki bakat dasar dan potensi kecerdasan yang siap diasah apabila kemandirian dan fokus belajar ditegakkan kembali.",
-        "Menunjukkan kesiapan untuk dieksplorasi minat dan bakatnya menuju jurusan yang sesuai dengan passion aslinya."
+      kelebihan = [
+        "Memiliki potensi kecerdasan dan kemampuan dasar yang siap berkembang apabila mendapatkan pola pendampingan yang konsisten dari orang tua."
       ];
-      perbaikan_sma = lowAnswers.slice(0, 5).map(a => formatBullet(a, "Membutuhkan fokus pematangan pada: "));
-      if (perbaikan_sma.length < 3) {
-        perbaikan_sma.push("Meningkatkan otonomi belajar mandiri tanpa tergantung pada instruksi berulang orang tua.");
-        perbaikan_sma.push("Mematangkan strategi belajar tryout SNBT dan kepastian orientasi jurusan perguruan tinggi.");
+      areaPerhatian = lowAnswers.slice(0, 5).map(a => {
+        const text = (a as any).text_answer || a.text || "Kemampuan awal";
+        return `Kemandirian & Fokus Belajar (${text}): Sangat membutuhkan pendampingan rutinitas di rumah agar anak terbiasa mengelola tugas secara teratur. Jika tidak didampingi, anak berpotensi tertinggal dalam mengikuti materi SMA yang lebih kompleks.`;
+      });
+      if (areaPerhatian.length < 3) {
+        areaPerhatian.push("Strategi Belajar Mandiri: Anak belum mampu mengatur waktu dan belajar tanpa selalu diingatkan. Penting didampingi agar tidak mengalami penurunan motivasi saat menghadapi ujian SMA.");
+        areaPerhatian.push("Regulasi Emosi & Resiliensi: Anak masih kesulitan mengendalikan emosi saat tertekan atau menghadapi kesulitan tugas. Tanpa pembinaan, anak rawan mengalami kecemasan akademik.");
       }
     } else {
-      status_sma = "Baik & Berprospek Tinggi";
-      status_ptn = "Siap";
-      const top = [...highAnswers, ...midAnswers].slice(0, 4);
-      const bot = [...lowAnswers, ...midAnswers].slice(0, 3);
-      keunggulan_sma = top.length > 0 ? top.map(a => formatBullet(a, "Unggul dan konsisten pada: ")) : [
-        "Konsistensi akademik yang baik dan berprospek tinggi menuju seleksi perguruan tinggi."
-      ];
-      perbaikan_sma = bot.length > 0 ? bot.map(a => formatBullet(a, "Perlu strategi optimal pada: ")) : [
-        "Manajemen waktu akademik seimbang antara tryout ujian seleksi, kegiatan organisasi, dan relaksasi."
-      ];
+      kelebihan = [...highAnswers, ...midAnswers].slice(0, 2).map(a => formatBullet(a, "Berkembang cukup baik pada: "));
+      if (kelebihan.length === 0) kelebihan = ["Memiliki motivasi belajar dan rasa ingin tahu yang cukup positif."];
+      areaPerhatian = [...lowAnswers, ...midAnswers].slice(0, 4).map(a => {
+        const text = (a as any).text_answer || a.text || "Kebiasaan belajar";
+        return `Optimasi Kemampuan (${text}): Perlu perhatian orang tua dalam membantu anak menyusun skala prioritas belajar dan manajemen waktu agar siap mengikuti ritme SMA.`;
+      });
     }
 
     return {
-      judul: "Laporan Assessment Kesiapan Perguruan Tinggi & Karier SMA",
-      status_kesiapan_sma: status_sma,
-      ringkasan_eksekutif_sma: `Berdasarkan analisis evaluasi aktual dari orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5 - Pola ${isPositif ? "Sangat Matang/Positif" : isKurang ? "Perlu Strategi/Kurang" : "Prospektif/Campuran"}), Ananda ${childName} menunjukkan kematangan kesiapan Perguruan Tinggi dan karier masa depan yang ${isPositif ? "sangat matang, siap kuliah, dan memiliki otonomi akademik luar biasa" : isKurang ? "membutuhkan pendampingan orientasi jurusan dan pemahaman strategi belajar intensif untuk menyongsong seleksi PTN/PTS" : "siap dan berkembang baik dengan perlunya penguatan fokus strategi seleksi kuliah"}.`,
-      keunggulan_akademik_sma: keunggulan_sma,
-      area_akademik_perlu_ditingkatkan: perbaikan_sma,
-      kesiapan_kuliah_dan_perencanaan_karier: {
-        status_kesiapan_ptn: status_ptn,
-        potensi_jurusan_kuliah: isPositif ? [
-          "Teknologi Informasi, Computer Science & Data Science (Saintek Unggul)",
-          "Manajemen Bisnis Ekonomi & Kepemimpinan Organisasi (Soshum)",
-          "Teknik & Ilmu Pengetahuan Alam Terapan"
-        ] : isKurang ? [
-          "Perlu tes minat bakat mendalam untuk mengeksplorasi jurusan vokasi/akademik yang senada dengan kepribadian anak.",
-          "Jurusan kreatif atau aplikatif yang sesuai dengan gaya belajar praktis siswa."
-        ] : [
-          "Bidang Sains, Teknologi, Manajemen, atau Ilmu Sosial yang selaras dengan nilai mata pelajaran terkuat anak."
-        ],
-        strategi_seleksi_perguruan_tinggi: isKurang ? [
-          "Mulailah menyusun jadwal latihan tryout rutin dengan target realistis.",
-          "Lakukan diskusi bedah kampus dan jurusan secara konsisten tanpa memberikan tekanan mental berlebih."
-        ] : [
-          "Mengikuti tryout SNBT / Ujian Mandiri terstruktur serta mengasah portofolio prestasi.",
-          "Riset mendalam mengenai passing grade dan karakteristik kampus target utama dan alternatif."
-        ]
-      },
-      public_speaking_dan_leadership: [
-        isKurang ? "Rasa percaya diri dalam mengemukakan ide presentasi atau memegang kepemimpinan tim masih perlu distimulasi dengan memberi kesempatan bernarasi di rumah." : "Mampu presentasi gagasan secara meyakinkan dan memegang peran leadership kolaboratif."
-      ],
-      problem_solving_dan_resiliensi: [
-        isKurang ? "Resilience (daya tahan menghadapi soal susah atau kejenuhan tryout) perlu dikuatkan melalui manajemen emosi dan dukungan mental keluarga." : "Memiliki daya tahan (resilience) tinggi saat menghadapi tantangan seleksi perguruan tinggi."
-      ],
-      pengembangan_soft_hard_skills: [
-        "Penguasaan teknologi digital, bahasa asing, serta pematangan kedewasaan tanggung jawab pribadi."
-      ],
-      perhatian_orangtua_dan_otonomi: isKurang ? [
-        "Hindari memaksa jurusan impian orang tua bila tidak sepadan dengan minat dan kesiapan mental anak.",
-        "Berikan bimbingan terpadu (misal kursus persiapan atau mentor) untuk mengatasi defisit kemampuan analisis.",
-        "Dukung otonomi anak dalam pengelolaan tanggung jawab belajarnya sendiri."
+      ringkasan_kemampuan_awal: `Berdasarkan hasil asesmen orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5), Ananda ${childName} menunjukkan gambaran kemampuan awal siswa Kelas X SMA yang ${isPositif ? "siap, mandiri, dan memiliki landasan belajar positif untuk mengikuti pembelajaran di jenjang SMA" : isKurang ? "memerlukan pendampingan terstruktur dari orang tua terutama pada pemantauan kebiasaan belajar, kemandirian tugas, dan regulasi emosi" : "berkembang cukup baik dengan beberapa area kebiasaan belajar yang perlu terus dibina agar siap menghadapi tuntutan SMA"}.`,
+      area_yang_perlu_diperhatikan: areaPerhatian,
+      kemampuan_awal_akademik: isKurang ? [
+        "Pemahaman materi baru dan penyelesaian tugas sekolah membutuhkan dorongan berulang dari orang tua.",
+        "Kemandirian dan konsistensi belajar mandiri di rumah masih perlu dibina secara teratur."
       ] : [
-        "Berikan otonomi penuh dalam menentukan rancangan karier dan pilihan jurusan kuliah anak.",
-        "Jadilah support system emosional di masa persaingan ujian seleksi PTN yang menegangkan."
+        "Mampu memahami materi pelajaran baru dengan cepat serta menyelesaikan tugas dengan tepat waktu.",
+        "Menunjukkan rasa ingin tahu yang tinggi dan motivasi belajar yang positif."
       ],
-      rekomendasi_strategi_masa_depan: isKurang ? [
-        { kategori: "Pendampingan Orientasi Jurusan & Karier", aktivitas: "Jalani konseling karier atau tes minat bakat untuk memetakan arah jurusan kuliah yang sesuai dengan anak." },
-        { kategori: "Strategi Intensif Persiapan PTN/PTS", aktivitas: "Fokus pada latihan rutin soal tryout SNBT dari tingkat dasar untuk menumbuhkan kembali kepercayaan diri anak." }
+      kemampuan_berpikir: isKurang ? [
+        "Perlu latihan pemecahan masalah (problem solving) secara logis dan terstruktur ketika menghadapi kesulitan tugas.",
+        "Perlu pendampingan saat menganalisis permasalahan sebelum mengambil keputusan."
       ] : [
-        { kategori: "Persiapan Strategis PTN/PTS", aktivitas: "Fasilitasi partisipasi tryout akurat dan konsultasi seleksi penentuan pilihan 1 & pilihan 2 di PTN impian." },
-        { kategori: "Pengayaan Portofolio Masa Depan", aktivitas: "Dorong anak mengambil sertifikasi bahasa asing (TOEFL/IELTS) atau proyek portofolio kepemimpinan/karya nyata." }
+        "Mampu berpikir logis dan menganalisis permasalahan dengan baik dalam situasi harian.",
+        "Mampu mencari solusi mandiri saat menghadapi kesulitan belajar."
       ],
-      catatan_kelulusan_sma: [
-        `Sangat menghargai pendampingan tulus dari Ibu/Bapak ${parentName} di fase kritis peralihan dari SMA menuju masa dewasa.`,
-        `Laporan ini dirumuskan langsung berdasarkan pola respons orang tua sebagai kompas strategis menembus perguruan tinggi & karier impian.`
+      kemampuan_komunikasi_dan_sosial: isKurang ? [
+        "Kepercayaan diri dalam menyampaikan pendapat dan adaptasi di lingkungan baru masih memerlukan penguatan dari orang tua.",
+        "Perlu dorongan untuk lebih aktif dan kooperatif dalam kegiatan kelompok."
+      ] : [
+        "Percaya diri dalam menyampaikan pendapat serta mudah beradaptasi dengan lingkungan pertemanan baru.",
+        "Mampu bekerja sama secara efektif dalam kegiatan kelompok."
+      ],
+      karakter_dan_kemandirian: isKurang ? [
+        "Sikap disiplin dan rasa tanggung jawab harian masih perlu diawasi dan dibimbing secara konsisten.",
+        "Regulasi emosi ketika menghadapi tekanan, kritik, atau kegagalan memerlukan kesabaran pendampingan orang tua."
+      ] : [
+        "Menunjukkan sikap disiplin, kejujuran, dan rasa tanggung jawab pribadi yang matang.",
+        "Mampu mengendalikan emosi dengan baik saat menghadapi tekanan atau kegagalan."
+      ],
+      kesiapan_mengikuti_pembelajaran_SMA: isKurang ? [
+        "Anak memerlukan penyesuaian dan pendampingan intensif agar mampu mengikuti ritme pembelajaran SMA yang lebih kompleks dan padat."
+      ] : [
+        "Anak telah memiliki kesiapan dasar yang baik untuk mengikuti pembelajaran SMA dan siap merencanakan minat masa depan."
+      ],
+      potensi_pengembangan: [
+        "Peluang besar untuk mengasah keterampilan berpikir kritis dan analisis terstruktur melalui kegiatan diskusi harian di rumah.",
+        "Potensi pengembangan kepemimpinan dan kemandirian otonom dengan memberikan kepercayaan tugas rumah secara bertahap."
+      ],
+      potensi_dan_kelebihan: kelebihan,
+      rekomendasi_untuk_orang_tua: isKurang ? [
+        "Dampingi anak menyusun jadwal rutinitas harian yang jelas antara waktu belajar, istirahat, dan kegiatan pribadi.",
+        "Hindari memberikan kritik tajam saat anak mengalami kegagalan, berikan apresiasi pada usaha dan bantu anak menemukan solusi.",
+        "Lakukan komunikasi terbuka setiap minggu untuk mengevaluasi hambatan tugas sekolah dan perasaan anak."
+      ] : [
+        "Berikan otonomi dan kepercayaan penuh dalam pengelolaan waktu belajar mandiri anak.",
+        "Fasilitasi ruang diskusi dan eksplorasi minat masa depan sesuai dengan potensi yang diminati anak."
       ]
     };
   }
@@ -1168,7 +1154,7 @@ export async function getAssessmentResultServer(assessmentId: string) {
     const childName = child?.name || cached?.child_name || "Anak";
     const parentName = parent?.name || cached?.parent_name || "Orang Tua";
 
-    if (!content || typeof content !== "object" || (!content.ringkasan && !content.status_perkembangan && !content.kekuatan_anak && !content.status_perkembangan_sd && !content.status_perkembangan_smp && !content.status_kesiapan_sma)) {
+    if (!content || typeof content !== "object" || (!content.ringkasan && !content.status_perkembangan && !content.kekuatan_anak && !content.status_perkembangan_sd && !content.status_perkembangan_smp && !content.status_kesiapan_sma && !content.ringkasan_kemampuan_awal)) {
       const { data: dbAns } = await supabaseAdmin.from("assessment_answers").select("score, question_id").eq("assessment_id", assessmentId);
       const scores = (dbAns || []).map((a: any) => Number(a.score ?? 3));
       const calcAvg = scores.length > 0 ? scores.reduce((sum: number, s: number) => sum + s, 0) / scores.length : 3.0;

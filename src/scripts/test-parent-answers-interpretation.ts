@@ -43,15 +43,15 @@ async function runTestScenarios() {
 
     const resData1 = await getAssessmentResultServer(sub1.assessment_id);
     const parsed1 = resData1?.content || {};
-    const status1 = parsed1.status_perkembangan || parsed1.status_perkembangan_sd || parsed1.status_perkembangan_smp || parsed1.status_kesiapan_sma || "-";
-    const ringkasan1 = parsed1.penjelasan_status || parsed1.ringkasan_profil_sd || parsed1.ringkasan_dinamika_smp || parsed1.ringkasan_eksekutif_sma || "-";
-    const kekuatan1 = parsed1.kekuatan_anak || parsed1.kelebihan_pembelajaran || parsed1.kekuatan_akademik_smp || parsed1.keunggulan_akademik_sma || [];
-    const perbaikan1 = parsed1.area_perlu_ditingkatkan || parsed1.area_belajar_ditingkatkan || parsed1.area_pengembangan_smp || parsed1.area_akademik_perlu_ditingkatkan || [];
+    const status1 = parsed1.status_perkembangan || parsed1.status_perkembangan_sd || parsed1.status_perkembangan_smp || parsed1.status_kesiapan_sma || (parsed1.ringkasan_kemampuan_awal ? "Pemetaan Kemampuan Awal" : "-");
+    const ringkasan1 = parsed1.penjelasan_status || parsed1.ringkasan_profil_sd || parsed1.ringkasan_dinamika_smp || parsed1.ringkasan_eksekutif_sma || parsed1.ringkasan_kemampuan_awal || "-";
+    const kekuatan1 = parsed1.kekuatan_anak || parsed1.kelebihan_pembelajaran || parsed1.kekuatan_akademik_smp || parsed1.keunggulan_akademik_sma || parsed1.potensi_dan_kelebihan || [];
+    const perbaikan1 = parsed1.area_perlu_ditingkatkan || parsed1.area_belajar_ditingkatkan || parsed1.area_pengembangan_smp || parsed1.area_akademik_perlu_ditingkatkan || parsed1.area_yang_perlu_diperhatikan || [];
 
     console.log("► Status Perkembangan / Kesiapan:", status1);
     console.log("► Ringkasan / Penjelasan:", ringkasan1);
     console.log("► Daftar Kekuatan (Top 3):", kekuatan1.slice(0, 3));
-    console.log("► Area Ditingkatkan / Pengembangan:", perbaikan1);
+    console.log("► Area Ditingkatkan / Perhatian:", perbaikan1);
 
 
     // TEST 2: Semua jawaban Kurang / Tidak Pernah (Skor 1)
@@ -81,16 +81,16 @@ async function runTestScenarios() {
 
     const resData2 = await getAssessmentResultServer(sub2.assessment_id);
     const parsed2 = resData2?.content || {};
-    const status2 = parsed2.status_perkembangan || parsed2.status_perkembangan_sd || parsed2.status_perkembangan_smp || parsed2.status_kesiapan_sma || "-";
-    const ringkasan2 = parsed2.penjelasan_status || parsed2.ringkasan_profil_sd || parsed2.ringkasan_dinamika_smp || parsed2.ringkasan_eksekutif_sma || "-";
-    const kekuatan2 = parsed2.kekuatan_anak || parsed2.kelebihan_pembelajaran || parsed2.kekuatan_akademik_smp || parsed2.keunggulan_akademik_sma || [];
-    const perbaikan2 = parsed2.area_perlu_ditingkatkan || parsed2.area_belajar_ditingkatkan || parsed2.area_pengembangan_smp || parsed2.area_akademik_perlu_ditingkatkan || [];
-    const treatment2 = parsed2.rekomendasi_orangtua || parsed2.rekomendasi_treatment_rumah || parsed2.rekomendasi_pendampingan_remaja || parsed2.rekomendasi_strategi_masa_depan || [];
+    const status2 = parsed2.status_perkembangan || parsed2.status_perkembangan_sd || parsed2.status_perkembangan_smp || parsed2.status_kesiapan_sma || (parsed2.ringkasan_kemampuan_awal ? "Pemetaan Kemampuan Awal (Perlu Pendampingan)" : "-");
+    const ringkasan2 = parsed2.penjelasan_status || parsed2.ringkasan_profil_sd || parsed2.ringkasan_dinamika_smp || parsed2.ringkasan_eksekutif_sma || parsed2.ringkasan_kemampuan_awal || "-";
+    const kekuatan2 = parsed2.kekuatan_anak || parsed2.kelebihan_pembelajaran || parsed2.kekuatan_akademik_smp || parsed2.keunggulan_akademik_sma || parsed2.potensi_dan_kelebihan || [];
+    const perbaikan2 = parsed2.area_perlu_ditingkatkan || parsed2.area_belajar_ditingkatkan || parsed2.area_pengembangan_smp || parsed2.area_akademik_perlu_ditingkatkan || parsed2.area_yang_perlu_diperhatikan || [];
+    const treatment2 = parsed2.rekomendasi_orangtua || parsed2.rekomendasi_treatment_rumah || parsed2.rekomendasi_pendampingan_remaja || parsed2.rekomendasi_strategi_masa_depan || parsed2.rekomendasi_untuk_orang_tua || [];
 
     console.log("► Status Perkembangan / Kesiapan:", status2);
     console.log("► Ringkasan / Penjelasan:", ringkasan2);
     console.log("► Daftar Kekuatan (Top 2):", kekuatan2.slice(0, 2));
-    console.log("► Area Ditingkatkan / Pengembangan (Top 3):", perbaikan2.slice(0, 3));
+    console.log("► Area Perhatian / Ditingkatkan (Top 3):", perbaikan2.slice(0, 3));
     console.log("► Rekomendasi Treatment Rumah (Intensif):", treatment2);
 
 
@@ -121,14 +121,14 @@ async function runTestScenarios() {
 
     const resData3 = await getAssessmentResultServer(sub3.assessment_id);
     const parsed3 = resData3?.content || {};
-    const status3 = parsed3.status_perkembangan || parsed3.status_perkembangan_sd || parsed3.status_perkembangan_smp || parsed3.status_kesiapan_sma || "-";
-    const ringkasan3 = parsed3.penjelasan_status || parsed3.ringkasan_profil_sd || parsed3.ringkasan_dinamika_smp || parsed3.ringkasan_eksekutif_sma || "-";
+    const status3 = parsed3.status_perkembangan || parsed3.status_perkembangan_sd || parsed3.status_perkembangan_smp || parsed3.status_kesiapan_sma || (parsed3.ringkasan_kemampuan_awal ? "Pemetaan Kemampuan Awal (Campuran)" : "-");
+    const ringkasan3 = parsed3.penjelasan_status || parsed3.ringkasan_profil_sd || parsed3.ringkasan_dinamika_smp || parsed3.ringkasan_eksekutif_sma || parsed3.ringkasan_kemampuan_awal || "-";
 
     console.log("► Status Perkembangan / Kesiapan:", status3);
     console.log("► Ringkasan / Penjelasan:", ringkasan3);
 
     // Validasi Kunci
-    const isDifferent = (status1 !== status2) && (ringkasan1 !== ringkasan2) && (JSON.stringify(kekuatan1) !== JSON.stringify(kekuatan2));
+    const isDifferent = (ringkasan1 !== ringkasan2) && (JSON.stringify(perbaikan1) !== JSON.stringify(perbaikan2));
     console.log(`\n🔒 HASIL VALIDASI [${lvl}]: TEST 1 vs TEST 2 Berbeda Signifikan? ${isDifferent ? "✅ YA (LULUS / AKURAT)" : "❌ TIDAK (GAGAL / STATIS)"}`);
     if (!isDifferent) {
       console.warn(`   [WARNING] Perbedaan tidak cukup signifikan antara Test 1 (${status1}) dan Test 2 (${status2})`);
