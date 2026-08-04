@@ -19,6 +19,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AssessmentIndexRouteImport } from './routes/assessment.index'
 import { Route as AssessmentLevelRouteImport } from './routes/assessment.level'
 import { Route as AssessmentQuestionsRouteImport } from './routes/assessment.questions'
+import { Route as AssessmentSelesaiRouteImport } from './routes/assessment.selesai'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
 import { Route as AuthenticatedAdminParentsRouteImport } from './routes/_authenticated/admin.parents'
@@ -77,6 +78,11 @@ const AssessmentQuestionsRoute = AssessmentQuestionsRouteImport.update({
   path: '/questions',
   getParentRoute: () => AssessmentRoute,
 } as any)
+const AssessmentSelesaiRoute = AssessmentSelesaiRouteImport.update({
+  id: '/selesai',
+  path: '/selesai',
+  getParentRoute: () => AssessmentRoute,
+} as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/assessment/level': typeof AssessmentLevelRoute
   '/assessment/questions': typeof AssessmentQuestionsRoute
+  '/assessment/selesai': typeof AssessmentSelesaiRoute
   '/assessment/': typeof AssessmentIndexRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/admin/parents': typeof AuthenticatedAdminParentsRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/results': typeof ResultsRoute
   '/assessment/level': typeof AssessmentLevelRoute
   '/assessment/questions': typeof AssessmentQuestionsRoute
+  '/assessment/selesai': typeof AssessmentSelesaiRoute
   '/assessment': typeof AssessmentIndexRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/admin/parents': typeof AuthenticatedAdminParentsRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/assessment/level': typeof AssessmentLevelRoute
   '/assessment/questions': typeof AssessmentQuestionsRoute
+  '/assessment/selesai': typeof AssessmentSelesaiRoute
   '/assessment/': typeof AssessmentIndexRoute
   '/_authenticated/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/_authenticated/admin/parents': typeof AuthenticatedAdminParentsRoute
@@ -191,6 +200,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/assessment/level'
     | '/assessment/questions'
+    | '/assessment/selesai'
     | '/assessment/'
     | '/admin/logs'
     | '/admin/parents'
@@ -208,6 +218,7 @@ export interface FileRouteTypes {
     | '/results'
     | '/assessment/level'
     | '/assessment/questions'
+    | '/assessment/selesai'
     | '/assessment'
     | '/admin/logs'
     | '/admin/parents'
@@ -228,6 +239,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/assessment/level'
     | '/assessment/questions'
+    | '/assessment/selesai'
     | '/assessment/'
     | '/_authenticated/admin/logs'
     | '/_authenticated/admin/parents'
@@ -318,6 +330,13 @@ declare module '@tanstack/react-router' {
       path: '/questions'
       fullPath: '/assessment/questions'
       preLoaderRoute: typeof AssessmentQuestionsRouteImport
+      parentRoute: typeof AssessmentRoute
+    }
+    '/assessment/selesai': {
+      id: '/assessment/selesai'
+      path: '/selesai'
+      fullPath: '/assessment/selesai'
+      preLoaderRoute: typeof AssessmentSelesaiRouteImport
       parentRoute: typeof AssessmentRoute
     }
     '/_authenticated/admin/': {
@@ -416,6 +435,7 @@ const AuthenticatedRouteRouteWithChildren =
 interface AssessmentRouteChildren {
   AssessmentLevelRoute: typeof AssessmentLevelRoute
   AssessmentQuestionsRoute: typeof AssessmentQuestionsRoute
+  AssessmentSelesaiRoute: typeof AssessmentSelesaiRoute
   AssessmentIndexRoute: typeof AssessmentIndexRoute
   AssessmentResultIdRoute: typeof AssessmentResultIdRoute
 }
@@ -423,6 +443,7 @@ interface AssessmentRouteChildren {
 const AssessmentRouteChildren: AssessmentRouteChildren = {
   AssessmentLevelRoute: AssessmentLevelRoute,
   AssessmentQuestionsRoute: AssessmentQuestionsRoute,
+  AssessmentSelesaiRoute: AssessmentSelesaiRoute,
   AssessmentIndexRoute: AssessmentIndexRoute,
   AssessmentResultIdRoute: AssessmentResultIdRoute,
 }
