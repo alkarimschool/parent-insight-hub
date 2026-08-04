@@ -26,19 +26,34 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
-function createSupabaseAdminClient() {
-  const SUPABASE_URL =
-    process.env.SUPABASE_URL ||
-    process.env.VITE_SUPABASE_URL ||
-    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) ||
-    "https://pmdhjmjcalmgixvhcrwk.supabase.co";
-
-  const serviceRoleKey =
+function getServiceRoleKey(): string | undefined {
+  const g = globalThis as any;
+  return (
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
+    g.SUPABASE_SERVICE_ROLE_KEY ||
+    g.env?.SUPABASE_SERVICE_ROLE_KEY ||
+    g.__env?.SUPABASE_SERVICE_ROLE_KEY ||
     (typeof import.meta !== 'undefined' && (import.meta as any).env?.SUPABASE_SERVICE_ROLE_KEY) ||
-    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_SERVICE_ROLE_KEY);
+    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_SERVICE_ROLE_KEY)
+  );
+}
 
+function getSupabaseUrl(): string {
+  const g = globalThis as any;
+  return (
+    process.env.SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    g.SUPABASE_URL ||
+    g.env?.SUPABASE_URL ||
+    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) ||
+    "https://pmdhjmjcalmgixvhcrwk.supabase.co"
+  );
+}
+
+function createSupabaseAdminClient() {
+  const SUPABASE_URL = getSupabaseUrl();
+  const serviceRoleKey = getServiceRoleKey();
   const publishableKey =
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
@@ -46,7 +61,6 @@ function createSupabaseAdminClient() {
     "sb_publishable_qtEDnfJ2uApK1ILNzAXkxw_F0UJAqua";
 
   const keyToUse = serviceRoleKey || publishableKey;
-
   const hasServiceKey = Boolean(serviceRoleKey);
   const isCloudflare = typeof (globalThis as any).WebSocketPair !== 'undefined' || typeof (globalThis as any).navigator?.userAgent === 'string';
 
@@ -56,6 +70,10 @@ function createSupabaseAdminClient() {
     hasServiceRoleKey: hasServiceKey,
     keyType: hasServiceKey ? "SERVICE_ROLE (Admin - Bypasses RLS)" : "PUBLISHABLE_KEY (Anon - Subject to RLS)",
   });
+
+  if (!hasServiceKey) {
+    console.warn("[SUPABASE_SECURITY_WARNING] SUPABASE_SERVICE_ROLE_KEY missing in runtime environment! Admin queries fallback to ANON publishable key.");
+  }
 
   return createClient<Database>(SUPABASE_URL, keyToUse, {
     global: {
@@ -69,11 +87,17 @@ function createSupabaseAdminClient() {
   });
 }
 
-let _supabaseAdmin: ReturnType<typeof createSupabaseAdminClient> | undefined;
+let _cachedAdminClient: ReturnType<typeof createSupabaseAdminClient> | undefined;
+let _cachedWithServiceKey = false;
 
 export const supabaseAdmin = new Proxy({} as ReturnType<typeof createSupabaseAdminClient>, {
   get(_, prop, receiver) {
-    if (!_supabaseAdmin) _supabaseAdmin = createSupabaseAdminClient();
-    return Reflect.get(_supabaseAdmin, prop, receiver);
+    const currentHasServiceKey = Boolean(getServiceRoleKey());
+    // Re-create client if we previously cached a client without service role key, but now service role key is available
+    if (!_cachedAdminClient || (!_cachedWithServiceKey && currentHasServiceKey)) {
+      _cachedAdminClient = createSupabaseAdminClient();
+      _cachedWithServiceKey = currentHasServiceKey;
+    }
+    return Reflect.get(_cachedAdminClient, prop, receiver);
   },
 });

@@ -507,9 +507,14 @@ export async function getAdminParentsListServer() {
     supabaseAdmin.from("assessments").select("*").order("created_at", { ascending: false }).limit(500),
   ]);
 
-  if (pErr) console.error("getAdminParentsListServer parents error:", pErr.message);
-  if (cErr) console.error("getAdminParentsListServer children error:", cErr.message);
-  if (aErr) console.error("getAdminParentsListServer assessments error:", aErr.message);
+  console.info("[getAdminParentsListServer AUDIT]", {
+    parentsCount: parents?.length ?? 0,
+    parentsError: pErr ? `[${pErr.code}] ${pErr.message}` : null,
+    childrenCount: children?.length ?? 0,
+    childrenError: cErr ? `[${cErr.code}] ${cErr.message}` : null,
+    assessmentsCount: assessments?.length ?? 0,
+    assessmentsError: aErr ? `[${aErr.code}] ${aErr.message}` : null,
+  });
 
   const parentMap = new Map<string, any>();
   if (parents && Array.isArray(parents)) {
