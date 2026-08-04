@@ -226,7 +226,7 @@ function ResultPage() {
         {level === "SMA" ? (
           <div className="mb-8 text-center print:mb-6 print-break-inside-avoid">
             <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-4 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 mb-3 print:hidden">
-              🎓 Pemetaan Kemampuan Awal Siswa Kelas X SMA
+              🎓 Pemetaan Kemampuan Awal Siswa SMA
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground print:text-xl print:text-black print-break-after-avoid">
               Laporan Hasil Asesmen Kemampuan Awal Siswa SMA
@@ -244,7 +244,7 @@ function ResultPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground block font-medium print:text-gray-600">Kelas</span>
-                  <strong className="text-sm font-bold text-foreground block mt-0.5 print:text-black">Kelas X</strong>
+                  <strong className="text-sm font-bold text-foreground block mt-0.5 print:text-black">{data?.child_class || "SMA"}</strong>
                 </div>
                 <div>
                   <span className="text-muted-foreground block font-medium print:text-gray-600">Jenjang</span>

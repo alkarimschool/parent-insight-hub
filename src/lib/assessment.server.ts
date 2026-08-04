@@ -453,7 +453,7 @@ function generateFallbackResult(childName: string, parentName: string, avgScore:
     }
 
     return {
-      ringkasan_kemampuan_awal: `Berdasarkan hasil asesmen orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5), Ananda ${childName} menunjukkan gambaran kemampuan awal siswa Kelas X SMA yang ${isPositif ? "siap, mandiri, dan memiliki landasan belajar positif untuk mengikuti pembelajaran di jenjang SMA" : isKurang ? "memerlukan pendampingan terstruktur dari orang tua terutama pada pemantauan kebiasaan belajar, kemandirian tugas, dan regulasi emosi" : "berkembang cukup baik dengan beberapa area kebiasaan belajar yang perlu terus dibina agar siap menghadapi tuntutan SMA"}.`,
+      ringkasan_kemampuan_awal: `Berdasarkan hasil asesmen yang diisi oleh orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5), Ananda ${childName} menunjukkan gambaran kemampuan awal yang ${isPositif ? "siap, mandiri, dan memiliki landasan belajar positif untuk mengikuti proses pembelajaran di jenjang SMA" : isKurang ? "memerlukan pendampingan terstruktur dari orang tua terutama pada pemantauan kebiasaan belajar, kemandirian tugas, dan regulasi emosi" : "berkembang cukup baik dengan beberapa area kebiasaan belajar yang perlu terus dibina agar siap menghadapi tuntutan pembelajaran di jenjang SMA"}.`,
       area_yang_perlu_diperhatikan: areaPerhatian,
       kemampuan_awal_akademik: isKurang ? [
         "Pemahaman materi baru dan penyelesaian tugas sekolah membutuhkan dorongan berulang dari orang tua.",
