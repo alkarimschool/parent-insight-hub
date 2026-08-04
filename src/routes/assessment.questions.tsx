@@ -48,6 +48,7 @@ function QuestionsPage() {
   }, [navigate]);
 
   const level: EducationLevel = (formData?.education_level || "TK") as EducationLevel;
+  const isLocked = !!locks.data?.[level];
 
   const { data: dbCats } = useQuery({
     queryKey: ["assessment_categories", level],
@@ -114,6 +115,10 @@ function QuestionsPage() {
   const progress = list.length ? (answered / list.length) * 100 : 0;
 
   const handleSubmit = async () => {
+    if (isLocked) {
+      toast.error(LOCK_MESSAGE);
+      return;
+    }
     if (!formData || !formData.whatsapp?.trim() || !formData.child_name?.trim()) {
       toast.error("Data anak/WhatsApp belum lengkap. Silakan kembali ke pengisian data.");
       navigate({ to: "/assessment" });
@@ -205,6 +210,26 @@ function QuestionsPage() {
     );
   }
   if (!current) return null;
+
+  if (isLocked) {
+    return (
+      <div className="min-h-screen bg-gradient-soft">
+        <PublicNav siteName={website.data?.site_name ?? "PAA"} logoText="PAA" />
+        <div className="mx-auto max-w-xl px-4 py-20 text-center sm:px-6">
+          <span className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-muted text-muted-foreground">
+            <Lock className="h-7 w-7" />
+          </span>
+          <h1 className="mt-6 text-2xl font-bold text-foreground sm:text-3xl">
+            Asesmen {level} Sedang Dalam Pengembangan
+          </h1>
+          <p className="mt-3 text-muted-foreground">{LOCK_MESSAGE}</p>
+          <Link to="/assessment/level" className="mt-8 inline-flex items-center gap-2 rounded-full bg-gradient-hero px-6 py-3 text-sm font-semibold text-primary-foreground shadow-soft">
+            Pilih Jenjang Lain <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const currentOptions = current.options || SCALE;
   const isCurrentTextarea = current.type === "textarea";
