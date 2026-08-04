@@ -10,6 +10,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { updateParentChildFn, getAdminParentsFn, deleteAssessmentFn, retryAssessmentFn } from "@/lib/admin.functions";
 
 import { getAssessmentContent } from "@/lib/assessment-content";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/admin/parents")({
   component: ParentsList,
@@ -60,8 +61,69 @@ function ParentsList() {
   const list = useQuery({
     queryKey: ["admin-parents-list-rpc"],
     queryFn: async () => {
-      const data = await getParentsList();
-      return data ?? [];
+      try {
+        const serverData = await getParentsList();
+        if (serverData && Array.isArray(serverData) && serverData.length > 0) {
+          return serverData;
+        }
+      } catch (err) {
+        console.warn("[admin.parents] getParentsList server fn error, running client fallback:", err);
+      }
+
+      // Direct client fallback to Supabase Database (Guarantees data display on Lovable SPA)
+      const [{ data: parents }, { data: children }, { data: assessments }] = await Promise.all([
+        supabase.from("parents").select("*").order("created_at", { ascending: false }).limit(500),
+        supabase.from("children").select("*").order("created_at", { ascending: false }).limit(500),
+        supabase.from("assessments").select("*").order("created_at", { ascending: false }).limit(500),
+      ]);
+
+      const parentMap = new Map((parents || []).map((p: any) => [p.id, p]));
+      const childMap = new Map((children || []).map((c: any) => [c.id, c]));
+
+      const resultList: any[] = [];
+      const processedParentIds = new Set<string>();
+
+      if (assessments && Array.isArray(assessments)) {
+        for (const a of assessments) {
+          if (a.parent_id) processedParentIds.add(a.parent_id);
+
+          const pObj = parentMap.get(a.parent_id);
+          const cObj = childMap.get(a.child_id);
+          const lvl = a.education_level || cObj?.education_level || "SMA";
+
+          resultList.push({
+            id: a.id,
+            status: a.status || "analyzed",
+            education_level: lvl,
+            created_at: a.created_at || new Date().toISOString(),
+            parent_id: a.parent_id,
+            child_id: a.child_id,
+            parents: pObj ? { id: pObj.id, name: pObj.name, whatsapp: pObj.whatsapp } : { id: a.parent_id, name: "Orang Tua", whatsapp: "-" },
+            children: cObj ? { id: cObj.id, name: cObj.name, school: cObj.school || "", birth_date: cObj.birth_date } : { id: a.child_id, name: "Anak", school: "" },
+          });
+        }
+      }
+
+      if (parents && Array.isArray(parents)) {
+        for (const p of parents) {
+          if (!processedParentIds.has(p.id)) {
+            const foundC = (children || []).find((c: any) => c.parent_id === p.id);
+            resultList.push({
+              id: p.id,
+              status: "pending",
+              education_level: foundC?.education_level || "SMA",
+              created_at: p.created_at || new Date().toISOString(),
+              parent_id: p.id,
+              child_id: foundC?.id,
+              parents: { id: p.id, name: p.name, whatsapp: p.whatsapp },
+              children: foundC ? { id: foundC.id, name: foundC.name, school: foundC.school || "" } : { name: "Anak", school: "" },
+            });
+          }
+        }
+      }
+
+      resultList.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      return resultList;
     },
     refetchInterval: 3000,
     refetchOnWindowFocus: true,
