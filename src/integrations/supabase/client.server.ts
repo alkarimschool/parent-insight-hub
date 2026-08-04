@@ -17,11 +17,11 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
       new Headers(init.headers).forEach((value, key) => headers.set(key, value));
     }
 
-    if (isNewSupabaseApiKey(supabaseKey) && headers.get('Authorization') === `Bearer ${supabaseKey}`) {
-      headers.delete('Authorization');
+    headers.set('apikey', supabaseKey);
+    if (!headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${supabaseKey}`);
     }
 
-    headers.set('apikey', supabaseKey);
     return fetch(input, { ...init, headers });
   };
 }
