@@ -4,7 +4,23 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { PublicNav, PublicFooter } from "@/components/site/PublicNav";
 import { fetchWebsite } from "@/lib/settings";
-import { CheckCircle2, Sparkles, Home, GraduationCap, Printer, ShieldAlert, Lock } from "lucide-react";
+import {
+  CheckCircle2,
+  Sparkles,
+  Home,
+  GraduationCap,
+  Printer,
+  ShieldAlert,
+  Lock,
+  ClipboardList,
+  AlertTriangle,
+  BookOpen,
+  Brain,
+  MessageSquare,
+  Star,
+  Rocket,
+  Users,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
 import { getAssessmentResultFn } from "@/lib/assessment.functions";
@@ -33,6 +49,38 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       </h3>
       <div className="mt-3 text-sm leading-relaxed text-muted-foreground print:text-black">{children}</div>
     </div>
+  );
+}
+
+function SectionWithIcon({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-soft print:border-gray-300 print:shadow-none">
+      <h3 className="flex items-center gap-2 text-lg font-bold text-foreground print:text-black">
+        {icon || <Sparkles className="h-4 w-4 text-primary print:hidden" />}
+        {title}
+      </h3>
+      <div className="mt-3 text-sm leading-relaxed text-muted-foreground print:text-black">{children}</div>
+    </div>
+  );
+}
+
+function SmaList({ items, variant = "default" }: { items?: string[]; variant?: "default" | "warning" | "highlight" }) {
+  if (!items?.length) return <p className="italic text-muted-foreground print:text-gray-500">Tidak ada catatan spesifik.</p>;
+  return (
+    <ul className="space-y-3">
+      {items.map((it, i) => (
+        <li key={i} className="flex items-start gap-3 text-sm leading-relaxed text-foreground print:text-black">
+          {variant === "warning" ? (
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 print:text-black" />
+          ) : variant === "highlight" ? (
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary print:text-black" />
+          ) : (
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400 print:text-black" />
+          )}
+          <span>{it}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -175,27 +223,72 @@ function ResultPage() {
 
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 print:px-0 print:py-4">
         {/* Dynamic Badge, H1, Description, Metadata */}
-        <div className="mb-8 text-center print:mb-6">
-          <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-bold text-primary print:bg-transparent print:p-0 print:text-black">
-            <span className="print:hidden">{content.icon}</span> <GraduationCap className="h-4 w-4 print:hidden" /> {content.badge}
+        {level === "SMA" ? (
+          <div className="mb-8 text-center print:mb-6">
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-4 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 mb-3 print:hidden">
+              🎓 Pemetaan Kemampuan Awal Siswa Kelas X SMA
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground print:text-xl print:text-black">
+              Laporan Hasil Asesmen Kemampuan Awal Siswa SMA
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground print:text-xs print:text-gray-700 font-medium">
+              Pemetaan Kemampuan Awal Siswa Berdasarkan Observasi Orang Tua
+            </p>
+
+            {/* Kartu Informasi Siswa */}
+            <div className="mt-6 rounded-2xl border border-border/70 bg-card p-4 sm:p-5 shadow-soft text-left print:border-gray-300 print:shadow-none print:mt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5 text-xs">
+                <div>
+                  <span className="text-muted-foreground block font-medium print:text-gray-600">Nama Siswa</span>
+                  <strong className="text-sm font-bold text-foreground block mt-0.5 print:text-black">{childName}</strong>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block font-medium print:text-gray-600">Kelas</span>
+                  <strong className="text-sm font-bold text-foreground block mt-0.5 print:text-black">Kelas X</strong>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block font-medium print:text-gray-600">Jenjang</span>
+                  <strong className="text-sm font-bold text-foreground block mt-0.5 print:text-black">SMA</strong>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block font-medium print:text-gray-600">Tanggal Asesmen</span>
+                  <strong className="text-sm font-bold text-foreground block mt-0.5 print:text-black">
+                    {data?.created_at ? new Date(data.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block font-medium print:text-gray-600">Status Analisis</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 mt-1 print:border print:border-emerald-600 print:text-black">
+                    <CheckCircle2 className="h-3 w-3" /> Selesai Analisis
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-          <h1 className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl print:mt-2 print:text-2xl print:text-black">
-            {content.getHeader(childName)}
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base print:text-xs print:text-gray-700">
-            {content.description}
-          </p>
-          <div className="mt-3 flex flex-wrap justify-center gap-4 text-xs font-medium text-muted-foreground print:text-gray-800">
-            <span>Nama Anak: <strong className="text-foreground print:text-black">{childName}</strong></span>
-            <span>•</span>
-            <span>Jenjang: <strong className="text-foreground print:text-black">{content.shortName} ({content.fullName})</strong></span>
-            {data?.created_at && (
-              <>
-                <span>•</span>
-                <span>Tanggal: <strong className="text-foreground print:text-black">{new Date(data.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</strong></span>
-              </>
-            )}
-        </div>
+        ) : (
+          <div className="mb-8 text-center print:mb-6">
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-bold text-primary print:bg-transparent print:p-0 print:text-black">
+              <span className="print:hidden">{content.icon}</span> <GraduationCap className="h-4 w-4 print:hidden" /> {content.badge}
+            </div>
+            <h1 className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl print:mt-2 print:text-2xl print:text-black">
+              {content.getHeader(childName)}
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base print:text-xs print:text-gray-700">
+              {content.description}
+            </p>
+            <div className="mt-3 flex flex-wrap justify-center gap-4 text-xs font-medium text-muted-foreground print:text-gray-800">
+              <span>Nama Anak: <strong className="text-foreground print:text-black">{childName}</strong></span>
+              <span>•</span>
+              <span>Jenjang: <strong className="text-foreground print:text-black">{content.shortName} ({content.fullName})</strong></span>
+              {data?.created_at && (
+                <>
+                  <span>•</span>
+                  <span>Tanggal: <strong className="text-foreground print:text-black">{new Date(data.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</strong></span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {result.isLoading || !c ? (
           <div className="rounded-3xl border border-border/60 bg-card p-10 text-center shadow-soft">
@@ -499,79 +592,95 @@ function ResultPage() {
           /* ========================================================================= */
           /* EXPLICIT SMA LEVEL REPORT (10 STRICT CLASS X CAPABILITY SECTIONS)         */
           /* ========================================================================= */
-          <div className="grid gap-5">
+          <div className="grid gap-6">
             {/* 1. 📋 Ringkasan Kemampuan Awal */}
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 shadow-soft text-center print:border-emerald-600 print:bg-transparent">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">🎓 Pemetaan Kemampuan Awal Siswa Kelas X SMA</span>
+            <div className="rounded-2xl border border-blue-500/30 bg-blue-500/5 dark:bg-blue-950/20 p-6 shadow-soft text-left print:border-blue-600 print:bg-transparent">
+              <h3 className="flex items-center gap-2 text-base font-bold text-blue-900 dark:text-blue-300 print:text-black">
+                <ClipboardList className="h-5 w-5 text-blue-600 print:hidden" />
+                📋 Ringkasan Kemampuan Awal
+              </h3>
               {(c.ringkasan_kemampuan_awal || c.ringkasan_eksekutif_sma || c.ringkasan) && (
-                <p className="mt-3 text-sm leading-relaxed text-emerald-900/80 dark:text-emerald-200 print:text-black">
+                <p className="mt-3 text-sm leading-relaxed text-foreground print:text-black">
                   {c.ringkasan_kemampuan_awal || c.ringkasan_eksekutif_sma || c.ringkasan}
                 </p>
               )}
             </div>
 
             {/* 2. ⚠️ Area yang Perlu Diperhatikan (Fokus Utama Laporan) */}
-            <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-6 shadow-soft print:border-amber-600 print:bg-transparent">
-              <h3 className="flex items-center gap-2 text-lg font-bold text-amber-900 dark:text-amber-300 print:text-black">
-                <Sparkles className="h-5 w-5 text-amber-600 print:hidden" />
-                {content.sections.s2}
+            <div className="rounded-2xl border-2 border-amber-500/60 bg-amber-500/10 dark:bg-amber-950/30 p-6 shadow-md print:border-amber-600 print:bg-transparent">
+              <h3 className="flex items-center gap-2 text-lg font-extrabold text-amber-900 dark:text-amber-300 print:text-black">
+                <AlertTriangle className="h-5 w-5 text-amber-600 print:hidden" />
+                ⚠️ Area yang Perlu Diperhatikan
               </h3>
-              <p className="mt-1 text-xs text-amber-800/80 dark:text-amber-300/80 print:text-gray-700 mb-3">
-                Fokus utama pembinaan: Aspek yang memerlukan pendampingan orang tua selama anak belajar di SMA.
+              <p className="mt-1 text-xs font-medium text-amber-800 dark:text-amber-300 print:text-gray-700 mb-4">
+                Fokus utama pembinaan: Aspek yang memerlukan pendampingan & perhatian khusus orang tua selama anak belajar di SMA.
               </p>
-              <List items={c.area_yang_perlu_diperhatikan || c.area_akademik_perlu_ditingkatkan || c.area_pengembangan} />
+              <SmaList items={c.area_yang_perlu_diperhatikan || c.area_akademik_perlu_ditingkatkan || c.area_pengembangan} variant="warning" />
             </div>
 
             {/* 3. 📚 Kemampuan Awal Akademik */}
-            <Section title={content.sections.s3}>
-              <List items={c.kemampuan_awal_akademik || c.keunggulan_akademik_sma || c.kelebihan} />
-            </Section>
+            <SectionWithIcon title="📚 Kemampuan Awal Akademik" icon={<BookOpen className="h-5 w-5 text-primary print:hidden" />}>
+              <SmaList items={c.kemampuan_awal_akademik || c.keunggulan_akademik_sma || c.kelebihan} />
+            </SectionWithIcon>
 
             {/* 4. 🧠 Kemampuan Berpikir */}
-            <Section title={content.sections.s4}>
-              <List items={c.kemampuan_berpikir || c.problem_solving_dan_resiliensi} />
-            </Section>
+            <SectionWithIcon title="🧠 Kemampuan Berpikir" icon={<Brain className="h-5 w-5 text-primary print:hidden" />}>
+              <SmaList items={c.kemampuan_berpikir || c.problem_solving_dan_resiliensi} />
+            </SectionWithIcon>
 
-            {/* 5. 🗣️ Kemampuan Komunikasi dan Sosial */}
-            <Section title={content.sections.s5}>
-              <List items={c.kemampuan_komunikasi_dan_sosial || c.public_speaking_dan_leadership} />
-            </Section>
+            {/* 5. 💬 Kemampuan Komunikasi dan Sosial */}
+            <SectionWithIcon title="💬 Kemampuan Komunikasi dan Sosial" icon={<MessageSquare className="h-5 w-5 text-primary print:hidden" />}>
+              <SmaList items={c.kemampuan_komunikasi_dan_sosial || c.public_speaking_dan_leadership} />
+            </SectionWithIcon>
 
-            {/* 6. 🛡️ Karakter dan Kemandirian */}
-            <Section title={content.sections.s6}>
-              <List items={c.karakter_dan_kemandirian || c.pengembangan_soft_hard_skills} />
-            </Section>
+            {/* 6. ⭐ Karakter dan Kemandirian */}
+            <SectionWithIcon title="⭐ Karakter dan Kemandirian" icon={<Star className="h-5 w-5 text-amber-500 print:hidden" />}>
+              <SmaList items={c.karakter_dan_kemandirian || c.pengembangan_soft_hard_skills} />
+            </SectionWithIcon>
 
-            {/* 7. 🏫 Kesiapan Mengikuti Pembelajaran SMA */}
-            <Section title={content.sections.s7}>
-              <List items={c.kesiapan_mengikuti_pembelajaran_SMA || c.kesiapan_mengikuti_pembelajaran_sma || (c.kesiapan_kuliah_dan_perencanaan_karier ? [c.kesiapan_kuliah_dan_perencanaan_karier.status_kesiapan_ptn] : ["Siap mengikuti ritme & tuntutan pembelajaran SMA."])} />
-            </Section>
+            {/* 7. 🎓 Kesiapan Mengikuti Pembelajaran SMA */}
+            <SectionWithIcon title="🎓 Kesiapan Mengikuti Pembelajaran SMA" icon={<GraduationCap className="h-5 w-5 text-primary print:hidden" />}>
+              <SmaList items={c.kesiapan_mengikuti_pembelajaran_SMA || c.kesiapan_mengikuti_pembelajaran_sma || (c.kesiapan_kuliah_dan_perencanaan_karier ? [c.kesiapan_kuliah_dan_perencanaan_karier.status_kesiapan_ptn] : ["Siap mengikuti ritme & tuntutan pembelajaran SMA."])} />
+            </SectionWithIcon>
 
-            {/* 8. 🌱 Potensi Pengembangan */}
-            <Section title={content.sections.s8}>
-              <List items={c.potensi_pengembangan || (Array.isArray(c.potensi) ? c.potensi : [c.potensi])} />
-            </Section>
+            {/* 8. 🚀 Potensi Pengembangan */}
+            <SectionWithIcon title="🚀 Potensi Pengembangan" icon={<Rocket className="h-5 w-5 text-purple-600 print:hidden" />}>
+              <SmaList items={c.potensi_pengembangan || (Array.isArray(c.potensi) ? c.potensi : [c.potensi])} />
+            </SectionWithIcon>
 
-            {/* 9. ⭐ Potensi dan Kelebihan (Penguatan Singkat) */}
-            <Section title={content.sections.s9}>
-              <List items={c.potensi_dan_kelebihan || c.keunggulan_akademik_sma} />
-            </Section>
+            {/* 9. 🌟 Potensi dan Kelebihan */}
+            <SectionWithIcon title="🌟 Potensi dan Kelebihan" icon={<Sparkles className="h-5 w-5 text-amber-500 print:hidden" />}>
+              <SmaList items={c.potensi_dan_kelebihan || c.keunggulan_akademik_sma} />
+            </SectionWithIcon>
 
             {/* 10. 👨‍👩‍👧 Rekomendasi untuk Orang Tua */}
-            <Section title={content.sections.s10}>
+            <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/5 dark:bg-emerald-950/20 p-6 shadow-soft print:border-emerald-600 print:bg-transparent">
+              <h3 className="flex items-center gap-2 text-lg font-bold text-foreground print:text-black mb-4">
+                <Users className="h-5 w-5 text-emerald-600 print:hidden" />
+                👨‍👩‍👧 Rekomendasi untuk Orang Tua
+              </h3>
               {Array.isArray(c.rekomendasi_untuk_orang_tua || c.rekomendasi_strategi_masa_depan || c.perhatian_orangtua_dan_otonomi) ? (
                 <ul className="space-y-3">
                   {(c.rekomendasi_untuk_orang_tua || c.rekomendasi_strategi_masa_depan || c.perhatian_orangtua_dan_otonomi).map((t: any, i: number) => (
-                    <li key={i} className="rounded-xl border border-border/60 bg-muted/30 p-3 print:border-gray-300">
-                      <div className="text-sm font-semibold text-foreground print:text-black">{typeof t === "object" ? (t.kategori || `Rekomendasi ${i + 1}`) : `Rekomendasi ${i + 1}`}</div>
-                      <div className="mt-1 text-sm text-muted-foreground print:text-gray-800">{typeof t === "object" ? (t.aktivitas || JSON.stringify(t)) : t}</div>
+                    <li key={i} className="rounded-xl border border-border/60 bg-card p-4 shadow-xs print:border-gray-300">
+                      <div className="text-sm font-bold text-foreground print:text-black flex items-center gap-2">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-bold print:hidden">
+                          {i + 1}
+                        </span>
+                        {typeof t === "object" ? (t.kategori || `Rekomendasi ${i + 1}`) : `Rekomendasi ${i + 1}`}
+                      </div>
+                      <div className="mt-1.5 text-sm leading-relaxed text-muted-foreground print:text-gray-800">
+                        {typeof t === "object" ? (t.aktivitas || JSON.stringify(t)) : t}
+                      </div>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p>{String(c.rekomendasi_untuk_orang_tua || c.rekomendasi_strategi_masa_depan || c.treatment || "")}</p>
+                <p className="text-sm leading-relaxed text-foreground print:text-black">
+                  {String(c.rekomendasi_untuk_orang_tua || c.rekomendasi_strategi_masa_depan || c.treatment || "")}
+                </p>
               )}
-            </Section>
+            </div>
 
             <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">
               <Link to="/" className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-accent">
@@ -583,7 +692,6 @@ function ResultPage() {
             </div>
           </div>
         )}
-      </div>
       </div>
 
       <div className="print:hidden">
