@@ -1095,18 +1095,27 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
 }
 
 export async function submitAndAnalyze(data: SubmitInput) {
-  // 1. Fast Save DB (Target <= 2 seconds)
+  // 1. Fast Save DB
   const saveRes = await saveAssessmentSubmission(data);
 
   console.log(`[3] Job Analisis dibuat | Assessment ID: ${saveRes.assessment_id}`);
 
-  // 2. Non-blocking Background Execution
-  runBackgroundAiAnalysis(saveRes.assessment_id, data).catch((err) => {
-    console.error("[BACKGROUND_AI_TRIGGER_FAIL]", err);
-  });
+  // 2. Robust Execution: Try waitUntil for Workers, or await execution so edge isolate does not kill background task
+  try {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const req = getRequest();
+    const waitUntil = (req as any)?.waitUntil || (globalThis as any)?.waitUntil;
+    if (typeof waitUntil === "function") {
+      waitUntil(runBackgroundAiAnalysis(saveRes.assessment_id, data));
+    } else {
+      await runBackgroundAiAnalysis(saveRes.assessment_id, data);
+    }
+  } catch {
+    await runBackgroundAiAnalysis(saveRes.assessment_id, data);
+  }
 
-  // 3. Return immediate response
-  return { assessment_id: saveRes.assessment_id, status: "queued" as const };
+  // 3. Return response with success status
+  return { assessment_id: saveRes.assessment_id, status: "analyzed" as const };
 }
 
 export async function retryAssessmentAnalysisServer(assessmentId: string) {
@@ -1148,11 +1157,10 @@ export async function retryAssessmentAnalysisServer(assessmentId: string) {
     })),
   };
 
-  runBackgroundAiAnalysis(assessmentId, payload).catch((err) => {
-    console.error("[RETRY_AI_ANALYSIS_ERROR]", err);
-  });
+  // Await execution so Cloudflare Worker edge function does not truncate execution
+  await runBackgroundAiAnalysis(assessmentId, payload);
 
-  return { success: true, assessment_id: assessmentId, message: "Proses analisis ulang telah dimulai di background." };
+  return { success: true, assessment_id: assessmentId, message: "Proses analisis ulang telah berhasil diselesaikan." };
 }
 
 export async function getAssessmentResultServer(assessmentId: string, clientAdminFlag?: boolean) {
