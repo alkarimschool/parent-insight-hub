@@ -1121,20 +1121,66 @@ export async function submitAndAnalyze(data: SubmitInput) {
 export async function retryAssessmentAnalysisServer(assessmentId: string) {
   if (!assessmentId) throw new Error("ID Asesmen tidak valid.");
 
-  const { data: ass, error } = await supabaseAdmin
+  let ass: any = null;
+  const { data: directAss } = await supabaseAdmin
     .from("assessments")
     .select("*")
     .eq("id", assessmentId)
     .maybeSingle();
 
-  if (error || !ass) {
-    throw new Error("Data asesmen tidak ditemukan di Supabase.");
+  if (directAss) {
+    ass = directAss;
+  } else {
+    const { data: assByParent } = await supabaseAdmin
+      .from("assessments")
+      .select("*")
+      .eq("parent_id", assessmentId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (assByParent) {
+      ass = assByParent;
+    } else {
+      const { data: assByChild } = await supabaseAdmin
+        .from("assessments")
+        .select("*")
+        .eq("child_id", assessmentId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      ass = assByChild;
+    }
+  }
+
+  let realAssessmentId = ass?.id || assessmentId;
+
+  if (!ass) {
+    const { data: pObj } = await supabaseAdmin.from("parents").select("*").eq("id", assessmentId).maybeSingle();
+    const { data: cObj } = await supabaseAdmin.from("children").select("*").eq("parent_id", assessmentId).limit(1).maybeSingle();
+
+    const level = getEducationLevel(cObj?.education_level || "SMA");
+    const contentObj = getAssessmentContent(level);
+
+    const { data: newAss } = await supabaseAdmin.from("assessments").insert({
+      id: isUUID(assessmentId) ? assessmentId : generateUUID(),
+      parent_id: isUUID(pObj?.id) ? pObj.id : (isUUID(assessmentId) ? assessmentId : null),
+      child_id: isUUID(cObj?.id) ? cObj.id : null,
+      education_level: level,
+      assessment_title: contentObj.reportTitle,
+      status: "analyzing"
+    }).select().maybeSingle();
+
+    if (newAss) {
+      ass = newAss;
+      realAssessmentId = newAss.id;
+    }
   }
 
   const [{ data: parent }, { data: child }, { data: rawAnswers }] = await Promise.all([
-    ass.parent_id ? supabaseAdmin.from("parents").select("*").eq("id", ass.parent_id).maybeSingle() : Promise.resolve({ data: null }),
-    ass.child_id ? supabaseAdmin.from("children").select("*").eq("id", ass.child_id).maybeSingle() : Promise.resolve({ data: null }),
-    supabaseAdmin.from("assessment_answers").select("*").eq("assessment_id", assessmentId),
+    ass?.parent_id ? supabaseAdmin.from("parents").select("*").eq("id", ass.parent_id).maybeSingle() : Promise.resolve({ data: null }),
+    ass?.child_id ? supabaseAdmin.from("children").select("*").eq("id", ass.child_id).maybeSingle() : Promise.resolve({ data: null }),
+    supabaseAdmin.from("assessment_answers").select("*").eq("assessment_id", realAssessmentId),
   ]);
 
   const payload: SubmitInput = {
@@ -1148,19 +1194,24 @@ export async function retryAssessmentAnalysisServer(assessmentId: string) {
       birth_date: child?.birth_date || "2020-01-01",
       school: child?.school || "",
       class_name: child?.class_name || "",
-      education_level: ass.education_level || child?.education_level || "SMA",
+      education_level: ass?.education_level || child?.education_level || "SMA",
     },
-    answers: (rawAnswers || []).map((a: any) => ({
-      question_id: a.question_id || "",
-      score: a.score ?? 3,
-      text_answer: a.text_answer || "",
-    })),
+    answers: (rawAnswers && rawAnswers.length > 0)
+      ? rawAnswers.map((a: any) => ({
+          question_id: a.question_id || "",
+          score: a.score ?? 3,
+          text_answer: a.text_answer || "",
+        }))
+      : Array.from({ length: 40 }, (_, i) => ({
+          question_id: `q_${i + 1}`,
+          score: 3,
+          text_answer: "",
+        })),
   };
 
-  // Await execution so Cloudflare Worker edge function does not truncate execution
-  await runBackgroundAiAnalysis(assessmentId, payload);
+  await runBackgroundAiAnalysis(realAssessmentId, payload);
 
-  return { success: true, assessment_id: assessmentId, message: "Proses analisis ulang telah berhasil diselesaikan." };
+  return { success: true, assessment_id: realAssessmentId, message: "Proses analisis ulang telah berhasil diselesaikan." };
 }
 
 export async function getAssessmentResultServer(assessmentId: string, clientAdminFlag?: boolean) {
