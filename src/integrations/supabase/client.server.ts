@@ -90,7 +90,7 @@ function getSupabaseUrl(): string {
     g.SUPABASE_URL ||
     g.env?.SUPABASE_URL ||
     (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) ||
-    "https://pmdhjmjcalmgixvhcrwk.supabase.co"
+    "https://lqzicsebjjzhdsduqdcf.supabase.co"
   );
 }
 
@@ -101,7 +101,7 @@ function createSupabaseAdminClient() {
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
     (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY) ||
-    "sb_publishable_qtEDnfJ2uApK1ILNzAXkxw_F0UJAqua";
+    "sb_publishable_pu4E46tx3jk_u55S6-vFDg_Bggu_6fv";
 
   const keyToUse = serviceRoleKey || publishableKey;
   const hasServiceKey = Boolean(serviceRoleKey);

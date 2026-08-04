@@ -14,8 +14,8 @@
     "binding": "STATIC_ASSETS"
   },
   "vars": {
-    "SUPABASE_URL": "https://pmdhjmjcalmgixvhcrwk.supabase.co",
-    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_qtEDnfJ2uApK1ILNzAXkxw_F0UJAqua"
+    "SUPABASE_URL": "https://lqzicsebjjzhdsduqdcf.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_pu4E46tx3jk_u55S6-vFDg_Bggu_6fv"
   },
   "pages_build_output_dir": ".output/public"
 }
