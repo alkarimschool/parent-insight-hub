@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchWebsite } from "@/lib/settings";
 import { PublicNav, PublicFooter } from "@/components/site/PublicNav";
-import { BarChart3, ArrowRight, ShieldAlert, Lock, Home } from "lucide-react";
+import { BarChart3, ArrowRight, ShieldAlert, ShieldCheck, Lock, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/results")({
@@ -34,7 +34,6 @@ function ResultsPage() {
     checkAdmin();
   }, []);
 
-<<<<<<< HEAD
   const query = useQuery({
     queryKey: ["public-recent-results", isAdmin],
     enabled: isAdmin === true,

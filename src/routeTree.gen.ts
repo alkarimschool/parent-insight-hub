@@ -19,6 +19,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AssessmentIndexRouteImport } from './routes/assessment.index'
 import { Route as AssessmentLevelRouteImport } from './routes/assessment.level'
 import { Route as AssessmentQuestionsRouteImport } from './routes/assessment.questions'
+import { Route as AssessmentSelesaiRouteImport } from './routes/assessment.selesai'
 import { Route as AssessmentSubmittedRouteImport } from './routes/assessment.submitted'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
@@ -76,6 +77,11 @@ const AssessmentLevelRoute = AssessmentLevelRouteImport.update({
 const AssessmentQuestionsRoute = AssessmentQuestionsRouteImport.update({
   id: '/questions',
   path: '/questions',
+  getParentRoute: () => AssessmentRoute,
+} as any)
+const AssessmentSelesaiRoute = AssessmentSelesaiRouteImport.update({
+  id: '/selesai',
+  path: '/selesai',
   getParentRoute: () => AssessmentRoute,
 } as any)
 const AssessmentSubmittedRoute = AssessmentSubmittedRouteImport.update({
@@ -138,11 +144,8 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/assessment/level': typeof AssessmentLevelRoute
   '/assessment/questions': typeof AssessmentQuestionsRoute
-<<<<<<< HEAD
-  '/assessment/submitted': typeof AssessmentSubmittedRoute
-=======
   '/assessment/selesai': typeof AssessmentSelesaiRoute
->>>>>>> 22bb57b704f0fbe8aedd37b54779893e05ab969d
+  '/assessment/submitted': typeof AssessmentSubmittedRoute
   '/assessment/': typeof AssessmentIndexRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/admin/parents': typeof AuthenticatedAdminParentsRoute
@@ -160,11 +163,8 @@ export interface FileRoutesByTo {
   '/results': typeof ResultsRoute
   '/assessment/level': typeof AssessmentLevelRoute
   '/assessment/questions': typeof AssessmentQuestionsRoute
-<<<<<<< HEAD
-  '/assessment/submitted': typeof AssessmentSubmittedRoute
-=======
   '/assessment/selesai': typeof AssessmentSelesaiRoute
->>>>>>> 22bb57b704f0fbe8aedd37b54779893e05ab969d
+  '/assessment/submitted': typeof AssessmentSubmittedRoute
   '/assessment': typeof AssessmentIndexRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/admin/parents': typeof AuthenticatedAdminParentsRoute
@@ -186,11 +186,8 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/assessment/level': typeof AssessmentLevelRoute
   '/assessment/questions': typeof AssessmentQuestionsRoute
-<<<<<<< HEAD
-  '/assessment/submitted': typeof AssessmentSubmittedRoute
-=======
   '/assessment/selesai': typeof AssessmentSelesaiRoute
->>>>>>> 22bb57b704f0fbe8aedd37b54779893e05ab969d
+  '/assessment/submitted': typeof AssessmentSubmittedRoute
   '/assessment/': typeof AssessmentIndexRoute
   '/_authenticated/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/_authenticated/admin/parents': typeof AuthenticatedAdminParentsRoute
@@ -212,11 +209,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/assessment/level'
     | '/assessment/questions'
-<<<<<<< HEAD
-    | '/assessment/submitted'
-=======
     | '/assessment/selesai'
->>>>>>> 22bb57b704f0fbe8aedd37b54779893e05ab969d
+    | '/assessment/submitted'
     | '/assessment/'
     | '/admin/logs'
     | '/admin/parents'
@@ -234,11 +228,8 @@ export interface FileRouteTypes {
     | '/results'
     | '/assessment/level'
     | '/assessment/questions'
-<<<<<<< HEAD
-    | '/assessment/submitted'
-=======
     | '/assessment/selesai'
->>>>>>> 22bb57b704f0fbe8aedd37b54779893e05ab969d
+    | '/assessment/submitted'
     | '/assessment'
     | '/admin/logs'
     | '/admin/parents'
@@ -259,11 +250,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/assessment/level'
     | '/assessment/questions'
-<<<<<<< HEAD
-    | '/assessment/submitted'
-=======
     | '/assessment/selesai'
->>>>>>> 22bb57b704f0fbe8aedd37b54779893e05ab969d
+    | '/assessment/submitted'
     | '/assessment/'
     | '/_authenticated/admin/logs'
     | '/_authenticated/admin/parents'
@@ -356,19 +344,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssessmentQuestionsRouteImport
       parentRoute: typeof AssessmentRoute
     }
-<<<<<<< HEAD
-    '/assessment/submitted': {
-      id: '/assessment/submitted'
-      path: '/submitted'
-      fullPath: '/assessment/submitted'
-      preLoaderRoute: typeof AssessmentSubmittedRouteImport
-=======
     '/assessment/selesai': {
       id: '/assessment/selesai'
       path: '/selesai'
       fullPath: '/assessment/selesai'
       preLoaderRoute: typeof AssessmentSelesaiRouteImport
->>>>>>> 22bb57b704f0fbe8aedd37b54779893e05ab969d
+      parentRoute: typeof AssessmentRoute
+    }
+    '/assessment/submitted': {
+      id: '/assessment/submitted'
+      path: '/submitted'
+      fullPath: '/assessment/submitted'
+      preLoaderRoute: typeof AssessmentSubmittedRouteImport
       parentRoute: typeof AssessmentRoute
     }
     '/_authenticated/admin/': {
@@ -467,11 +454,8 @@ const AuthenticatedRouteRouteWithChildren =
 interface AssessmentRouteChildren {
   AssessmentLevelRoute: typeof AssessmentLevelRoute
   AssessmentQuestionsRoute: typeof AssessmentQuestionsRoute
-<<<<<<< HEAD
-  AssessmentSubmittedRoute: typeof AssessmentSubmittedRoute
-=======
   AssessmentSelesaiRoute: typeof AssessmentSelesaiRoute
->>>>>>> 22bb57b704f0fbe8aedd37b54779893e05ab969d
+  AssessmentSubmittedRoute: typeof AssessmentSubmittedRoute
   AssessmentIndexRoute: typeof AssessmentIndexRoute
   AssessmentResultIdRoute: typeof AssessmentResultIdRoute
 }
@@ -479,11 +463,8 @@ interface AssessmentRouteChildren {
 const AssessmentRouteChildren: AssessmentRouteChildren = {
   AssessmentLevelRoute: AssessmentLevelRoute,
   AssessmentQuestionsRoute: AssessmentQuestionsRoute,
-<<<<<<< HEAD
-  AssessmentSubmittedRoute: AssessmentSubmittedRoute,
-=======
   AssessmentSelesaiRoute: AssessmentSelesaiRoute,
->>>>>>> 22bb57b704f0fbe8aedd37b54779893e05ab969d
+  AssessmentSubmittedRoute: AssessmentSubmittedRoute,
   AssessmentIndexRoute: AssessmentIndexRoute,
   AssessmentResultIdRoute: AssessmentResultIdRoute,
 }
@@ -503,3 +484,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

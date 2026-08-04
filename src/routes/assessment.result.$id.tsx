@@ -10,7 +10,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { getAssessmentResultFn } from "@/lib/assessment.functions";
 import { getAssessmentContent } from "@/lib/assessment-content";
 import { getEducationLevel } from "@/lib/questions.data";
-import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/assessment/result/$id")({
   ssr: false,
