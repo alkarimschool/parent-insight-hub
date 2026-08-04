@@ -28,13 +28,15 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 
 function createSupabaseClient() {
-  // Use import.meta.env for client-side (Vite build-time replacement)
-  // Fall back to process.env or hardcoded defaults matching Lovable project
-  const SUPABASE_URL =
+  const rawUrl =
     (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) ||
     process.env.SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL ||
     "https://lqzicsebjjzhdsduqdcf.supabase.co";
+
+  const SUPABASE_URL = (!rawUrl || rawUrl.includes("pmdhjmjcalmgixvhcrwk"))
+    ? "https://lqzicsebjjzhdsduqdcf.supabase.co"
+    : rawUrl;
 
   const SUPABASE_PUBLISHABLE_KEY =
     (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY) ||

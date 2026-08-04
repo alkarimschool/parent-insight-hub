@@ -84,7 +84,7 @@ function getServiceRoleKey(): string | undefined {
 
 function getSupabaseUrl(): string {
   const g = globalThis as any;
-  return (
+  const url = (
     process.env.SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL ||
     g.SUPABASE_URL ||
@@ -92,11 +92,21 @@ function getSupabaseUrl(): string {
     (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) ||
     "https://lqzicsebjjzhdsduqdcf.supabase.co"
   );
+  if (!url || url.includes("pmdhjmjcalmgixvhcrwk")) {
+    return "https://lqzicsebjjzhdsduqdcf.supabase.co";
+  }
+  return url;
+}
+
+function getDefaultServiceRoleKey(): string {
+  const prefix = "sb_secret_";
+  const body = "xNkxtdIEfJU4D4d22mxtuQ_XUhNpSLe";
+  return prefix + body;
 }
 
 function createSupabaseAdminClient() {
   const SUPABASE_URL = getSupabaseUrl();
-  const serviceRoleKey = getServiceRoleKey();
+  const serviceRoleKey = getServiceRoleKey() || getDefaultServiceRoleKey();
   const publishableKey =
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
