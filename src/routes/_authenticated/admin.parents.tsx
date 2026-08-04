@@ -33,6 +33,7 @@ function ParentsList() {
   const getParentsList = useServerFn(getAdminParentsFn);
   const updateParentChild = useServerFn(updateParentChildFn);
   const retryAnalysis = useServerFn(retryAssessmentFn);
+  const deleteAssessment = useServerFn(deleteAssessmentFn);
   const [retryingId, setRetryingId] = useState<string | null>(null);
 
   const handleRetryAnalysis = async (r: any) => {
