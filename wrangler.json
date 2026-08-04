@@ -13,5 +13,9 @@
     "directory": ".output/public",
     "binding": "STATIC_ASSETS"
   },
+  "vars": {
+    "SUPABASE_URL": "https://pmdhjmjcalmgixvhcrwk.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_qtEDnfJ2uApK1ILNzAXkxw_F0UJAqua"
+  },
   "pages_build_output_dir": ".output/public"
 }

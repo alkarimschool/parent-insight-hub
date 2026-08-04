@@ -26,41 +26,60 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
+const SERVICE_KEY_NAMES = [
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "VITE_SUPABASE_SERVICE_ROLE_KEY",
+  "SUPABASE_SERVICE_KEY",
+  "SUPABASE_SECRET_KEY",
+  "SERVICE_ROLE_KEY",
+  "VITE_SUPABASE_SERVICE_KEY",
+  "VITE_SUPABASE_SECRET_KEY",
+];
+
 function getServiceRoleKey(): string | undefined {
   const g = globalThis as any;
-  let key: string | undefined =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
-    g.SUPABASE_SERVICE_ROLE_KEY ||
-    g.env?.SUPABASE_SERVICE_ROLE_KEY ||
-    g.__env?.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!key) {
-    try {
-      const vinxi = require("vinxi/http");
-      const event = vinxi?.getEvent?.();
-      key =
-        event?.context?.cloudflare?.env?.SUPABASE_SERVICE_ROLE_KEY ||
-        event?.context?.env?.SUPABASE_SERVICE_ROLE_KEY ||
-        event?.context?.cloudflare?.env?.VITE_SUPABASE_SERVICE_ROLE_KEY;
-    } catch {}
+  // 1. Check process.env and global objects
+  for (const name of SERVICE_KEY_NAMES) {
+    if (process.env[name]) return process.env[name];
+    if (g[name]) return g[name];
+    if (g.env?.[name]) return g.env[name];
+    if (g.__env?.[name]) return g.__env[name];
   }
 
-  if (!key) {
-    try {
-      const h3 = require("h3");
-      const event = h3?.useEvent?.();
-      key =
-        event?.context?.cloudflare?.env?.SUPABASE_SERVICE_ROLE_KEY ||
-        event?.context?.env?.SUPABASE_SERVICE_ROLE_KEY;
-    } catch {}
+  // 2. Check Vinxi HTTP request event context
+  try {
+    const vinxi = require("vinxi/http");
+    const event = vinxi?.getEvent?.();
+    const cfEnv = event?.context?.cloudflare?.env || event?.context?.env;
+    if (cfEnv) {
+      for (const name of SERVICE_KEY_NAMES) {
+        if (cfEnv[name]) return cfEnv[name];
+      }
+    }
+  } catch {}
+
+  // 3. Check H3 event context
+  try {
+    const h3 = require("h3");
+    const event = h3?.useEvent?.();
+    const cfEnv = event?.context?.cloudflare?.env || event?.context?.env;
+    if (cfEnv) {
+      for (const name of SERVICE_KEY_NAMES) {
+        if (cfEnv[name]) return cfEnv[name];
+      }
+    }
+  } catch {}
+
+  // 4. Check import.meta.env
+  if (typeof import.meta !== "undefined" && (import.meta as any).env) {
+    const metaEnv = (import.meta as any).env;
+    for (const name of SERVICE_KEY_NAMES) {
+      if (metaEnv[name]) return metaEnv[name];
+    }
   }
 
-  if (!key && typeof import.meta !== "undefined") {
-    key = (import.meta as any).env?.SUPABASE_SERVICE_ROLE_KEY || (import.meta as any).env?.VITE_SUPABASE_SERVICE_ROLE_KEY;
-  }
-
-  return key;
+  return undefined;
 }
 
 function getSupabaseUrl(): string {
