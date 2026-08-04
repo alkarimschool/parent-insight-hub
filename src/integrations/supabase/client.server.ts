@@ -28,15 +28,39 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 function getServiceRoleKey(): string | undefined {
   const g = globalThis as any;
-  return (
+  let key: string | undefined =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
     g.SUPABASE_SERVICE_ROLE_KEY ||
     g.env?.SUPABASE_SERVICE_ROLE_KEY ||
-    g.__env?.SUPABASE_SERVICE_ROLE_KEY ||
-    (typeof import.meta !== 'undefined' && (import.meta as any).env?.SUPABASE_SERVICE_ROLE_KEY) ||
-    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_SERVICE_ROLE_KEY)
-  );
+    g.__env?.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!key) {
+    try {
+      const vinxi = require("vinxi/http");
+      const event = vinxi?.getEvent?.();
+      key =
+        event?.context?.cloudflare?.env?.SUPABASE_SERVICE_ROLE_KEY ||
+        event?.context?.env?.SUPABASE_SERVICE_ROLE_KEY ||
+        event?.context?.cloudflare?.env?.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    } catch {}
+  }
+
+  if (!key) {
+    try {
+      const h3 = require("h3");
+      const event = h3?.useEvent?.();
+      key =
+        event?.context?.cloudflare?.env?.SUPABASE_SERVICE_ROLE_KEY ||
+        event?.context?.env?.SUPABASE_SERVICE_ROLE_KEY;
+    } catch {}
+  }
+
+  if (!key && typeof import.meta !== "undefined") {
+    key = (import.meta as any).env?.SUPABASE_SERVICE_ROLE_KEY || (import.meta as any).env?.VITE_SUPABASE_SERVICE_ROLE_KEY;
+  }
+
+  return key;
 }
 
 function getSupabaseUrl(): string {
