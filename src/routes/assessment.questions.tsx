@@ -86,26 +86,32 @@ function QuestionsPage() {
   const topRef = useRef<HTMLDivElement>(null);
 
   const scrollToTop = () => {
-    if (topRef.current) {
-      topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        if (topRef.current) {
+          topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }, 20);
+    });
   };
 
   const handleNext = () => {
     if (idx < list.length - 1) {
       setIdx((prev) => prev + 1);
-      scrollToTop();
     }
   };
 
   const handlePrev = () => {
     if (idx > 0) {
       setIdx((prev) => prev - 1);
-      scrollToTop();
     }
   };
+
+  useEffect(() => {
+    scrollToTop();
+  }, [idx]);
 
   useEffect(() => {
     try {
