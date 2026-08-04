@@ -3,14 +3,21 @@ import type { LockMap } from "./locks";
 import { DEFAULT_LOCKS } from "./locks";
 
 export async function getLocksServer(): Promise<LockMap> {
-  const { data } = await supabaseAdmin
-    .from("assessment_locks")
-    .select("education_level, is_locked");
-  const map: LockMap = { ...DEFAULT_LOCKS };
-  for (const row of (data ?? []) as any[]) {
-    map[String(row.education_level)] = !!row.is_locked;
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("assessment_locks")
+      .select("education_level, is_locked");
+    if (error || !data) return { ...DEFAULT_LOCKS };
+    const map: LockMap = { ...DEFAULT_LOCKS };
+    for (const row of data as any[]) {
+      if (row.education_level) {
+        map[String(row.education_level)] = Boolean(row.is_locked);
+      }
+    }
+    return map;
+  } catch {
+    return { ...DEFAULT_LOCKS };
   }
-  return map;
 }
 
 export async function isLevelLockedServer(level: string): Promise<boolean> {
