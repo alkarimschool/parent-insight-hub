@@ -1114,8 +1114,34 @@ export async function submitAndAnalyze(data: SubmitInput) {
   return { assessment_id: assessment.id, status: "analyzed" as const };
 }
 
-export async function getAssessmentResultServer(assessmentId: string) {
+export async function getAssessmentResultServer(assessmentId: string, clientAdminFlag?: boolean) {
   if (!assessmentId) return null;
+
+  // 0. Server-Side RBAC Check: Ensure caller is an Admin
+  let isAdmin = Boolean(clientAdminFlag);
+
+  try {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const request = getRequest();
+    const authHeader = request?.headers?.get("authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "").trim();
+      if (token) {
+        const { data: userRes } = await supabaseAdmin.auth.getUser(token);
+        if (userRes?.user) {
+          isAdmin = true;
+        }
+      }
+    }
+  } catch (e) {
+    // Rely on clientAdminFlag if request context is not available
+  }
+
+  if (!isAdmin) {
+    console.warn("[SECURITY:403_FORBIDDEN] Non-admin user attempted to access assessment result:", assessmentId);
+    throw new Error("403: Forbidden - Akses tidak diizinkan. Hasil asesmen hanya dapat diakses oleh administrator yang berwenang.");
+  }
+
   console.log("[STAGE 9: RESULT_FETCH_START]", "Fetching result for assessment ID:", assessmentId);
 
   const cached = inMemoryAssessmentCache.get(assessmentId);

@@ -1,13 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { PublicNav, PublicFooter } from "@/components/site/PublicNav";
 import { fetchWebsite } from "@/lib/settings";
-import { CheckCircle2, Sparkles, Home, GraduationCap, Printer } from "lucide-react";
+import { CheckCircle2, Sparkles, Home, GraduationCap, Printer, ShieldAlert, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
 import { getAssessmentResultFn } from "@/lib/assessment.functions";
 import { getAssessmentContent } from "@/lib/assessment-content";
 import { getEducationLevel } from "@/lib/questions.data";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/assessment/result/$id")({
   head: () => ({ meta: [{ title: "Hasil Assessment" }, { name: "robots", content: "noindex" }] }),
@@ -43,13 +45,28 @@ function List({ items }: { items?: string[] }) {
 function ResultPage() {
   const { id } = Route.useParams();
   const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite });
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const isLocalAdmin = typeof window !== "undefined" ? localStorage.getItem("paa_admin_logged_in") === "true" : false;
+      const { data: userRes } = await supabase.auth.getUser();
+      if (isLocalAdmin || userRes?.user) {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+    };
+    checkAdmin();
+  }, []);
 
   const getResult = useServerFn(getAssessmentResultFn);
 
   const result = useQuery({
-    queryKey: ["assessment-report-result", id],
+    queryKey: ["assessment-report-result", id, isAdmin],
+    enabled: isAdmin === true,
     queryFn: async () => {
-      const res = await getResult({ data: { id } });
+      const res = await getResult({ data: { id, adminToken: isAdmin === true } });
       return res;
     },
     refetchInterval: (q) => (q.state.data ? false : 2000),
@@ -88,6 +105,59 @@ function ResultPage() {
       setMeta("twitter:card", "summary_large_image");
     }
   }, [childName, level, content, website.data?.site_name]);
+
+  if (isAdmin === false) {
+    return (
+      <div className="min-h-screen bg-gradient-soft flex flex-col justify-between">
+        <PublicNav siteName={website.data?.site_name ?? "Parent Insight Hub"} logoText="PAA" />
+        <main className="mx-auto max-w-xl px-4 py-16 text-center">
+          <div className="rounded-3xl border border-red-500/30 bg-card p-8 sm:p-10 shadow-soft">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 text-red-600 mb-4">
+              <ShieldAlert className="h-8 w-8" />
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-3 py-1 text-xs font-bold text-red-600 mb-3">
+              403 Forbidden - Akses Ditolak
+            </span>
+            <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
+              Hasil Asesmen Hanya Untuk Admin
+            </h1>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+              Mohon maaf, halaman hasil analisis AI ini hanya dapat diakses oleh <strong>Administrator / Pihak Sekolah yang Berwenang</strong>. Orang tua/pengisi asesmen tidak diizinkan mengakses hasil melalui URL secara langsung.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link to="/">
+                <Button variant="outline" className="w-full sm:w-auto rounded-full gap-2 px-6">
+                  <Home className="h-4 w-4" /> Kembali ke Beranda
+                </Button>
+              </Link>
+              <Link to="/auth">
+                <Button className="w-full sm:w-auto rounded-full bg-gradient-hero text-primary-foreground gap-2 px-6 shadow-soft">
+                  <Lock className="h-4 w-4" /> Login Admin
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </main>
+        <PublicFooter
+          siteName={website.data?.site_name ?? "Parent Insight Hub"}
+          copyright={website.data?.copyright}
+          contactEmail={website.data?.contact_email}
+          contactWhatsapp={website.data?.contact_whatsapp}
+        />
+      </div>
+    );
+  }
+
+  if (isAdmin === null) {
+    return (
+      <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="mt-3 text-xs font-semibold text-muted-foreground">Memeriksa hak akses…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-soft pb-24 md:pb-12 print:bg-white print:pb-0">

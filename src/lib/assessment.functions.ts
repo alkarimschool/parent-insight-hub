@@ -77,10 +77,16 @@ export const submitAssessment = createServerFn({ method: "POST" })
   });
 
 export const getAssessmentResultFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({ id: z.string().min(1) }).parse((d as any)?.data ?? d))
+  .inputValidator((d: unknown) => {
+    const raw = (d as any)?.data ?? d;
+    return z.object({
+      id: z.string().min(1),
+      adminToken: z.boolean().optional(),
+    }).parse(raw);
+  })
   .handler(async ({ data }) => {
     const { getAssessmentResultServer } = await import("./assessment.server");
-    return getAssessmentResultServer(data.id);
+    return getAssessmentResultServer(data.id, data.adminToken);
   });
 
 export const testAiPrompt = createServerFn({ method: "POST" })

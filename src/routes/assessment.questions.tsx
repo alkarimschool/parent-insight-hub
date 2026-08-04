@@ -65,8 +65,7 @@ function QuestionsPage() {
 
   const list = useMemo(() => {
     if (dbQs && dbQs.length > 0) {
-      const firstQText = dbQs[0]?.text || "";
-      if (level === "SMA" && !firstQText.includes("Anak saya mampu memahami materi")) {
+      if (level === "SMA" && dbQs.length !== 40) {
         return LEVEL_QUESTIONS.SMA;
       }
       return dbQs;
@@ -178,10 +177,10 @@ function QuestionsPage() {
 
       localStorage.removeItem(`paa_answers_${level}`);
       sessionStorage.removeItem("paa_form");
-      toast.success("✅ Assessment berhasil dikirim dan dianalisis!");
+      toast.success("✅ Assessment berhasil dikirim!");
 
-      console.log("[STAGE 8: FRONTEND_NAVIGATING]", `/assessment/result/${res.assessment_id}`);
-      await navigate({ to: "/assessment/result/$id", params: { id: res.assessment_id } });
+      console.log("[STAGE 8: FRONTEND_NAVIGATING]", "/assessment/submitted");
+      await navigate({ to: "/assessment/submitted" });
     } catch (e: any) {
       console.error("[STAGE: FRONTEND_SUBMIT_ERROR]", e);
       const msg =

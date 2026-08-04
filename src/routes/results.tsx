@@ -1,15 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchWebsite } from "@/lib/settings";
 import { PublicNav, PublicFooter } from "@/components/site/PublicNav";
-import { BarChart3, ArrowRight, FileCheck, Calendar, User } from "lucide-react";
+import { BarChart3, ArrowRight, FileCheck, Calendar, User, ShieldAlert, Lock, Home } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/results")({
   head: () => ({
     meta: [
       { title: "Hasil Assessment — Parent Awareness Assessment" },
-      { name: "description", content: "Daftar dan status hasil asesmen perkembangan anak Anda." },
+      { name: "description", content: "Daftar dan status hasil asesmen perkembangan anak." },
     ],
   }),
   component: ResultsPage,
@@ -17,9 +19,24 @@ export const Route = createFileRoute("/results")({
 
 function ResultsPage() {
   const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite });
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const isLocalAdmin = typeof window !== "undefined" ? localStorage.getItem("paa_admin_logged_in") === "true" : false;
+      const { data: userRes } = await supabase.auth.getUser();
+      if (isLocalAdmin || userRes?.user) {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+    };
+    checkAdmin();
+  }, []);
 
   const query = useQuery({
-    queryKey: ["public-recent-results"],
+    queryKey: ["public-recent-results", isAdmin],
+    enabled: isAdmin === true,
     queryFn: async () => {
       const { data } = await supabase
         .from("assessments")
@@ -31,6 +48,61 @@ function ResultsPage() {
   });
 
   const list = query.data ?? [];
+
+  if (isAdmin === false) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col justify-between">
+        <PublicNav siteName={website.data?.site_name ?? "Parent Awareness Assessment"} logoText={website.data?.logo_text ?? "PAA"} />
+
+        <main className="mx-auto max-w-xl px-4 py-16 text-center">
+          <div className="rounded-3xl border border-red-500/30 bg-card p-8 sm:p-10 shadow-soft">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 text-red-600 mb-4">
+              <ShieldAlert className="h-8 w-8" />
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-3 py-1 text-xs font-bold text-red-600 mb-3">
+              403 Forbidden - Akses Ditolak
+            </span>
+            <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
+              Akses Hasil Asesmen Dibatasi
+            </h1>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+              Daftar dan detail hasil analisis asesmen hanya dapat diakses oleh <strong>Administrator / Pihak Sekolah yang Berwenang</strong>. Orang tua/pengisi asesmen dapat menghubungi pihak sekolah untuk mendapatkan laporan asesmen.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link to="/">
+                <Button variant="outline" className="w-full sm:w-auto rounded-full gap-2 px-6">
+                  <Home className="h-4 w-4" /> Kembali ke Beranda
+                </Button>
+              </Link>
+              <Link to="/auth">
+                <Button className="w-full sm:w-auto rounded-full bg-gradient-hero text-primary-foreground gap-2 px-6 shadow-soft">
+                  <Lock className="h-4 w-4" /> Login Admin
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </main>
+
+        <PublicFooter
+          siteName={website.data?.site_name ?? "Parent Awareness Assessment"}
+          copyright={website.data?.copyright}
+          contactEmail={website.data?.contact_email}
+          contactWhatsapp={website.data?.contact_whatsapp}
+        />
+      </div>
+    );
+  }
+
+  if (isAdmin === null) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="mt-3 text-xs font-semibold text-muted-foreground">Memeriksa hak akses…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

@@ -304,20 +304,58 @@ export const LEVEL_QUESTIONS: Record<EducationLevel, QuestionData[]> = {
   ],
 
   SMA: [
-    { id: "sma-q1", education_level: "SMA", category_name: "Kemampuan Awal Akademik", text: "Anak saya mampu memahami materi pelajaran baru dengan cukup cepat.", order_index: 1 },
-    { id: "sma-q2", education_level: "SMA", category_name: "Kemampuan Awal Akademik", text: "Anak saya mampu belajar secara mandiri tanpa harus selalu diingatkan.", order_index: 2 },
-    { id: "sma-q3", education_level: "SMA", category_name: "Kemampuan Awal Akademik", text: "Anak saya menunjukkan rasa ingin tahu yang tinggi terhadap materi atau pengetahuan baru.", order_index: 3 },
-    { id: "sma-q4", education_level: "SMA", category_name: "Kemampuan Awal Akademik", text: "Anak saya mampu menyelesaikan tugas sekolah dengan baik dan tepat waktu.", order_index: 4 },
-    { id: "sma-q5", education_level: "SMA", category_name: "Kebiasaan Belajar", text: "Anak saya memiliki kebiasaan belajar yang teratur dan konsisten.", order_index: 5 },
-    { id: "sma-q6", education_level: "SMA", category_name: "Kebiasaan Belajar", text: "Anak saya mampu mengatur waktu antara belajar, beristirahat, dan kegiatan lainnya dengan baik.", order_index: 6 },
-    { id: "sma-q7", education_level: "SMA", category_name: "Kemampuan Berpikir", text: "Anak saya mampu berpikir logis ketika menghadapi suatu permasalahan.", order_index: 7 },
-    { id: "sma-q8", education_level: "SMA", category_name: "Kemampuan Berpikir", text: "Anak saya mampu menganalisis suatu permasalahan sebelum mengambil keputusan.", order_index: 8 },
-    { id: "sma-q9", education_level: "SMA", category_name: "Kemampuan Berpikir", text: "Anak saya mampu mencari solusi ketika menghadapi kesulitan dalam belajar atau kehidupan sehari-hari.", order_index: 9 },
-    { id: "sma-q10", education_level: "SMA", category_name: "Komunikasi dan Sosial", text: "Anak saya percaya diri dalam menyampaikan pendapat kepada orang lain.", order_index: 10 },
-    { id: "sma-q11", education_level: "SMA", category_name: "Komunikasi dan Sosial", text: "Anak saya mudah beradaptasi dengan lingkungan atau teman baru.", order_index: 11 },
-    { id: "sma-q12", education_level: "SMA", category_name: "Komunikasi dan Sosial", text: "Anak saya mampu bekerja sama dengan baik dalam kegiatan kelompok.", order_index: 12 },
-    { id: "sma-q13", education_level: "SMA", category_name: "Karakter dan Kemandirian", text: "Anak saya menunjukkan sikap disiplin, tanggung jawab, dan kejujuran dalam kehidupan sehari-hari.", order_index: 13 },
-    { id: "sma-q14", education_level: "SMA", category_name: "Karakter dan Kemandirian", text: "Anak saya mampu mengendalikan emosi ketika menghadapi tekanan, kritik, atau kegagalan.", order_index: 14 },
-    { id: "sma-q15", education_level: "SMA", category_name: "Kesiapan Mengikuti Pendidikan SMA", text: "Saya menilai anak saya telah memiliki kesiapan untuk mengikuti pembelajaran di jenjang SMA dan mulai merencanakan masa depan sesuai minat serta potensinya.", order_index: 15 },
+    // A. Kemampuan Awal Akademik (8 Pertanyaan)
+    { id: "sma-q1", education_level: "SMA", category_name: "Kemampuan Awal Akademik", text: "Anak saya mampu memahami materi pelajaran baru di sekolah dengan cepat dan tepat.", order_index: 1 },
+    { id: "sma-q2", education_level: "SMA", category_name: "Kemampuan Awal Akademik", text: "Anak saya menunjukkan kecepatan belajar yang memadai untuk mengikuti ritme pelajaran.", order_index: 2 },
+    { id: "sma-q3", education_level: "SMA", category_name: "Kemampuan Awal Akademik", text: "Anak saya memiliki rasa ingin tahu yang tinggi terhadap hal-hal baru atau pelajaran yang sedang dipelajari.", order_index: 3 },
+    { id: "sma-q4", education_level: "SMA", category_name: "Kemampuan Awal Akademik", text: "Anak saya terbiasa belajar secara mandiri di rumah tanpa harus selalu diminta.", order_index: 4 },
+    { id: "sma-q5", education_level: "SMA", category_name: "Kemampuan Awal Akademik", text: "Anak saya konsisten dalam menjaga jadwal dan kebiasaan belajar harian.", order_index: 5 },
+    { id: "sma-q6", education_level: "SMA", category_name: "Kemampuan Awal Akademik", text: "Anak saya selalu menyelesaikan tugas sekolah atau pekerjaan rumah (PR) secara tuntas dan tepat waktu.", order_index: 6 },
+    { id: "sma-q7", education_level: "SMA", category_name: "Kemampuan Awal Akademik", text: "Anak saya mampu memahami dan mengikuti instruksi atau petunjuk tugas dengan cermat.", order_index: 7 },
+    { id: "sma-q8", education_level: "SMA", category_name: "Kemampuan Awal Akademik", text: "Anak saya siap dan percaya diri dalam mempelajari materi yang lebih kompleks atau abstrak.", order_index: 8 },
+
+    // B. Motivasi dan Kebiasaan Belajar (6 Pertanyaan)
+    { id: "sma-q9", education_level: "SMA", category_name: "Motivasi dan Kebiasaan Belajar", text: "Anak saya menunjukkan semangat dan antusiasme yang tinggi dalam kegiatan belajar harian.", order_index: 9 },
+    { id: "sma-q10", education_level: "SMA", category_name: "Motivasi dan Kebiasaan Belajar", text: "Anak saya tekun dan tidak mudah menyerah ketika menemui soal atau materi pelajaran yang sulit.", order_index: 10 },
+    { id: "sma-q11", education_level: "SMA", category_name: "Motivasi dan Kebiasaan Belajar", text: "Anak saya mampu mengatur dan mengelola waktu belajar, istirahat, hobi, dan aktivitas lain dengan seimbang.", order_index: 11 },
+    { id: "sma-q12", education_level: "SMA", category_name: "Motivasi dan Kebiasaan Belajar", text: "Anak saya memiliki kebiasaan membaca buku, artikel, atau materi pengetahuan secara teratur.", order_index: 12 },
+    { id: "sma-q13", education_level: "SMA", category_name: "Motivasi dan Kebiasaan Belajar", text: "Anak saya mampu menjaga fokus dan konsentrasi saat belajar tanpa mudah terdistraksi ponsel atau lingkungan.", order_index: 13 },
+    { id: "sma-q14", education_level: "SMA", category_name: "Motivasi dan Kebiasaan Belajar", text: "Anak saya menyadari dan bertanggung jawab penuh atas proses serta hasil belajarnya sendiri.", order_index: 14 },
+
+    // C. Kemampuan Berpikir (6 Pertanyaan)
+    { id: "sma-q15", education_level: "SMA", category_name: "Kemampuan Berpikir", text: "Anak saya mampu menggunakan penalaran yang logis dalam memahami suatu permasalahan.", order_index: 15 },
+    { id: "sma-q16", education_level: "SMA", category_name: "Kemampuan Berpikir", text: "Anak saya terbiasa berpikir kritis dan tidak menelan mentah-mentah informasi yang diterima.", order_index: 16 },
+    { id: "sma-q17", education_level: "SMA", category_name: "Kemampuan Berpikir", text: "Anak saya mampu menganalisis informasi atau masalah rumit menjadi bagian-bagian yang lebih sederhana.", order_index: 17 },
+    { id: "sma-q18", education_level: "SMA", category_name: "Kemampuan Berpikir", text: "Anak saya dapat menemukan alternatif solusi yang efektif saat menghadapi kendala atau tantangan.", order_index: 18 },
+    { id: "sma-q19", education_level: "SMA", category_name: "Kemampuan Berpikir", text: "Anak saya mampu mengambil keputusan secara bijak setelah mempertimbangkan alasan dan alasannya.", order_index: 19 },
+    { id: "sma-q20", education_level: "SMA", category_name: "Kemampuan Berpikir", text: "Anak saya mampu menghubungkan konsep pelajaran dengan situasi atau kejadian nyata di kehidupan sehari-hari.", order_index: 20 },
+
+    // D. Komunikasi dan Sosial (5 Pertanyaan)
+    { id: "sma-q21", education_level: "SMA", category_name: "Komunikasi dan Sosial", text: "Anak saya mampu menyampaikan pikiran, ide, atau perasaannya secara jelas dan sopan.", order_index: 21 },
+    { id: "sma-q22", education_level: "SMA", category_name: "Komunikasi dan Sosial", text: "Anak saya berani menyampaikan pandangan atau bertanya di hadapan orang lain atau kelompok.", order_index: 22 },
+    { id: "sma-q23", education_level: "SMA", category_name: "Komunikasi dan Sosial", text: "Anak saya mampu bekerja sama, berbagi peran, dan berkontribusi aktif dalam kegiatan kelompok.", order_index: 23 },
+    { id: "sma-q24", education_level: "SMA", category_name: "Komunikasi dan Sosial", text: "Anak saya dapat beradaptasi dengan cepat saat memasuki lingkungan, suasana, atau kelompok baru.", order_index: 24 },
+    { id: "sma-q25", education_level: "SMA", category_name: "Komunikasi dan Sosial", text: "Anak saya mampu menjalin hubungan pertemanan yang positif, sehat, dan saling menghargai.", order_index: 25 },
+
+    // E. Karakter dan Kemandirian (6 Pertanyaan)
+    { id: "sma-q26", education_level: "SMA", category_name: "Karakter dan Kemandirian", text: "Anak saya terbiasa disiplin dalam menaati aturan di rumah maupun di sekolah.", order_index: 26 },
+    { id: "sma-q27", education_level: "SMA", category_name: "Karakter dan Kemandirian", text: "Anak saya siap menerima dan menanggung konsekuensi atas tindakan atau keputusan yang diambilnya.", order_index: 27 },
+    { id: "sma-q28", education_level: "SMA", category_name: "Karakter dan Kemandirian", text: "Anak saya mengutamakan kejujuran dalam bertindak, berkata, maupun mengerjakan tugas-tugasnya.", order_index: 28 },
+    { id: "sma-q29", education_level: "SMA", category_name: "Karakter dan Kemandirian", text: "Anak saya mampu mengendalikan emosi dengan baik saat menghadapi tekanan, kritik, atau kekecewaan.", order_index: 29 },
+    { id: "sma-q30", education_level: "SMA", category_name: "Karakter dan Kemandirian", text: "Anak saya mandiri dalam menyiapkan kebutuhan sekolah dan mengurus keperluan pribadinya.", order_index: 30 },
+    { id: "sma-q31", education_level: "SMA", category_name: "Karakter dan Kemandirian", text: "Anak saya konsisten dan memegang teguh janji atau komitmen yang telah disepakati bersama.", order_index: 31 },
+
+    // F. Kesiapan Mengikuti Pembelajaran SMA (5 Pertanyaan)
+    { id: "sma-q32", education_level: "SMA", category_name: "Kesiapan Mengikuti Pembelajaran SMA", text: "Anak saya menunjukkan kesiapan mental dan fisik untuk mengikuti tuntutan pembelajaran jenjang SMA.", order_index: 32 },
+    { id: "sma-q33", education_level: "SMA", category_name: "Kesiapan Mengikuti Pembelajaran SMA", text: "Anak saya siap menghadapi peningkatan beban dan tingkat kesulitan pelajaran di SMA.", order_index: 33 },
+    { id: "sma-q34", education_level: "SMA", category_name: "Kesiapan Mengikuti Pembelajaran SMA", text: "Anak saya siap mengemban peran dan tanggung jawab yang lebih besar sebagai siswa SMA.", order_index: 34 },
+    { id: "sma-q35", education_level: "SMA", category_name: "Kesiapan Mengikuti Pembelajaran SMA", text: "Anak saya antusias mengikuti kegiatan sekolah untuk mengeksplorasi dan mengembangkan potensinya.", order_index: 35 },
+    { id: "sma-q36", education_level: "SMA", category_name: "Kesiapan Mengikuti Pembelajaran SMA", text: "Anak saya mulai memikirkan dan mendiskusikan cita-cita serta rencana jurusan masa depannya.", order_index: 36 },
+
+    // G. Potensi Pengembangan (4 Pertanyaan)
+    { id: "sma-q37", education_level: "SMA", category_name: "Potensi Pengembangan", text: "Anak saya memiliki potensi akademik yang kuat dan siap dikembangkan lebih jauh.", order_index: 37 },
+    { id: "sma-q38", education_level: "SMA", category_name: "Potensi Pengembangan", text: "Anak saya menunjukkan potensi kepemimpinan dan kemampuan mengarahkan atau memimpin kawan.", order_index: 38 },
+    { id: "sma-q39", education_level: "SMA", category_name: "Potensi Pengembangan", text: "Anak saya memiliki potensi komunikasi yang baik dalam menyampaikan presentasi atau pandangan.", order_index: 39 },
+    { id: "sma-q40", education_level: "SMA", category_name: "Potensi Pengembangan", text: "Anak saya terbuka menerima masukan dan memiliki kemauan tinggi untuk terus mengembangkan diri.", order_index: 40 },
   ],
 };
