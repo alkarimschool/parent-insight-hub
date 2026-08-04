@@ -223,6 +223,7 @@ function SettingsAdmin() {
 
   return (
     <div className="space-y-8">
+      <AssessmentLockPanel />
       <div>
         <h1 className="text-2xl font-bold text-foreground">Integrasi AI & WhatsApp</h1>
         <p className="text-sm text-muted-foreground">
