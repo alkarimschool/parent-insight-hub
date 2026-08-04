@@ -8,14 +8,81 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Bot, MessageSquare, Save, Zap } from "lucide-react";
+import { Bot, MessageSquare, Save, Zap, Lock, LockOpen } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { testAiPrompt } from "@/lib/assessment.functions";
 import { saveAiSettingsFn, saveWaSettingsFn } from "@/lib/admin.functions";
+import { setAssessmentLockFn } from "@/lib/locks.functions";
+import { fetchAssessmentLocks, LOCK_LEVELS } from "@/lib/locks";
 
 export const Route = createFileRoute("/_authenticated/admin/settings")({
   component: SettingsAdmin,
 });
+
+function AssessmentLockPanel() {
+  const qc = useQueryClient();
+  const setLock = useServerFn(setAssessmentLockFn);
+  const [pending, setPending] = useState<string | null>(null);
+  const locksQuery = useQuery({ queryKey: ["assessment-locks"], queryFn: fetchAssessmentLocks });
+
+  const toggle = async (level: string, nextLocked: boolean) => {
+    setPending(level);
+    try {
+      await setLock({ data: { level, is_locked: nextLocked } });
+      await qc.invalidateQueries({ queryKey: ["assessment-locks"] });
+      toast.success(nextLocked ? `Assessment ${level} dikunci.` : `Assessment ${level} diaktifkan.`);
+    } catch (e: any) {
+      toast.error("Gagal mengubah status: " + (e?.message ?? "Error"));
+    } finally {
+      setPending(null);
+    }
+  };
+
+  return (
+    <div className="rounded-3xl border border-border/60 bg-card p-6 shadow-soft space-y-6">
+      <div className="flex items-center gap-3 border-b border-border/40 pb-4">
+        <span className="grid h-10 w-10 place-items-center rounded-2xl bg-amber-500/10 text-amber-600">
+          <Lock className="h-5 w-5" />
+        </span>
+        <div>
+          <h2 className="text-lg font-bold text-foreground">Kunci / Buka Assessment per Jenjang</h2>
+          <p className="text-xs text-muted-foreground">
+            Jenjang yang terkunci tidak dapat dibuka atau dikerjakan pengguna, termasuk melalui URL langsung.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {LOCK_LEVELS.map((lvl) => {
+          const locked = !!locksQuery.data?.[lvl];
+          return (
+            <div key={lvl} className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background p-4">
+              <div>
+                <div className="font-bold text-foreground">Jenjang {lvl}</div>
+                <div className={"text-xs font-semibold " + (locked ? "text-amber-600" : "text-emerald-600")}>
+                  {locked ? "🔒 Terkunci — Sedang Dalam Pengembangan" : "✅ Aktif"}
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant={locked ? "default" : "outline"}
+                disabled={pending === lvl || locksQuery.isLoading}
+                onClick={() => toggle(lvl, !locked)}
+                className="rounded-full"
+              >
+                {locked ? (
+                  <><LockOpen className="mr-1.5 h-4 w-4" /> Aktifkan</>
+                ) : (
+                  <><Lock className="mr-1.5 h-4 w-4" /> Kunci</>
+                )}
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function SettingsAdmin() {
   const qc = useQueryClient();
@@ -156,6 +223,7 @@ function SettingsAdmin() {
 
   return (
     <div className="space-y-8">
+      <AssessmentLockPanel />
       <div>
         <h1 className="text-2xl font-bold text-foreground">Integrasi AI & WhatsApp</h1>
         <p className="text-sm text-muted-foreground">

@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { PublicNav, PublicFooter } from "@/components/site/PublicNav";
@@ -12,6 +13,14 @@ import { getEducationLevel } from "@/lib/questions.data";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/assessment/result/$id")({
+  ssr: false,
+  beforeLoad: async () => {
+    // RBAC: hasil analisis hanya untuk admin (backend juga memvalidasi dengan 403).
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) throw redirect({ to: "/auth" });
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: data.user.id, _role: "admin" });
+    if (!isAdmin) throw redirect({ to: "/" });
+  },
   head: () => ({ meta: [{ title: "Hasil Assessment" }, { name: "robots", content: "noindex" }] }),
   component: ResultPage,
 });

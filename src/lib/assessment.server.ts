@@ -679,6 +679,15 @@ export async function submitAndAnalyze(data: SubmitInput) {
   const submitLevel: EducationLevel = getEducationLevel(data.child?.education_level);
   console.log("[STAGE: SUBMIT]", "Education Level Submit:", submitLevel);
 
+  // LOCK GUARD: reject submissions for levels locked by admin
+  {
+    const { isLevelLockedServer } = await import("./locks.server");
+    const { LOCK_MESSAGE } = await import("./locks");
+    if (await isLevelLockedServer(submitLevel)) {
+      throw new Error(LOCK_MESSAGE);
+    }
+  }
+
   const assessmentContent = getAssessmentContent(submitLevel);
   const parentName = data.parent?.name?.trim() || `Orang Tua Ananda ${data.child?.name?.trim() || "Anak"}`;
 
