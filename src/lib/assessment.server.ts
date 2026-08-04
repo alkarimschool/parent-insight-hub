@@ -714,10 +714,9 @@ async function getCachedPromptAndSettings(level: EducationLevel) {
 
 export async function saveAssessmentSubmission(data: SubmitInput) {
   const tSaveStart = Date.now();
-  console.log(`[START SAVE] Saving submission for child: ${data.child?.name}`);
+  console.log(`[1] Submit diterima | Child: ${data.child?.name}`);
 
   const submitLevel: EducationLevel = getEducationLevel(data.child?.education_level);
-  console.log("[STAGE: SUBMIT]", "Education Level Submit:", submitLevel);
 
   // LOCK GUARD: reject submissions for levels locked by admin
   {
@@ -898,7 +897,7 @@ export async function saveAssessmentSubmission(data: SubmitInput) {
   }
 
   const tSaveDuration = Date.now() - tSaveStart;
-  console.log(`[FINISH SAVE] Submission saved in ${tSaveDuration} ms | Assessment ID: ${assessment.id}`);
+  console.log(`[2] Jawaban berhasil disimpan | Duration: ${tSaveDuration} ms | ID: ${assessment.id}`);
 
   return {
     assessment_id: assessment.id,
@@ -912,7 +911,7 @@ export async function saveAssessmentSubmission(data: SubmitInput) {
 export async function runBackgroundAiAnalysis(assessmentId: string, data: SubmitInput) {
   const tTotalStart = Date.now();
   try {
-    console.log(`[START AI_WORKER] Starting background AI worker for assessment ID: ${assessmentId}`);
+    console.log(`[4] Worker mulai berjalan | Assessment ID: ${assessmentId}`);
     
     await supabaseAdmin.from("assessments").update({ status: "analyzing" }).eq("id", assessmentId);
 
@@ -964,6 +963,8 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
 
     // Use in-memory cache for prompt & settings
     const { prompt: activePrompt, settings } = await getCachedPromptAndSettings(dbEducationLevel);
+    console.log(`[5] Prompt ${dbEducationLevel} berhasil diambil | Source: ${activePrompt?.id ? "Admin DB" : "Default Fallback"}`);
+
     const defaultPromptForLevel = DEFAULT_PROMPTS[dbEducationLevel] || DEFAULT_PROMPTS.TK;
     const promptToUse = (activePrompt && activePrompt.user_template && activePrompt.system_prompt)
       ? activePrompt
@@ -985,6 +986,8 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
       .replace(/\{\{child_school\}\}/g, data.child.school || "-")
       .replace(/\{\{answers\}\}/g, answersText);
 
+    console.log(`[6] Prompt Final berhasil dibuat | Length: ${filledPrompt.length} chars`);
+
     const totalScore = data.answers.reduce((acc, curr) => acc + Number(curr?.score ?? (curr as any)?.value ?? 3), 0);
     const avgScore = totalScore / (data.answers.length || 1);
 
@@ -992,9 +995,8 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
     let rawText: string = "";
     let usedModel: string = settings?.model ?? "google/gemini-3.6-flash";
 
-    // STAGE: AI GATEWAY CALL WITH SINGLE REQUEST & TOKEN OPTIMIZATION
     const tAiStart = Date.now();
-    console.log(`[START AI] Calling AI model ${usedModel} for level ${dbEducationLevel} (maxTokens: ${isSma ? 2048 : (settings?.max_tokens ?? 4096)})`);
+    console.log(`[7] Request AI dikirim | Model: ${usedModel} | Level: ${dbEducationLevel}`);
 
     try {
       const aiRes = await callLovableAiJson({
@@ -1010,11 +1012,9 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
       console.warn("[BACKGROUND_AI_WARN] AI Gateway call warning:", aiErr?.message);
     }
     const tAiDuration = Date.now() - tAiStart;
-    console.log(`[FINISH AI] AI call completed in ${tAiDuration} ms`);
+    console.log(`[8] Response AI diterima | Duration: ${tAiDuration} ms | Raw Length: ${rawText.length} chars`);
 
-    // STAGE: PARSE JSON
     const tParseStart = Date.now();
-    console.log(`[START PARSE] Parsing AI output JSON...`);
     if (rawText) {
       try {
         parsedResult = JSON.parse(rawText);
@@ -1024,7 +1024,7 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
       }
     }
     const tParseDuration = Date.now() - tParseStart;
-    console.log(`[FINISH PARSE] JSON parsing completed in ${tParseDuration} ms`);
+    console.log(`[9] JSON berhasil diparsing | Duration: ${tParseDuration} ms | Valid: ${Boolean(parsedResult)}`);
 
     if (!parsedResult || typeof parsedResult !== "object" || (!parsedResult.ringkasan && !parsedResult.status_perkembangan && !parsedResult.kekuatan_anak && !parsedResult.status_perkembangan_sd && !parsedResult.status_perkembangan_smp && !parsedResult.status_kesiapan_sma && !parsedResult.ringkasan_kemampuan_awal)) {
       console.log("[BACKGROUND_AI_FALLBACK] Using interactive fallback generator for assessment:", assessmentId);
@@ -1058,9 +1058,7 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
       status: "analyzed",
     });
 
-    // STAGE: SINGLE PARALLEL BATCH UPDATE IN DATABASE
     const tUpdateStart = Date.now();
-    console.log(`[START UPDATE] Executing parallel DB updates for ai_results & assessments...`);
 
     await Promise.all([
       supabaseAdmin.from("ai_results").upsert({
@@ -1080,10 +1078,10 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
     ]);
 
     const tUpdateDuration = Date.now() - tUpdateStart;
-    console.log(`[FINISH UPDATE] DB updates completed in ${tUpdateDuration} ms`);
+    console.log(`[10] Hasil analisis berhasil disimpan | Duration: ${tUpdateDuration} ms`);
 
     const tTotalDuration = Date.now() - tTotalStart;
-    console.log(`[TOTAL ANALYSIS TIME] Total background AI worker execution time: ${tTotalDuration} ms for assessment ID: ${assessmentId}`);
+    console.log(`[11] Status berubah menjadi Analisis Selesai | Total Worker Time: ${tTotalDuration} ms`);
 
     return { success: true, assessment_id: assessmentId };
   } catch (err: any) {
@@ -1099,6 +1097,8 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
 export async function submitAndAnalyze(data: SubmitInput) {
   // 1. Fast Save DB (Target <= 2 seconds)
   const saveRes = await saveAssessmentSubmission(data);
+
+  console.log(`[3] Job Analisis dibuat | Assessment ID: ${saveRes.assessment_id}`);
 
   // 2. Non-blocking Background Execution
   runBackgroundAiAnalysis(saveRes.assessment_id, data).catch((err) => {
@@ -1181,7 +1181,7 @@ export async function getAssessmentResultServer(assessmentId: string, clientAdmi
     throw new Error("403: Forbidden - Akses tidak diizinkan. Hasil asesmen hanya dapat diakses oleh administrator yang berwenang.");
   }
 
-  console.log("[STAGE 9: RESULT_FETCH_START]", "Fetching result for assessment ID:", assessmentId);
+  console.log(`[12] Dashboard berhasil membaca hasil | Assessment ID: ${assessmentId}`);
 
   const cached = inMemoryAssessmentCache.get(assessmentId);
 
