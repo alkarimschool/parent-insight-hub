@@ -4,10 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { ExternalLink, Edit3, Trash2, Save, X, Search, GraduationCap, MessageSquare, AlertTriangle, Loader2 } from "lucide-react";
+import { ExternalLink, Edit3, Trash2, Save, X, Search, GraduationCap, MessageSquare, AlertTriangle, Loader2, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { updateParentChildFn, getAdminParentsFn, deleteAssessmentFn } from "@/lib/admin.functions";
+import { updateParentChildFn, getAdminParentsFn, deleteAssessmentFn, retryAssessmentFn } from "@/lib/admin.functions";
 
 import { getAssessmentContent } from "@/lib/assessment-content";
 
@@ -32,7 +32,23 @@ function ParentsList() {
   const qc = useQueryClient();
   const getParentsList = useServerFn(getAdminParentsFn);
   const updateParentChild = useServerFn(updateParentChildFn);
-  const deleteAssessment = useServerFn(deleteAssessmentFn);
+  const retryAnalysis = useServerFn(retryAssessmentFn);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+
+  const handleRetryAnalysis = async (r: any) => {
+    const cObj = Array.isArray(r.children) ? r.children[0] : r.children;
+    const childName = cObj?.name || "Siswa";
+    setRetryingId(r.id);
+    try {
+      await retryAnalysis({ data: { id: r.id } });
+      toast.success(`✅ Proses analisis ulang untuk Ananda ${childName} telah dimulai di background.`);
+      qc.invalidateQueries({ queryKey: ["admin-parents-list-rpc"] });
+    } catch (err: any) {
+      toast.error(err?.message || "Gagal memicu analisis ulang.");
+    } finally {
+      setRetryingId(null);
+    }
+  };
 
   const [q, setQ] = useState("");
   const [editingRow, setEditingRow] = useState<any>(null);
@@ -195,13 +211,44 @@ function ParentsList() {
                     <td className="p-3.5 font-mono text-muted-foreground">{pObj?.whatsapp ?? "-"}</td>
                     <td className="p-3.5">
                       <div className="flex items-center gap-2">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${r.status === "analyzed" ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>
-                          {r.status === "analyzed" ? "Selesai Analisis" : "Diproses"}
-                        </span>
+                        {r.status === "analyzed" || r.status === "completed" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-600">
+                            <CheckCircle2 className="h-3 w-3" /> 🟢 Analisis Selesai
+                          </span>
+                        ) : r.status === "analyzing" || r.status === "processing" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 border border-blue-500/30 px-2.5 py-0.5 text-[10px] font-bold text-blue-600 animate-pulse">
+                            <Loader2 className="h-3 w-3 animate-spin" /> 🔵 Sedang Diproses
+                          </span>
+                        ) : r.status === "failed" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 border border-rose-500/30 px-2.5 py-0.5 text-[10px] font-bold text-rose-600">
+                            <AlertCircle className="h-3 w-3" /> 🔴 Gagal Diproses
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-bold text-amber-600">
+                            <RefreshCw className="h-3 w-3 animate-spin" /> 🟡 Menunggu Analisis
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="p-3.5 text-right">
                       <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                        {/* RETRY ANALISIS BUTTON */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRetryAnalysis(r)}
+                          disabled={retryingId === r.id}
+                          title="Jalankan ulang analisis AI untuk asesmen ini"
+                          className="rounded-full text-[11px] h-7 px-2.5 border-purple-500/40 hover:bg-purple-500/10 text-purple-600 font-semibold"
+                        >
+                          {retryingId === r.id ? (
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                          )}
+                          Analisis Ulang
+                        </Button>
+
                         {/* EDIT BUTTON */}
                         <Button size="sm" variant="outline" onClick={() => handleEditClick(r)} className="rounded-full text-[11px] h-7 px-2.5">
                           <Edit3 className="h-3 w-3 mr-1 text-primary" /> Edit

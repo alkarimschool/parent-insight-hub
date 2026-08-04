@@ -685,7 +685,7 @@ async function getOrSeedQuestionsForLevel(level: EducationLevel) {
   }
 }
 
-export async function submitAndAnalyze(data: SubmitInput) {
+export async function saveAssessmentSubmission(data: SubmitInput) {
   // STAGE 1: SUBMIT - Parse input education_level
   const submitLevel: EducationLevel = getEducationLevel(data.child?.education_level);
   console.log("[STAGE: SUBMIT]", "Education Level Submit:", submitLevel);
@@ -811,21 +811,20 @@ export async function submitAndAnalyze(data: SubmitInput) {
   }
 
   // ==========================================
-  // 3. DATABASE OPERASI: INSERT ASSESSMENTS (3-TIER BULLETPROOF)
+  // 3. DATABASE OPERASI: INSERT ASSESSMENTS (STATUS: QUEUED)
   // ==========================================
   const assTitle = assessmentContent.reportTitle;
-  console.log("[DB:INSERT:ASSESSMENTS]", "Saving assessment payload:", {
+  console.log("[DB:INSERT:ASSESSMENTS]", "Saving assessment payload (status: queued):", {
     parent_id: parent.id,
     child_id: child.id,
     education_level: submitLevel,
     assessment_title: assTitle,
-    status: "analyzing",
+    status: "queued",
   });
 
   let assessment: any = null;
 
   if (isUUID(parent.id) && isUUID(child.id)) {
-    // Tier 1: Extended Columns (education_level, assessment_title)
     const { data: aData, error: aErr } = await supabaseAdmin
       .from("assessments")
       .insert({
@@ -833,7 +832,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
         child_id: child.id,
         education_level: submitLevel,
         assessment_title: assTitle,
-        status: "analyzing",
+        status: "queued",
       })
       .select()
       .maybeSingle();
@@ -841,13 +840,12 @@ export async function submitAndAnalyze(data: SubmitInput) {
     if (!aErr && aData) {
       assessment = aData;
     } else {
-      // Tier 2: Minimal Base Columns
       const { data: aMinimal } = await supabaseAdmin
         .from("assessments")
         .insert({
           parent_id: parent.id,
           child_id: child.id,
-          status: "analyzing",
+          status: "queued",
         })
         .select()
         .maybeSingle();
@@ -862,7 +860,7 @@ export async function submitAndAnalyze(data: SubmitInput) {
       id: generateUUID(),
       parent_id: parent.id,
       child_id: child.id,
-      status: "analyzing",
+      status: "queued",
       education_level: submitLevel,
       assessment_title: assTitle,
     };
@@ -870,43 +868,19 @@ export async function submitAndAnalyze(data: SubmitInput) {
   }
 
   // ==========================================
-  // SINGLE SOURCE OF TRUTH: RE-FETCH ASSESSMENT
-  // ==========================================
-  const { data: dbAssessmentRecord } = await supabaseAdmin
-    .from("assessments")
-    .select("*")
-    .eq("id", assessment.id)
-    .maybeSingle();
-
-  const dbEducationLevel: EducationLevel = submitLevel;
-  console.log("[STAGE: DATABASE_INSERT]", "Education Level Database:", dbEducationLevel);
-
-  // ==========================================
   // 4. DATABASE OPERASI: INSERT ASSESSMENT_ANSWERS
   // ==========================================
+  const dbEducationLevel: EducationLevel = submitLevel;
   const dbQuestions = await getOrSeedQuestionsForLevel(dbEducationLevel);
   const answerRows: Array<{ assessment_id: string; question_id: string; score: number }> = [];
-  const answersFormattedText: string[] = [];
 
   data.answers.forEach((ans, idx) => {
     let qUuid: string | null = null;
-    let qText = "Pertanyaan " + (idx + 1);
-    let catName = "Umum";
-
     if (isUUID(ans.question_id)) {
       qUuid = ans.question_id;
-      const foundQ = dbQuestions.find((q: any) => q.id === ans.question_id);
-      if (foundQ) {
-        qText = foundQ.text;
-        catName = (foundQ as any).question_categories?.name || "Umum";
-      }
     } else {
       const foundQ = dbQuestions[idx] || dbQuestions.find((q: any) => q.order_index === idx + 1);
-      if (foundQ) {
-        qUuid = foundQ.id;
-        qText = foundQ.text;
-        catName = (foundQ as any).question_categories?.name || "Umum";
-      }
+      if (foundQ) qUuid = foundQ.id;
     }
 
     const scoreVal = Number(ans?.score ?? (ans as any)?.value ?? 3);
@@ -917,221 +891,256 @@ export async function submitAndAnalyze(data: SubmitInput) {
         score: scoreVal,
       });
     }
-
-    const textVal = ans.text_answer || (ans as any).textAnswer;
-    if (textVal) {
-      answersFormattedText.push(`Q${idx + 1}. [${catName}] ${qText} → "${textVal}"`);
-    } else {
-      const label = ["Tidak Pernah / Belum Mampu", "Jarang / Kurang Mampu", "Kadang-kadang / Cukup", "Sering / Mampu", "Selalu / Sangat Mampu"][Math.max(0, Math.min(4, scoreVal - 1))] ?? "Cukup Mampu";
-      answersFormattedText.push(`Q${idx + 1}. [${catName}] ${qText} → Skor: ${scoreVal}/5 (${label})`);
-    }
   });
 
   if (answerRows.length > 0) {
-    console.log("[DB:INSERT:ANSWERS]", "Saving answer rows:", answerRows.length);
     try {
-      const { data: ansInserted, error: ansErr } = await supabaseAdmin.from("assessment_answers").insert(answerRows).select();
-      console.log("[DB:INSERT:ANSWERS_RESULT]", { count: ansInserted?.length, error: ansErr?.message });
-      if (ansErr) {
-        console.warn("[DB:WARN:ANSWERS_INSERT]", ansErr.message);
-      }
+      await supabaseAdmin.from("assessment_answers").insert(answerRows);
     } catch (e: any) {
       console.warn("[DB:WARN:ANSWERS_EXCEPTION]", e?.message);
     }
   }
 
-  const totalScoreCalc = data.answers.reduce((acc, curr) => acc + Number(curr?.score ?? (curr as any)?.value ?? 3), 0);
-  const avgScoreCalc = totalScoreCalc / (data.answers.length || 1);
-  const highCountCalc = data.answers.filter(a => Number(a?.score ?? (a as any)?.value ?? 3) >= 4).length;
-  const lowCountCalc = data.answers.filter(a => Number(a?.score ?? (a as any)?.value ?? 3) <= 2).length;
-  const patternTypeCalc = avgScoreCalc >= 4.0 ? "POSITIF / SANGAT BAIK" : (avgScoreCalc <= 2.5 ? "KURANG / PERLU PENDAMPINGAN INTENSIF" : "CAMPURAN / BERKEMBANG SESUAI USIA");
-
-  const analyticalHeader = `\n\n--- RINGKASAN & POLA JAWABAN AKTUAL ORANG TUA ---\n- Rata-rata Skor Keseluruhan: ${avgScoreCalc.toFixed(2)} / 5.00\n- Status Pola Jawaban: ${patternTypeCalc}\n- Jumlah Jawaban Skor Tinggi (4-5): ${highCountCalc} aspek\n- Jumlah Jawaban Skor Rendah (1-2): ${lowCountCalc} aspek\n\n[INSTRUKSI WAJIB POLA ANALISIS]: Pola jawaban orang tua adalah "${patternTypeCalc}". Sesuai Aturan Wajib Interpretasi Jawaban Orang Tua, rancangan laporan (status, penjelasan status, keunggulan, area perbaikan, dan rekomendasi treatment) HARUS mencerminkan secara proporsional pola skoring ini! Dilarang membuat laporan generik!`;
-
-  const answersText = answersFormattedText.join("\n") + analyticalHeader;
-
-  // ==========================================
-  // STAGE 3: PROMPT BUILD & CALL AI CLIENT
-  // ==========================================
-  console.log("[STAGE: PROMPT_BUILD]", "Education Level Prompt:", dbEducationLevel);
-
-  let activePrompt: any = null;
-  let settings: any = null;
-
-  try {
-    const { getPromptServer } = await import("./admin.server");
-    const [prompt, { data: set }] = await Promise.all([
-      getPromptServer(dbEducationLevel),
-      supabaseAdmin.from("ai_settings").select("*").eq("is_active", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-    ]);
-
-    activePrompt = prompt;
-
-    if (!activePrompt) {
-      const { data: anyLevelPrompt } = await supabaseAdmin
-        .from("ai_prompts")
-        .select("*")
-        .eq("education_level", dbEducationLevel)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      activePrompt = anyLevelPrompt;
-    }
-    settings = set;
-  } catch (e) {
-    console.warn("Prompt fetch error", e);
-  }
-
-  const defaultPromptForLevel = DEFAULT_PROMPTS[dbEducationLevel] || DEFAULT_PROMPTS.TK;
-  const promptToUse = (activePrompt && activePrompt.user_template && activePrompt.system_prompt)
-    ? activePrompt
-    : {
-        id: `default_${dbEducationLevel}`,
-        education_level: dbEducationLevel,
-        name: defaultPromptForLevel.name,
-        system_prompt: defaultPromptForLevel.system_prompt,
-        user_template: defaultPromptForLevel.user_template,
-      };
-
-  console.log("[PROMPT_AUDIT:LEVEL]", dbEducationLevel);
-  console.log("[PROMPT_AUDIT:ID]", promptToUse.id || `prompt_${dbEducationLevel}`);
-  console.log("[PROMPT_AUDIT:SYSTEM_PROMPT]", `(Len: ${promptToUse.system_prompt.length})`, promptToUse.system_prompt);
-  console.log("[PROMPT_AUDIT:USER_PROMPT]", `(Len: ${promptToUse.user_template.length})`, promptToUse.user_template);
-  console.log("[PROMPT_AUDIT:TIMESTAMP]", promptToUse.updated_at || new Date().toISOString());
-
-  const filledPrompt = promptToUse.user_template
-    .replace(/\$\{assessment\.education_level\}/g, dbEducationLevel)
-    .replace(/\{\{parent_name\}\}/g, parentName)
-    .replace(/\{\{parent_whatsapp\}\}/g, data.parent.whatsapp)
-    .replace(/\{\{child_name\}\}/g, data.child.name)
-    .replace(/\{\{child_gender\}\}/g, data.child.gender === "L" ? "Laki-laki" : "Perempuan")
-    .replace(/\{\{education_level\}\}/g, dbEducationLevel)
-    .replace(/\{\{child_school\}\}/g, data.child.school || "-")
-    .replace(/\{\{answers\}\}/g, answersText);
-
-  const levelContentObj = getAssessmentContent(dbEducationLevel);
-  const totalScore = data.answers.reduce((acc, curr) => acc + Number(curr?.score ?? (curr as any)?.value ?? 3), 0);
-  const avgScore = totalScore / (data.answers.length || 1);
-
-  let parsedResult: any = null;
-  let rawText: string = "";
-  let usedModel: string = settings?.model ?? "google/gemini-3.6-flash";
-
-  try {
-    console.log("[PROMPT_AUDIT:STATUS]", "Mengirim ke AI dengan System Prompt & User Prompt dari Admin Dashboard...");
-    const aiRes = await callLovableAiJson({
-      model: usedModel,
-      systemPrompt: promptToUse.system_prompt,
-      userPrompt: filledPrompt,
-      temperature: Number(settings?.temperature ?? 0.7),
-      maxTokens: settings?.max_tokens ?? 4096,
-    });
-    rawText = aiRes.text;
-    usedModel = aiRes.model;
-    console.log("[PROMPT_AUDIT:STATUS]", "Berhasil menerima respon AI. Length:", rawText.length);
-
-    try {
-      parsedResult = JSON.parse(rawText);
-    } catch {
-      const match = rawText.match(/\{[\s\S]*\}/);
-      parsedResult = match ? JSON.parse(match[0]) : null;
-    }
-  } catch (aiErr: any) {
-    console.warn("[PROMPT_AUDIT:STATUS]", "Gagal memanggil AI Gateway:", aiErr?.message);
-  }
-
-  if (!parsedResult || typeof parsedResult !== "object" || (!parsedResult.ringkasan && !parsedResult.status_perkembangan && !parsedResult.kekuatan_anak && !parsedResult.status_perkembangan_sd && !parsedResult.status_perkembangan_smp && !parsedResult.status_kesiapan_sma)) {
-    console.log("[PROMPT_AUDIT:STATUS]", "Menggunakan fallback generator interaktif berbasis jawaban aktual orang tua...");
-    parsedResult = generateFallbackResult(data.child.name, parentName, avgScore, dbEducationLevel, data.answers, dbQuestions);
-    rawText = JSON.stringify(parsedResult);
-  }
-
-  // ==========================================
-  // STAGE 4: DATABASE OPERASI: INSERT AI_RESULTS & UPDATE ASSESSMENTS
-  // ==========================================
-  console.log("[STAGE: AI_RESULT]", "Education Level Result:", dbEducationLevel);
-
-  parsedResult = {
-    ...parsedResult,
-    education_level: dbEducationLevel,
-    shortName: dbEducationLevel,
-    badge: levelContentObj.badge,
-    title: levelContentObj.title,
-    description: levelContentObj.description,
-    summaryTitle: levelContentObj.summaryTitle,
-    introText: levelContentObj.introText,
-    reportTitle: levelContentObj.reportTitle,
-    metadataTitle: levelContentObj.metadataTitle,
-    metadataDescription: levelContentObj.metadataDescription,
-    fullName: levelContentObj.fullName,
-    sections: levelContentObj.sections,
-  };
-
-  if (dbEducationLevel !== "TK" && parsedResult.ringkasan) {
-    parsedResult.ringkasan = parsedResult.ringkasan
-      .replace(/perkembangan anak usia dini \(TK \/ PAUD\)/gi, `karakter dan potensi akademik ${levelContentObj.fullName}`)
-      .replace(/perkembangan anak usia dini/gi, `potensi dan kebiasaan belajar ${levelContentObj.fullName}`)
-      .replace(/anak usia dini/gi, `peserta didik ${levelContentObj.shortName}`);
-  }
-
-  inMemoryAssessmentCache.set(assessment.id, {
+  console.log("[STAGE: FAST_SUBMIT_SUCCESS]", { assessment_id: assessment.id, status: "queued" });
+  return {
     assessment_id: assessment.id,
+    status: "queued" as const,
     education_level: dbEducationLevel,
     parent_name: parentName,
-    child_name: data.child.name,
-    created_at: new Date().toISOString(),
-    content: parsedResult,
-    status: "analyzed",
-  });
+    child_name: data.child.name.trim(),
+  };
+}
 
-  // 5. INSERT AI_RESULTS TO DATABASE
-  console.log("[DB:INSERT:AI_RESULTS]", "Saving ai_results payload for assessment:", assessment.id);
-  const { data: aiResInserted, error: aiResErr } = await supabaseAdmin.from("ai_results").insert({
-    assessment_id: assessment.id,
-    content: parsedResult,
-    raw_text: rawText,
-    model: usedModel,
-  }).select().maybeSingle();
+export async function runBackgroundAiAnalysis(assessmentId: string, data: SubmitInput) {
+  try {
+    console.log("[BACKGROUND_AI_START]", "Starting AI analysis for assessment ID:", assessmentId);
+    
+    // Update status to analyzing
+    await supabaseAdmin.from("assessments").update({ status: "analyzing" }).eq("id", assessmentId);
 
-  console.log("[DB:INSERT:AI_RESULTS_RESULT]", { data: aiResInserted, error: aiResErr?.message });
-  if (aiResErr) {
-    console.warn("[DB:WARN:AI_RESULTS_INSERT]", aiResErr.message);
-  }
+    const submitLevel: EducationLevel = getEducationLevel(data.child?.education_level);
+    const dbEducationLevel: EducationLevel = submitLevel;
+    const levelContentObj = getAssessmentContent(dbEducationLevel);
+    const parentName = data.parent?.name?.trim() || `Orang Tua Ananda ${data.child?.name?.trim() || "Anak"}`;
+    const dbQuestions = await getOrSeedQuestionsForLevel(dbEducationLevel);
 
-  console.log("[STAGE 6: DB_AI_RESULTS_SAVED]", "Assessment ID:", assessment.id, "Model:", usedModel);
+    const answersFormattedText: string[] = [];
+    data.answers.forEach((ans, idx) => {
+      let qText = "Pertanyaan " + (idx + 1);
+      let catName = "Umum";
 
-  // 6. UPDATE ASSESSMENTS STATUS TO ANALYZED IN DATABASE (RESILIENT UPDATES)
-  console.log("[DB:UPDATE:ASSESSMENTS]", "Updating assessment status analyzed:", { id: assessment.id, education_level: dbEducationLevel });
-  
-  const { data: upData, error: upErr } = await supabaseAdmin
-    .from("assessments")
-    .update({
+      if (isUUID(ans.question_id)) {
+        const foundQ = dbQuestions.find((q: any) => q.id === ans.question_id);
+        if (foundQ) {
+          qText = foundQ.text;
+          catName = (foundQ as any).question_categories?.name || "Umum";
+        }
+      } else {
+        const foundQ = dbQuestions[idx] || dbQuestions.find((q: any) => q.order_index === idx + 1);
+        if (foundQ) {
+          qText = foundQ.text;
+          catName = (foundQ as any).question_categories?.name || "Umum";
+        }
+      }
+
+      const scoreVal = Number(ans?.score ?? (ans as any)?.value ?? 3);
+      const textVal = ans.text_answer || (ans as any).textAnswer;
+      if (textVal) {
+        answersFormattedText.push(`Q${idx + 1}. [${catName}] ${qText} → "${textVal}"`);
+      } else {
+        const label = ["Tidak Pernah / Belum Mampu", "Jarang / Kurang Mampu", "Kadang-kadang / Cukup", "Sering / Mampu", "Selalu / Sangat Mampu"][Math.max(0, Math.min(4, scoreVal - 1))] ?? "Cukup Mampu";
+        answersFormattedText.push(`Q${idx + 1}. [${catName}] ${qText} → Skor: ${scoreVal}/5 (${label})`);
+      }
+    });
+
+    const totalScoreCalc = data.answers.reduce((acc, curr) => acc + Number(curr?.score ?? (curr as any)?.value ?? 3), 0);
+    const avgScoreCalc = totalScoreCalc / (data.answers.length || 1);
+    const highCountCalc = data.answers.filter(a => Number(a?.score ?? (a as any)?.value ?? 3) >= 4).length;
+    const lowCountCalc = data.answers.filter(a => Number(a?.score ?? (a as any)?.value ?? 3) <= 2).length;
+    const patternTypeCalc = avgScoreCalc >= 4.0 ? "POSITIF / SANGAT BAIK" : (avgScoreCalc <= 2.5 ? "KURANG / PERLU PENDAMPINGAN INTENSIF" : "CAMPURAN / BERKEMBANG SESUAI USIA");
+
+    const analyticalHeader = `\n\n--- RINGKASAN & POLA JAWABAN AKTUAL ORANG TUA ---\n- Rata-rata Skor Keseluruhan: ${avgScoreCalc.toFixed(2)} / 5.00\n- Status Pola Jawaban: ${patternTypeCalc}\n- Jumlah Jawaban Skor Tinggi (4-5): ${highCountCalc} aspek\n- Jumlah Jawaban Skor Rendah (1-2): ${lowCountCalc} aspek\n\n[INSTRUKSI WAJIB POLA ANALISIS]: Pola jawaban orang tua adalah "${patternTypeCalc}". Sesuai Aturan Wajib Interpretasi Jawaban Orang Tua, rancangan laporan (status, penjelasan status, keunggulan, area perbaikan, dan rekomendasi treatment) HARUS mencerminkan secara proporsional pola skoring ini! Dilarang membuat laporan generik!`;
+
+    const answersText = answersFormattedText.join("\n") + analyticalHeader;
+
+    let activePrompt: any = null;
+    let settings: any = null;
+
+    try {
+      const { getPromptServer } = await import("./admin.server");
+      const [prompt, { data: set }] = await Promise.all([
+        getPromptServer(dbEducationLevel),
+        supabaseAdmin.from("ai_settings").select("*").eq("is_active", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+      ]);
+      activePrompt = prompt;
+      settings = set;
+    } catch (e) {
+      console.warn("Prompt fetch error", e);
+    }
+
+    const defaultPromptForLevel = DEFAULT_PROMPTS[dbEducationLevel] || DEFAULT_PROMPTS.TK;
+    const promptToUse = (activePrompt && activePrompt.user_template && activePrompt.system_prompt)
+      ? activePrompt
+      : {
+          id: `default_${dbEducationLevel}`,
+          education_level: dbEducationLevel,
+          name: defaultPromptForLevel.name,
+          system_prompt: defaultPromptForLevel.system_prompt,
+          user_template: defaultPromptForLevel.user_template,
+        };
+
+    const filledPrompt = promptToUse.user_template
+      .replace(/\$\{assessment\.education_level\}/g, dbEducationLevel)
+      .replace(/\{\{parent_name\}\}/g, parentName)
+      .replace(/\{\{parent_whatsapp\}\}/g, data.parent.whatsapp)
+      .replace(/\{\{child_name\}\}/g, data.child.name)
+      .replace(/\{\{child_gender\}\}/g, data.child.gender === "L" ? "Laki-laki" : "Perempuan")
+      .replace(/\{\{education_level\}\}/g, dbEducationLevel)
+      .replace(/\{\{child_school\}\}/g, data.child.school || "-")
+      .replace(/\{\{answers\}\}/g, answersText);
+
+    const totalScore = data.answers.reduce((acc, curr) => acc + Number(curr?.score ?? (curr as any)?.value ?? 3), 0);
+    const avgScore = totalScore / (data.answers.length || 1);
+
+    let parsedResult: any = null;
+    let rawText: string = "";
+    let usedModel: string = settings?.model ?? "google/gemini-3.6-flash";
+
+    try {
+      const aiRes = await callLovableAiJson({
+        model: usedModel,
+        systemPrompt: promptToUse.system_prompt,
+        userPrompt: filledPrompt,
+        temperature: Number(settings?.temperature ?? 0.85),
+        maxTokens: settings?.max_tokens ?? 4096,
+      });
+      rawText = aiRes.text;
+      usedModel = aiRes.model;
+
+      try {
+        parsedResult = JSON.parse(rawText);
+      } catch {
+        const match = rawText.match(/\{[\s\S]*\}/);
+        parsedResult = match ? JSON.parse(match[0]) : null;
+      }
+    } catch (aiErr: any) {
+      console.warn("[BACKGROUND_AI_WARN] AI Gateway call warning:", aiErr?.message);
+    }
+
+    if (!parsedResult || typeof parsedResult !== "object" || (!parsedResult.ringkasan && !parsedResult.status_perkembangan && !parsedResult.kekuatan_anak && !parsedResult.status_perkembangan_sd && !parsedResult.status_perkembangan_smp && !parsedResult.status_kesiapan_sma && !parsedResult.ringkasan_kemampuan_awal)) {
+      console.log("[BACKGROUND_AI_FALLBACK] Using interactive fallback generator for assessment:", assessmentId);
+      parsedResult = generateFallbackResult(data.child.name, parentName, avgScore, dbEducationLevel, data.answers, dbQuestions);
+      rawText = JSON.stringify(parsedResult);
+    }
+
+    parsedResult = {
+      ...parsedResult,
+      education_level: dbEducationLevel,
+      shortName: dbEducationLevel,
+      badge: levelContentObj.badge,
+      title: levelContentObj.title,
+      description: levelContentObj.description,
+      summaryTitle: levelContentObj.summaryTitle,
+      introText: levelContentObj.introText,
+      reportTitle: levelContentObj.reportTitle,
+      metadataTitle: levelContentObj.metadataTitle,
+      metadataDescription: levelContentObj.metadataDescription,
+      fullName: levelContentObj.fullName,
+      sections: levelContentObj.sections,
+    };
+
+    inMemoryAssessmentCache.set(assessmentId, {
+      assessment_id: assessmentId,
+      education_level: dbEducationLevel,
+      parent_name: parentName,
+      child_name: data.child.name,
+      created_at: new Date().toISOString(),
+      content: parsedResult,
+      status: "analyzed",
+    });
+
+    await supabaseAdmin.from("ai_results").upsert({
+      assessment_id: assessmentId,
+      content: parsedResult,
+      raw_text: rawText,
+      model: usedModel,
+    }, { onConflict: "assessment_id" });
+
+    await supabaseAdmin.from("assessments").update({
       status: "analyzed",
       education_level: dbEducationLevel,
       assessment_title: levelContentObj.reportTitle,
       ai_prompt: filledPrompt,
       updated_at: new Date().toISOString(),
-    })
-    .eq("id", assessment.id)
-    .select()
+    }).eq("id", assessmentId);
+
+    console.log("[BACKGROUND_AI_SUCCESS]", "AI analysis completed successfully for assessment ID:", assessmentId);
+    return { success: true, assessment_id: assessmentId };
+  } catch (err: any) {
+    console.error("[BACKGROUND_AI_ERROR]", "AI analysis failed for assessment ID:", assessmentId, err?.message || err);
+    await supabaseAdmin.from("assessments").update({
+      status: "failed",
+      updated_at: new Date().toISOString(),
+    }).eq("id", assessmentId);
+    return { success: false, error: err?.message || "AI Analysis Failed" };
+  }
+}
+
+export async function submitAndAnalyze(data: SubmitInput) {
+  // 1. Fast Save DB (Target <= 2 seconds)
+  const saveRes = await saveAssessmentSubmission(data);
+
+  // 2. Non-blocking Background Execution
+  runBackgroundAiAnalysis(saveRes.assessment_id, data).catch((err) => {
+    console.error("[BACKGROUND_AI_TRIGGER_FAIL]", err);
+  });
+
+  // 3. Return immediate response
+  return { assessment_id: saveRes.assessment_id, status: "queued" as const };
+}
+
+export async function retryAssessmentAnalysisServer(assessmentId: string) {
+  if (!assessmentId) throw new Error("ID Asesmen tidak valid.");
+
+  const { data: ass, error } = await supabaseAdmin
+    .from("assessments")
+    .select("*, parents(*), children(*), assessment_answers(*, questions(*))")
+    .eq("id", assessmentId)
     .maybeSingle();
 
-  if (upErr || !upData) {
-    console.warn("[DB:WARN:UPDATE_FULL_FAIL] Retrying status-only update:", upErr?.message || "No rows updated");
-    const { data: upData2, error: upErr2 } = await supabaseAdmin
-      .from("assessments")
-      .update({ status: "analyzed", updated_at: new Date().toISOString() })
-      .eq("id", assessment.id)
-      .select()
-      .maybeSingle();
-
-    console.log("[DB:UPDATE:ASSESSMENTS_RETRY_RESULT]", { data: upData2, error: upErr2?.message });
-  } else {
-    console.log("[DB:UPDATE:ASSESSMENTS_RESULT:SUCCESS]", upData?.id);
+  if (error || !ass) {
+    throw new Error("Data asesmen tidak ditemukan di Supabase.");
   }
 
-  console.log("[STAGE 7: SERVER_FN_SUCCESS_RESPONSE]", { assessment_id: assessment.id, status: "analyzed" });
-  return { assessment_id: assessment.id, status: "analyzed" as const };
+  const pObj = Array.isArray(ass.parents) ? ass.parents[0] : ass.parents;
+  const cObj = Array.isArray(ass.children) ? ass.children[0] : ass.children;
+  const rawAnswers = ass.assessment_answers || [];
+
+  const payload: SubmitInput = {
+    parent: {
+      name: pObj?.name || "Orang Tua",
+      whatsapp: pObj?.whatsapp || "-",
+    },
+    child: {
+      name: cObj?.name || "Siswa",
+      gender: cObj?.gender || "L",
+      birth_date: cObj?.birth_date || "2020-01-01",
+      school: cObj?.school || "",
+      class_name: cObj?.class_name || "",
+      education_level: ass.education_level || cObj?.education_level || "SMA",
+    },
+    answers: rawAnswers.map((a: any) => ({
+      question_id: a.question_id || String(a.questions?.id || ""),
+      score: a.score ?? 3,
+      text_answer: a.questions?.text || "",
+    })),
+  };
+
+  runBackgroundAiAnalysis(assessmentId, payload).catch((err) => {
+    console.error("[RETRY_AI_ANALYSIS_ERROR]", err);
+  });
+
+  return { success: true, assessment_id: assessmentId, message: "Proses analisis ulang telah dimulai di background." };
 }
 
 export async function getAssessmentResultServer(assessmentId: string, clientAdminFlag?: boolean) {

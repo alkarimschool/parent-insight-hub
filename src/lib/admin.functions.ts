@@ -97,3 +97,13 @@ export const deleteQuestionFn = createServerFn({ method: "POST" })
     const { deleteQuestionServer } = await import("./admin.server");
     return deleteQuestionServer(data.id);
   });
+
+export const retryAssessmentFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => {
+    const raw = (d as any)?.data ?? d;
+    return z.object({ id: z.string().min(1) }).parse(raw);
+  })
+  .handler(async ({ data }) => {
+    const { retryAssessmentAnalysisServer } = await import("./assessment.server");
+    return retryAssessmentAnalysisServer(data.id);
+  });
