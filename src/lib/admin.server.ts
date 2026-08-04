@@ -207,11 +207,12 @@ export async function updateAssessmentCardSettingsServer(inputData: any) {
     // Also sync lock status to assessment_locks table
     for (const lvl of ["TK", "SD", "SMP", "SMA"]) {
       if (typeof payload[lvl]?.is_locked === "boolean") {
+        const isLocked = Boolean(payload[lvl].is_locked);
         await supabaseAdmin.from("assessment_locks").upsert({
-          level: lvl,
-          is_locked: payload[lvl].is_locked,
+          education_level: lvl,
+          is_locked: isLocked,
           updated_at: new Date().toISOString(),
-        }, { onConflict: "level" });
+        }, { onConflict: "education_level" });
       }
     }
 

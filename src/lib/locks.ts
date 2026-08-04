@@ -17,16 +17,35 @@ export const DEFAULT_LOCKS: LockMap = {
 
 export async function fetchAssessmentLocks(): Promise<LockMap> {
   try {
-    const { data, error } = await supabase
-      .from("assessment_locks")
-      .select("education_level, is_locked");
-    if (error || !data) return { ...DEFAULT_LOCKS };
+    const [{ data: wsData }, { data: lockData }] = await Promise.all([
+      supabase.from("website_settings").select("data").eq("id", 1).maybeSingle(),
+      supabase.from("assessment_locks").select("education_level, is_locked"),
+    ]);
+
     const map: LockMap = { ...DEFAULT_LOCKS };
-    for (const row of data as any[]) {
-      map[String(row.education_level)] = !!row.is_locked;
+
+    // 1. Load from assessment_locks table
+    if (lockData && Array.isArray(lockData)) {
+      for (const row of lockData as any[]) {
+        const lvl = String(row.education_level || row.level || "").toUpperCase();
+        if (lvl) map[lvl] = !!row.is_locked;
+      }
     }
+
+    // 2. Override from website_settings.data.assessment_cards (Admin Dashboard Cards settings)
+    const raw = (wsData?.data as any) ?? null;
+    const cards = raw?.assessment_cards || raw?.data?.assessment_cards;
+    if (cards && typeof cards === "object") {
+      for (const lvl of ["TK", "SD", "SMP", "SMA"]) {
+        if (cards[lvl] && typeof cards[lvl].is_locked === "boolean") {
+          map[lvl] = cards[lvl].is_locked;
+        }
+      }
+    }
+
     return map;
-  } catch {
+  } catch (err) {
+    console.warn("[fetchAssessmentLocks] Failed to fetch locks:", err);
     return { ...DEFAULT_LOCKS };
   }
 }

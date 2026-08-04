@@ -1,133 +1,105 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export interface HomepageData {
-  hero_title: string;
-  hero_subtitle: string;
-  hero_cta: string;
-  hero_badge?: string;
-  why_title: string;
-  why_subtitle?: string;
-  why_items: Array<{ icon: string; title: string; desc: string }>;
-  benefits_title: string;
-  benefits_subtitle?: string;
-  benefits_items: Array<{ icon: string; title: string; desc: string }>;
-  how_title: string;
-  how_subtitle?: string;
-  how_items: Array<{ step: string; title: string; desc: string }>;
-  faq_title: string;
-  faq_subtitle?: string;
-  faq_items: Array<{ q: string; a: string }>;
-  cta_title?: string;
-  cta_subtitle?: string;
-  cta_btn_text?: string;
-  footer_tagline?: string;
-}
-
-export interface WebsiteData {
+export interface WebsiteSettingsData {
   site_name: string;
   logo_text: string;
-  primary_color?: string;
-  meta_title: string;
-  meta_description: string;
-  contact_whatsapp?: string;
-  contact_email?: string;
-  contact_address?: string;
-  social_instagram?: string;
-  social_facebook?: string;
-  social_youtube?: string;
-  copyright?: string;
-  ga_id?: string;
-  gtm_id?: string;
+  contact_email: string;
+  contact_whatsapp: string;
+  copyright: string;
 }
 
-export const DEFAULT_HOMEPAGE_DATA: HomepageData = {
-  hero_title: "Pahami Perkembangan & Potensi Anak Anda dengan Analisis AI",
-  hero_subtitle: "Asesmen interaktif untuk orang tua dalam mengidentifikasi pola pengasuhan, tumbuh kembang anak, dan solusi edukatif personal.",
-  hero_cta: "Mulai Asesmen Sekarang",
-  hero_badge: "Terpercaya & Komprehensif",
-  why_title: "Mengapa Memilih PAA?",
-  why_subtitle: "Pendekatan berbasis ilmu sains pengasuhan dan teknologi kecerdasan buatan.",
-  why_items: [
-    { icon: "BrainCircuit", title: "Analisis Berbasis AI", desc: "Rekomendasi instan yang disesuaikan dengan profil spesifik anak Anda." },
-    { icon: "Sparkles", title: "Mudah & Cepat", desc: "Selesaikan pertanyaan asesmen hanya dalam waktu 5-10 menit." },
-    { icon: "ShieldCheck", title: "Privasi Terjaga", desc: "Data keluarga Anda terenkripsi aman dan tidak dipublikasikan." },
-  ],
-  benefits_title: "Manfaat Yang Anda Dapatkan",
-  benefits_subtitle: "Berbagai keuntungan yang bisa didapatkan untuk mendampingi tumbuh kembang anak.",
-  benefits_items: [
-    { icon: "CheckCircle", title: "Laporan Detail", desc: "Evaluasi lengkap berbagai aspek tumbuh kembang." },
-    { icon: "Heart", title: "Panduan Pengasuhan", desc: "Saran praktis sehari-hari untuk mendampingi anak." },
-    { icon: "Target", title: "Solusi Fokus Target", desc: "Fokus pada penguatan kelebihan dan perbaikan kendala." },
-    { icon: "Clock", title: "Akses Kapan Saja", desc: "Laporan tersimpan dan dapat diakses kapan pun Anda butuhkan." },
-  ],
-  how_title: "Cara Kerja Asesmen",
-  how_subtitle: "Langkah mudah memulai asesmen tumbuh kembang anak.",
-  how_items: [
-    { step: "1", title: "Pilih Jenjang", desc: "Pilih jenjang pendidikan anak (TK, SD, SMP, SMA)." },
-    { step: "2", title: "Isi Asesmen", desc: "Jawab pertanyaan seputar aktivitas dan kebiasaan anak." },
-    { step: "3", title: "Proses AI", desc: "Sistem menganalisis pola jawaban secara mendalam." },
-    { step: "4", title: "Terima Laporan", desc: "Dapatkan hasil analisis dan panduan lengkap." },
-  ],
-  faq_title: "Pertanyaan yang Sering Diajukan",
-  faq_subtitle: "Temukan jawaban dari pertanyaan yang sering ditanyakan orang tua.",
-  faq_items: [
-    { q: "Berapa lama waktu yang dibutuhkan?", a: "Sekitar 5 hingga 10 menit untuk menyelesaikan seluruh pertanyaan." },
-    { q: "Apakah asesmen ini gratis?", a: "Ya, Anda dapat mencoba asesmen secara gratis dan mendapatkan laporan evaluasi." },
-  ],
-  cta_title: "Siap memahami perkembangan anak Anda?",
-  cta_subtitle: "Selesaikan asesmen dalam 5–10 menit dan dapatkan laporan personal.",
-  cta_btn_text: "Mulai Asesmen Sekarang",
-  footer_tagline: "Mendampingi tumbuh kembang anak Indonesia menuju masa depan gemilang.",
-};
-
-export const DEFAULT_WEBSITE_DATA: WebsiteData = {
+export const DEFAULT_WEBSITE_DATA: WebsiteSettingsData = {
   site_name: "Parent Awareness Assessment",
   logo_text: "PAA",
-  meta_title: "Parent Awareness Assessment | Analisis Perkembangan Anak",
-  meta_description: "Platform asesmen kesadaran orang tua untuk mengukur dan mendukung perkembangan anak secara komprehensif berbasis AI.",
-  contact_email: "support@parentinsight.id",
+  contact_email: "support@sdalamalkarim.sch.id",
   contact_whatsapp: "6281234567890",
   copyright: "© 2026 Parent Awareness Assessment. All rights reserved.",
-  ga_id: "",
 };
 
-export async function fetchHomepage(): Promise<HomepageData> {
-  try {
-    const { data, error } = await supabase
-      .from("homepage_settings")
-      .select("data")
-      .order("id", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) {
-      console.error("[fetchHomepage] Supabase query error:", error.message);
-      return DEFAULT_HOMEPAGE_DATA;
-    }
-
-    const raw = (data?.data as any) ?? null;
-    if (!raw) {
-      console.info("[fetchHomepage] No data row found, returning DEFAULT_HOMEPAGE_DATA.");
-      return DEFAULT_HOMEPAGE_DATA;
-    }
-
-    const unwrapped = raw?.data ?? raw;
-    return { ...DEFAULT_HOMEPAGE_DATA, ...unwrapped };
-  } catch (err: any) {
-    console.error("[fetchHomepage] Exception error:", err?.message || err);
-    return DEFAULT_HOMEPAGE_DATA;
-  }
-}
-
-export async function fetchWebsite(): Promise<WebsiteData> {
+export async function fetchWebsite(): Promise<WebsiteSettingsData> {
   try {
     const { data } = await supabase.from("website_settings").select("data").eq("id", 1).maybeSingle();
     const raw = (data?.data as any) ?? null;
     if (!raw) return DEFAULT_WEBSITE_DATA;
-    const unwrapped = raw?.data ?? raw;
-    return { ...DEFAULT_WEBSITE_DATA, ...unwrapped };
+    return { ...DEFAULT_WEBSITE_DATA, ...(raw?.data ?? raw) };
   } catch {
     return DEFAULT_WEBSITE_DATA;
+  }
+}
+
+export interface HomepageSettingsData {
+  hero_badge: string;
+  hero_title: string;
+  hero_subtitle: string;
+  hero_cta: string;
+  why_title: string;
+  why_subtitle: string;
+  why_items: { icon: string; title: string; desc: string }[];
+  benefits_title: string;
+  benefits_subtitle: string;
+  benefits_items: { icon: string; title: string; desc: string }[];
+  how_title: string;
+  how_subtitle: string;
+  how_items: { step: string; title: string; desc: string }[];
+  faq_title: string;
+  faq_subtitle: string;
+  faq_items: { q: string; a: string }[];
+  cta_title: string;
+  cta_subtitle: string;
+  cta_btn_text: string;
+  footer_tagline: string;
+}
+
+export const DEFAULT_HOMEPAGE_DATA: HomepageSettingsData = {
+  hero_badge: "Parent Awareness Assessment",
+  hero_title: "Kenali Potensi & Kebutuhan Perkembangan Anak Anda",
+  hero_subtitle:
+    "Asesmen mandiri berbasis AI untuk membantu orang tua memahami aspek akademik, cara berpikir, komunikasi-sosial, serta karakter anak secara personal.",
+  hero_cta: "Mulai Assessment Gratis",
+  why_title: "Mengapa Perlu Asesmen Pengenalan Anak?",
+  why_subtitle: "Setiap anak memiliki keunikan dan kecepatan berkembang yang berbeda.",
+  why_items: [
+    { icon: "Sparkles", title: "Rekomendasi Personal AI", desc: "Mendapatkan analisis mendalam dan strategi pendampingan yang disesuaikan." },
+    { icon: "ShieldCheck", title: "Praktis & Terstruktur", desc: "Cukup jawab pertanyaan observasi harian tanpa tes berlebihan untuk anak." },
+    { icon: "Brain", title: "Fondasi Masa Depan", desc: "Membantu mengarahkan pola belajar, kemandirian, dan minat secara tepat sejak dini." },
+  ],
+  benefits_title: "Manfaat yang Anda Dapatkan",
+  benefits_subtitle: "Panduan praktis untuk mendampingi tumbuh kembang anak di rumah dan sekolah.",
+  benefits_items: [
+    { icon: "CheckCircle2", title: "Laporan Pemetaan Awal", desc: "Gambaran menyeluruh aspek akademik, sosial, dan emosional anak." },
+    { icon: "BookOpen", title: "Strategi Belajar", desc: "Tips konkret membantu anak fokus dan mandiri mengelola waktu." },
+    { icon: "Users", title: "Komunikasi Orang Tua", desc: "Saran praktis membangun hubungan hangat dan komunikasi terbuka." },
+    { icon: "Target", title: "Pengembangan Potensi", desc: "Identifikasi kelebihan dan area yang memerlukan pembinaan." },
+  ],
+  how_title: "Cara Kerja Asesmen",
+  how_subtitle: "Hanya 3 langkah mudah untuk mendapatkan laporan analisis anak.",
+  how_items: [
+    { step: "1", title: "Pilih Jenjang", desc: "Tentukan jenjang pendidikan anak (TK, SD, SMP, SMA)." },
+    { step: "2", title: "Jawab Pertanyaan", desc: "Isi pertanyaan observasi sesuai kondisi harian anak." },
+    { step: "3", title: "Terima Laporan", desc: "Dapatkan analisis AI lengkap dan rekomendasi pendampingan." },
+  ],
+  faq_title: "Pertanyaan Sering Diajukan",
+  faq_subtitle: "Informasi penting seputar pelaksanaan asesmen.",
+  faq_items: [
+    { q: "Berapa lama waktu yang dibutuhkan?", a: "Sekitar 5–10 menit untuk menyelesaikan 40 pertanyaan." },
+    { q: "Apakah asesmen ini aman dan rahasia?", a: "Ya, seluruh data disimpan dengan aman di Supabase Database dan hanya diakses oleh admin/orang tua." },
+    { q: "Siapa yang sebaiknya mengisi asesmen?", a: "Orang tua atau wali yang mendampingi aktivitas harian anak di rumah." },
+  ],
+  cta_title: "Siap memahami perkembangan anak Anda?",
+  cta_subtitle: "Selesaikan asesmen dalam 5–10 menit dan dapatkan laporan personal.",
+  cta_btn_text: "Mulai Assessment",
+  footer_tagline: "Platform Pemetaan & Analisis Pembentukan Karakter Anak Berbasis AI",
+};
+
+export async function fetchHomepage(): Promise<HomepageSettingsData> {
+  try {
+    const { data } = await supabase.from("website_settings").select("data").eq("id", 1).maybeSingle();
+    const raw = (data?.data as any) ?? null;
+    const hp = raw?.homepage || raw?.data?.homepage;
+    if (!hp || typeof hp !== "object") return DEFAULT_HOMEPAGE_DATA;
+    return { ...DEFAULT_HOMEPAGE_DATA, ...hp };
+  } catch {
+    return DEFAULT_HOMEPAGE_DATA;
   }
 }
 
@@ -215,18 +187,37 @@ export const DEFAULT_CARD_SETTINGS_DATA: AssessmentCardSettingsData = {
 
 export async function fetchAssessmentCardSettings(): Promise<AssessmentCardSettingsData> {
   try {
-    const { data } = await supabase.from("website_settings").select("data").eq("id", 1).maybeSingle();
-    const raw = (data?.data as any) ?? null;
-    const cards = raw?.assessment_cards || raw?.data?.assessment_cards;
-    if (!cards || typeof cards !== "object") return DEFAULT_CARD_SETTINGS_DATA;
-    
-    return {
-      TK: { ...DEFAULT_CARD_SETTINGS_DATA.TK, ...(cards.TK || {}) },
-      SD: { ...DEFAULT_CARD_SETTINGS_DATA.SD, ...(cards.SD || {}) },
-      SMP: { ...DEFAULT_CARD_SETTINGS_DATA.SMP, ...(cards.SMP || {}) },
-      SMA: { ...DEFAULT_CARD_SETTINGS_DATA.SMA, ...(cards.SMA || {}) },
+    const [{ data: wsData }, { data: lockData }] = await Promise.all([
+      supabase.from("website_settings").select("data").eq("id", 1).maybeSingle(),
+      supabase.from("assessment_locks").select("education_level, is_locked"),
+    ]);
+
+    const raw = (wsData?.data as any) ?? null;
+    const cards = raw?.assessment_cards || raw?.data?.assessment_cards || {};
+
+    const lockMap: Record<string, boolean> = {};
+    if (lockData && Array.isArray(lockData)) {
+      for (const row of lockData as any[]) {
+        const lvl = String(row.education_level || row.level || "").toUpperCase();
+        if (lvl) lockMap[lvl] = !!row.is_locked;
+      }
+    }
+
+    const resolveLock = (lvl: string) => {
+      if (cards[lvl] && typeof cards[lvl].is_locked === "boolean") {
+        return cards[lvl].is_locked;
+      }
+      return lockMap[lvl] ?? false;
     };
-  } catch {
+
+    return {
+      TK: { ...DEFAULT_CARD_SETTINGS_DATA.TK, ...(cards.TK || {}), is_locked: resolveLock("TK") },
+      SD: { ...DEFAULT_CARD_SETTINGS_DATA.SD, ...(cards.SD || {}), is_locked: resolveLock("SD") },
+      SMP: { ...DEFAULT_CARD_SETTINGS_DATA.SMP, ...(cards.SMP || {}), is_locked: resolveLock("SMP") },
+      SMA: { ...DEFAULT_CARD_SETTINGS_DATA.SMA, ...(cards.SMA || {}), is_locked: resolveLock("SMA") },
+    };
+  } catch (err) {
+    console.warn("[fetchAssessmentCardSettings] Error:", err);
     return DEFAULT_CARD_SETTINGS_DATA;
   }
 }
