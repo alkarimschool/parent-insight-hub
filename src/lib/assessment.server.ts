@@ -685,8 +685,37 @@ async function getOrSeedQuestionsForLevel(level: EducationLevel) {
   }
 }
 
+const promptCache = new Map<string, { prompt: any; settings: any; cachedAt: number }>();
+
+async function getCachedPromptAndSettings(level: EducationLevel) {
+  const now = Date.now();
+  const cached = promptCache.get(level);
+  if (cached && now - cached.cachedAt < 60000) {
+    return { prompt: cached.prompt, settings: cached.settings };
+  }
+
+  let prompt = null;
+  let settings = null;
+  try {
+    const { getPromptServer } = await import("./admin.server");
+    const [p, { data: set }] = await Promise.all([
+      getPromptServer(level),
+      supabaseAdmin.from("ai_settings").select("*").eq("is_active", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    prompt = p;
+    settings = set;
+  } catch (e) {
+    console.warn("Prompt fetch error", e);
+  }
+
+  promptCache.set(level, { prompt, settings, cachedAt: now });
+  return { prompt, settings };
+}
+
 export async function saveAssessmentSubmission(data: SubmitInput) {
-  // STAGE 1: SUBMIT - Parse input education_level
+  const tSaveStart = Date.now();
+  console.log(`[START SAVE] Saving submission for child: ${data.child?.name}`);
+
   const submitLevel: EducationLevel = getEducationLevel(data.child?.education_level);
   console.log("[STAGE: SUBMIT]", "Education Level Submit:", submitLevel);
 
@@ -709,12 +738,8 @@ export async function saveAssessmentSubmission(data: SubmitInput) {
     throw new Error("Silakan lengkapi seluruh pertanyaan sebelum mengirim assessment.");
   }
 
-  // ==========================================
-  // 1. DATABASE OPERASI: INSERT / UPSERT PARENTS
-  // ==========================================
+  // 1. INSERT / UPSERT PARENTS
   let parent: any = null;
-  console.log("[DB:INSERT:PARENTS]", "Saving parent payload:", { name: parentName, whatsapp: data.parent.whatsapp.trim() });
-  
   const { data: pExisting } = await supabaseAdmin
     .from("parents")
     .select("*")
@@ -723,7 +748,6 @@ export async function saveAssessmentSubmission(data: SubmitInput) {
 
   if (pExisting) {
     parent = pExisting;
-    console.log("[DB:UPSERT:PARENTS]", "Existing parent found:", parent.id);
     const { error: pUpErr } = await supabaseAdmin
       .from("parents")
       .update({ name: parentName })
@@ -736,10 +760,7 @@ export async function saveAssessmentSubmission(data: SubmitInput) {
       .select()
       .single();
 
-    console.log("[DB:INSERT:PARENTS_RESULT]", { data: pInserted, error: pErr?.message });
-
     if (pErr || !pInserted) {
-      console.warn("[DB:WARN:PARENTS_RLS_FAIL] Parent insert failed (RLS error), attempting to link existing parent row:", pErr?.message);
       const { data: pFallback } = await supabaseAdmin
         .from("parents")
         .select("*")
@@ -749,30 +770,19 @@ export async function saveAssessmentSubmission(data: SubmitInput) {
 
       if (pFallback) {
         parent = pFallback;
-        console.log("[DB:UPSERT:PARENTS_FALLBACK_SUCCESS]", parent.id);
       } else {
         parent = {
           id: generateUUID(),
           name: parentName,
           whatsapp: data.parent.whatsapp.trim(),
         };
-        console.info("[DB:WARN:PARENTS_LOCAL_FALLBACK] Created local parent object:", parent.id);
       }
     } else {
       parent = pInserted;
     }
   }
 
-  // ==========================================
-  // 2. DATABASE OPERASI: INSERT CHILDREN
-  // ==========================================
-  console.log("[DB:INSERT:CHILDREN]", "Saving child payload:", {
-    parent_id: parent.id,
-    name: data.child.name.trim(),
-    gender: data.child.gender || "L",
-    birth_date: data.child.birth_date || "2020-01-01",
-  });
-
+  // 2. INSERT CHILDREN
   let child: any = null;
   try {
     const { data: cInserted, error: cErr } = await supabaseAdmin
@@ -807,21 +817,10 @@ export async function saveAssessmentSubmission(data: SubmitInput) {
       class_name: data.child.class_name || null,
       education_level: submitLevel,
     };
-    console.info("[DB:WARN:CHILDREN_LOCAL_FALLBACK] Created local child object:", child.id);
   }
 
-  // ==========================================
-  // 3. DATABASE OPERASI: INSERT ASSESSMENTS (STATUS: QUEUED)
-  // ==========================================
+  // 3. INSERT ASSESSMENTS (STATUS: QUEUED)
   const assTitle = assessmentContent.reportTitle;
-  console.log("[DB:INSERT:ASSESSMENTS]", "Saving assessment payload (status: queued):", {
-    parent_id: parent.id,
-    child_id: child.id,
-    education_level: submitLevel,
-    assessment_title: assTitle,
-    status: "queued",
-  });
-
   let assessment: any = null;
 
   if (isUUID(parent.id) && isUUID(child.id)) {
@@ -864,12 +863,9 @@ export async function saveAssessmentSubmission(data: SubmitInput) {
       education_level: submitLevel,
       assessment_title: assTitle,
     };
-    console.info("[DB:WARN:ASSESSMENTS_LOCAL_FALLBACK] Created local assessment object:", assessment.id);
   }
 
-  // ==========================================
-  // 4. DATABASE OPERASI: INSERT ASSESSMENT_ANSWERS
-  // ==========================================
+  // 4. INSERT ASSESSMENT_ANSWERS
   const dbEducationLevel: EducationLevel = submitLevel;
   const dbQuestions = await getOrSeedQuestionsForLevel(dbEducationLevel);
   const answerRows: Array<{ assessment_id: string; question_id: string; score: number }> = [];
@@ -901,7 +897,9 @@ export async function saveAssessmentSubmission(data: SubmitInput) {
     }
   }
 
-  console.log("[STAGE: FAST_SUBMIT_SUCCESS]", { assessment_id: assessment.id, status: "queued" });
+  const tSaveDuration = Date.now() - tSaveStart;
+  console.log(`[FINISH SAVE] Submission saved in ${tSaveDuration} ms | Assessment ID: ${assessment.id}`);
+
   return {
     assessment_id: assessment.id,
     status: "queued" as const,
@@ -912,14 +910,15 @@ export async function saveAssessmentSubmission(data: SubmitInput) {
 }
 
 export async function runBackgroundAiAnalysis(assessmentId: string, data: SubmitInput) {
+  const tTotalStart = Date.now();
   try {
-    console.log("[BACKGROUND_AI_START]", "Starting AI analysis for assessment ID:", assessmentId);
+    console.log(`[START AI_WORKER] Starting background AI worker for assessment ID: ${assessmentId}`);
     
-    // Update status to analyzing
     await supabaseAdmin.from("assessments").update({ status: "analyzing" }).eq("id", assessmentId);
 
     const submitLevel: EducationLevel = getEducationLevel(data.child?.education_level);
     const dbEducationLevel: EducationLevel = submitLevel;
+    const isSma = dbEducationLevel === "SMA";
     const levelContentObj = getAssessmentContent(dbEducationLevel);
     const parentName = data.parent?.name?.trim() || `Orang Tua Ananda ${data.child?.name?.trim() || "Anak"}`;
     const dbQuestions = await getOrSeedQuestionsForLevel(dbEducationLevel);
@@ -963,21 +962,8 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
 
     const answersText = answersFormattedText.join("\n") + analyticalHeader;
 
-    let activePrompt: any = null;
-    let settings: any = null;
-
-    try {
-      const { getPromptServer } = await import("./admin.server");
-      const [prompt, { data: set }] = await Promise.all([
-        getPromptServer(dbEducationLevel),
-        supabaseAdmin.from("ai_settings").select("*").eq("is_active", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-      ]);
-      activePrompt = prompt;
-      settings = set;
-    } catch (e) {
-      console.warn("Prompt fetch error", e);
-    }
-
+    // Use in-memory cache for prompt & settings
+    const { prompt: activePrompt, settings } = await getCachedPromptAndSettings(dbEducationLevel);
     const defaultPromptForLevel = DEFAULT_PROMPTS[dbEducationLevel] || DEFAULT_PROMPTS.TK;
     const promptToUse = (activePrompt && activePrompt.user_template && activePrompt.system_prompt)
       ? activePrompt
@@ -1006,26 +992,39 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
     let rawText: string = "";
     let usedModel: string = settings?.model ?? "google/gemini-3.6-flash";
 
+    // STAGE: AI GATEWAY CALL WITH SINGLE REQUEST & TOKEN OPTIMIZATION
+    const tAiStart = Date.now();
+    console.log(`[START AI] Calling AI model ${usedModel} for level ${dbEducationLevel} (maxTokens: ${isSma ? 2048 : (settings?.max_tokens ?? 4096)})`);
+
     try {
       const aiRes = await callLovableAiJson({
         model: usedModel,
         systemPrompt: promptToUse.system_prompt,
         userPrompt: filledPrompt,
         temperature: Number(settings?.temperature ?? 0.85),
-        maxTokens: settings?.max_tokens ?? 4096,
+        maxTokens: isSma ? 2048 : (settings?.max_tokens ?? 4096),
       });
       rawText = aiRes.text;
       usedModel = aiRes.model;
+    } catch (aiErr: any) {
+      console.warn("[BACKGROUND_AI_WARN] AI Gateway call warning:", aiErr?.message);
+    }
+    const tAiDuration = Date.now() - tAiStart;
+    console.log(`[FINISH AI] AI call completed in ${tAiDuration} ms`);
 
+    // STAGE: PARSE JSON
+    const tParseStart = Date.now();
+    console.log(`[START PARSE] Parsing AI output JSON...`);
+    if (rawText) {
       try {
         parsedResult = JSON.parse(rawText);
       } catch {
         const match = rawText.match(/\{[\s\S]*\}/);
         parsedResult = match ? JSON.parse(match[0]) : null;
       }
-    } catch (aiErr: any) {
-      console.warn("[BACKGROUND_AI_WARN] AI Gateway call warning:", aiErr?.message);
     }
+    const tParseDuration = Date.now() - tParseStart;
+    console.log(`[FINISH PARSE] JSON parsing completed in ${tParseDuration} ms`);
 
     if (!parsedResult || typeof parsedResult !== "object" || (!parsedResult.ringkasan && !parsedResult.status_perkembangan && !parsedResult.kekuatan_anak && !parsedResult.status_perkembangan_sd && !parsedResult.status_perkembangan_smp && !parsedResult.status_kesiapan_sma && !parsedResult.ringkasan_kemampuan_awal)) {
       console.log("[BACKGROUND_AI_FALLBACK] Using interactive fallback generator for assessment:", assessmentId);
@@ -1059,22 +1058,33 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
       status: "analyzed",
     });
 
-    await supabaseAdmin.from("ai_results").upsert({
-      assessment_id: assessmentId,
-      content: parsedResult,
-      raw_text: rawText,
-      model: usedModel,
-    }, { onConflict: "assessment_id" });
+    // STAGE: SINGLE PARALLEL BATCH UPDATE IN DATABASE
+    const tUpdateStart = Date.now();
+    console.log(`[START UPDATE] Executing parallel DB updates for ai_results & assessments...`);
 
-    await supabaseAdmin.from("assessments").update({
-      status: "analyzed",
-      education_level: dbEducationLevel,
-      assessment_title: levelContentObj.reportTitle,
-      ai_prompt: filledPrompt,
-      updated_at: new Date().toISOString(),
-    }).eq("id", assessmentId);
+    await Promise.all([
+      supabaseAdmin.from("ai_results").upsert({
+        assessment_id: assessmentId,
+        content: parsedResult,
+        raw_text: rawText,
+        model: usedModel,
+      }, { onConflict: "assessment_id" }),
 
-    console.log("[BACKGROUND_AI_SUCCESS]", "AI analysis completed successfully for assessment ID:", assessmentId);
+      supabaseAdmin.from("assessments").update({
+        status: "analyzed",
+        education_level: dbEducationLevel,
+        assessment_title: levelContentObj.reportTitle,
+        ai_prompt: filledPrompt,
+        updated_at: new Date().toISOString(),
+      }).eq("id", assessmentId)
+    ]);
+
+    const tUpdateDuration = Date.now() - tUpdateStart;
+    console.log(`[FINISH UPDATE] DB updates completed in ${tUpdateDuration} ms`);
+
+    const tTotalDuration = Date.now() - tTotalStart;
+    console.log(`[TOTAL ANALYSIS TIME] Total background AI worker execution time: ${tTotalDuration} ms for assessment ID: ${assessmentId}`);
+
     return { success: true, assessment_id: assessmentId };
   } catch (err: any) {
     console.error("[BACKGROUND_AI_ERROR]", "AI analysis failed for assessment ID:", assessmentId, err?.message || err);
