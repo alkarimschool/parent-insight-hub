@@ -2,9 +2,11 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { fetchWebsite } from "@/lib/settings";
 import { PublicNav, PublicFooter } from "@/components/site/PublicNav";
-import { Baby, BookOpen, GraduationCap, School, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
+import { Baby, BookOpen, GraduationCap, School, ArrowRight, Sparkles, CheckCircle2, Lock } from "lucide-react";
 import { EducationLevel } from "@/lib/questions.data";
 import { getAssessmentContent } from "@/lib/assessment-content";
+import { fetchAssessmentLocks, LOCK_MESSAGE } from "@/lib/locks";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/assessment/level")({
   head: () => ({
@@ -65,9 +67,14 @@ const LEVELS: Array<{
 
 function SelectLevelPage() {
   const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite });
+  const locks = useQuery({ queryKey: ["assessment-locks"], queryFn: fetchAssessmentLocks });
   const navigate = useNavigate();
 
   const handleSelectLevel = (lvl: EducationLevel) => {
+    if (locks.data?.[lvl]) {
+      toast.error(LOCK_MESSAGE);
+      return;
+    }
     try {
       const existing = sessionStorage.getItem("paa_form");
       const parsed = existing ? JSON.parse(existing) : {};
@@ -100,23 +107,36 @@ function SelectLevelPage() {
         <div className="mt-12 grid gap-6 sm:grid-cols-2">
           {LEVELS.map((lvl) => {
             const Icon = lvl.icon;
+            const isLocked = !!locks.data?.[lvl.key];
 
             return (
               <div
                 key={lvl.key}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-border/60 bg-card p-6 shadow-soft transition-all duration-300 hover:-translate-y-1.5 hover:shadow-elevated sm:p-8"
+                aria-disabled={isLocked}
+                className={
+                  "group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-border/60 bg-card p-6 shadow-soft sm:p-8 " +
+                  (isLocked
+                    ? "cursor-not-allowed opacity-70 grayscale select-none"
+                    : "transition-all duration-300 hover:-translate-y-1.5 hover:shadow-elevated")
+                }
               >
                 {/* Background Accent */}
-                <div className={`pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-gradient-to-br ${lvl.color} opacity-40 blur-2xl transition group-hover:opacity-70`} />
+                <div className={`pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-gradient-to-br ${lvl.color} opacity-40 blur-2xl transition ${isLocked ? "" : "group-hover:opacity-70"}`} />
 
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
-                      <Icon className="h-6 w-6" />
+                    <span className={"grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary transition-transform duration-300 " + (isLocked ? "" : "group-hover:scale-110")}>
+                      {isLocked ? <Lock className="h-6 w-6" /> : <Icon className="h-6 w-6" />}
                     </span>
-                    <span className="rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-xs font-semibold text-muted-foreground">
-                      {lvl.badge}
-                    </span>
+                    {isLocked ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                        🔒 Sedang Dalam Pengembangan
+                      </span>
+                    ) : (
+                      <span className="rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-xs font-semibold text-muted-foreground">
+                        {lvl.badge}
+                      </span>
+                    )}
                   </div>
 
                   <h3 className="mt-5 text-2xl font-bold text-foreground">{lvl.title}</h3>
@@ -130,15 +150,35 @@ function SelectLevelPage() {
                       </div>
                     ))}
                   </div>
+
+                  {isLocked && (
+                    <p className="mt-4 rounded-2xl bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground">
+                      {LOCK_MESSAGE}
+                    </p>
+                  )}
                 </div>
 
                 <div className="mt-8 pt-2">
                   <button
                     type="button"
+                    disabled={isLocked}
                     onClick={() => handleSelectLevel(lvl.key)}
-                    className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-hero py-3 text-sm font-semibold text-primary-foreground shadow-soft transition hover:opacity-95"
+                    className={
+                      "flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold shadow-soft transition " +
+                      (isLocked
+                        ? "cursor-not-allowed bg-muted text-muted-foreground"
+                        : "bg-gradient-hero text-primary-foreground hover:opacity-95")
+                    }
                   >
-                    Pilih Jenjang {lvl.key} <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                    {isLocked ? (
+                      <>
+                        <Lock className="h-4 w-4" /> Terkunci
+                      </>
+                    ) : (
+                      <>
+                        Pilih Jenjang {lvl.key} <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
