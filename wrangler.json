@@ -10,7 +10,8 @@
   },
   "main": ".output/server/index.mjs",
   "assets": {
-    "directory": ".output/public"
+    "directory": ".output/public",
+    "binding": "STATIC_ASSETS"
   },
   "pages_build_output_dir": ".output/public"
 }
