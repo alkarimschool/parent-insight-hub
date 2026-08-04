@@ -167,11 +167,11 @@ function SelectLevelPage() {
                   >
                     {isLocked ? (
                       <>
-                        <Lock className="h-4 w-4" /> Terkunci
+                        <Lock className="h-4 w-4" /> Segera Hadir
                       </>
                     ) : (
                       <>
-                        {card.button_text || `Pilih Jenjang ${key}`} <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                        {card.button_text || "Mulai Assessment"} <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                       </>
                     )}
                   </button>

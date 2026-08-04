@@ -208,11 +208,11 @@ function Home() {
                   >
                     {isLocked ? (
                       <>
-                        <Lock className="h-3.5 w-3.5" /> Terkunci
+                        <Lock className="h-3.5 w-3.5" /> Segera Hadir
                       </>
                     ) : (
                       <>
-                        {card.button_text || `Pilih Jenjang ${key}`} <ArrowRight className="h-3.5 w-3.5" />
+                        {card.button_text || "Mulai Assessment"} <ArrowRight className="h-3.5 w-3.5" />
                       </>
                     )}
                   </button>
