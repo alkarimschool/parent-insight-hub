@@ -178,6 +178,27 @@ export type Database = {
           },
         ]
       }
+      assessment_locks: {
+        Row: {
+          created_at: string
+          education_level: string
+          is_locked: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          education_level: string
+          is_locked?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          education_level?: string
+          is_locked?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       assessments: {
         Row: {
           ai_prompt: string | null
