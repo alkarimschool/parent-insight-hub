@@ -257,36 +257,36 @@ function QuestionsPage() {
   const isCurrentTextarea = current.type === "textarea";
 
   return (
-    <div className="min-h-screen bg-gradient-soft pb-24 md:pb-12">
+    <div className="min-h-screen bg-gradient-soft pb-16 md:pb-12">
       <PublicNav siteName={website.data?.site_name ?? "PAA"} logoText="PAA" />
-      <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-        <div ref={topRef} className="mb-6 scroll-mt-20">
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-1.5 font-bold text-primary">
-              <GraduationCap className="h-4 w-4" /> Jenjang {level} — {categoryName}
+      <div className="mx-auto max-w-2xl px-3.5 py-4 sm:px-6 sm:py-8">
+        <div ref={topRef} className="mb-3.5 sm:mb-5 scroll-mt-16">
+          <div className="flex items-center justify-between text-xs sm:text-sm">
+            <span className="flex items-center gap-1.5 font-bold text-primary truncate max-w-[70%]">
+              <GraduationCap className="h-4 w-4 shrink-0" /> Jenjang {level} — {categoryName}
             </span>
-            <span className="text-muted-foreground">{idx + 1} / {list.length}</span>
+            <span className="text-muted-foreground font-semibold shrink-0">{idx + 1} / {list.length}</span>
           </div>
-          <Progress value={progress} className="mt-2 h-2" />
+          <Progress value={progress} className="mt-1.5 h-1.5 sm:h-2" />
         </div>
 
-        <div className="rounded-3xl border border-border/60 bg-card p-6 shadow-soft sm:p-10">
-          <div className="text-xs font-semibold uppercase tracking-wider text-primary">
+        <div className="rounded-2xl sm:rounded-3xl border border-border/60 bg-card p-4 sm:p-7 md:p-8 shadow-soft">
+          <div className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-primary">
             Pertanyaan {idx + 1} ({level})
           </div>
-          <h2 className="mt-2 text-xl font-semibold leading-relaxed text-foreground sm:text-2xl">{current.text}</h2>
+          <h2 className="mt-1.5 text-base sm:text-xl font-bold leading-snug sm:leading-relaxed text-foreground">{current.text}</h2>
           
           {isCurrentTextarea ? (
-            <div className="mt-6">
+            <div className="mt-4">
               <Textarea
                 value={answers[current.id] ?? ""}
                 onChange={(e) => setAnswers({ ...answers, [current.id]: e.target.value })}
                 placeholder="Tuliskan pengamatan atau penjelasan Anda di sini..."
-                className="min-h-[140px] rounded-2xl border-border/60 bg-background p-4 text-base focus:border-primary"
+                className="min-h-[100px] sm:min-h-[130px] rounded-xl sm:rounded-2xl border-border/60 bg-background p-3 text-sm focus:border-primary"
               />
             </div>
           ) : (
-            <div className="mt-8 grid gap-3">
+            <div className="mt-4 sm:mt-6 grid gap-2 sm:gap-2.5">
               {currentOptions.map((s: any, optIdx: number) => {
                 const selected = answers[current.id] === s.v;
                 return (
@@ -294,33 +294,33 @@ function QuestionsPage() {
                     key={optIdx}
                     type="button"
                     onClick={() => setAnswers({ ...answers, [current.id]: s.v })}
-                    className={"flex items-center justify-between rounded-2xl border p-4 text-left transition " + (selected ? "border-primary bg-primary/5 shadow-soft" : "border-border/60 bg-background hover:border-primary/40 hover:bg-accent/40")}
+                    className={"flex items-center justify-between rounded-xl sm:rounded-2xl border px-3.5 py-2.5 sm:p-3.5 text-left transition active:scale-[0.99] " + (selected ? "border-primary bg-primary/10 shadow-soft" : "border-border/60 bg-background hover:border-primary/40 hover:bg-accent/40")}
                   >
-                    <span className="font-medium text-foreground">{s.label}</span>
-                    <span className={"grid h-8 w-8 place-items-center rounded-full text-sm font-bold " + (selected ? "bg-gradient-hero text-primary-foreground" : "bg-muted text-muted-foreground")}>{s.v}</span>
+                    <span className="text-xs sm:text-sm font-medium text-foreground leading-tight pr-2">{s.label}</span>
+                    <span className={"grid h-7 w-7 sm:h-8 sm:w-8 shrink-0 place-items-center rounded-full text-xs sm:text-sm font-bold ml-2 " + (selected ? "bg-gradient-hero text-primary-foreground" : "bg-muted text-muted-foreground")}>{s.v}</span>
                   </button>
                 );
               })}
             </div>
           )}
 
-          <div className="mt-8 flex items-center justify-between gap-3">
-            <Button type="button" variant="outline" onClick={handlePrev} disabled={idx === 0} className="rounded-full">
-              <ArrowLeft className="mr-1 h-4 w-4" /> Sebelumnya
+          <div className="mt-5 sm:mt-7 flex items-center justify-between gap-2.5">
+            <Button type="button" variant="outline" onClick={handlePrev} disabled={idx === 0} className="rounded-full h-9 sm:h-10 px-3.5 text-xs sm:text-sm">
+              <ArrowLeft className="mr-1 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Sebelumnya
             </Button>
             {idx < list.length - 1 ? (
-              <Button type="button" onClick={handleNext} disabled={!answers[current.id]} className="rounded-full bg-gradient-hero shadow-soft">
-                Selanjutnya <ArrowRight className="ml-1 h-4 w-4" />
+              <Button type="button" onClick={handleNext} disabled={!answers[current.id]} className="rounded-full bg-gradient-hero shadow-soft h-9 sm:h-10 px-4 text-xs sm:text-sm font-semibold">
+                Selanjutnya <ArrowRight className="ml-1 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
             ) : (
-              <Button type="button" onClick={handleSubmit} disabled={submitting || answered < list.length} className="rounded-full bg-gradient-hero shadow-soft px-6 py-2.5 font-bold">
-                {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mengirim Assessment...</>) : "Submit Assessment"}
+              <Button type="button" onClick={handleSubmit} disabled={submitting || answered < list.length} className="rounded-full bg-gradient-hero shadow-soft px-5 sm:px-6 h-9 sm:h-10 text-xs sm:text-sm font-bold">
+                {submitting ? (<><Loader2 className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" /> Mengirim...</>) : "Submit Assessment"}
               </Button>
             )}
           </div>
         </div>
 
-        <div className="mt-6 text-center text-xs text-muted-foreground">
+        <div className="mt-3.5 text-center text-[11px] sm:text-xs text-muted-foreground">
           Jawaban tersimpan otomatis. <Link to="/assessment" className="underline">Kembali ke data</Link>
         </div>
       </div>
