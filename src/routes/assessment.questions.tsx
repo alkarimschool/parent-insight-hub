@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PublicNav } from "@/components/site/PublicNav";
 import { fetchWebsite } from "@/lib/settings";
@@ -83,6 +83,29 @@ function QuestionsPage() {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number | string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const topRef = useRef<HTMLDivElement>(null);
+
+  const scrollToTop = () => {
+    if (topRef.current) {
+      topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleNext = () => {
+    if (idx < list.length - 1) {
+      setIdx((prev) => prev + 1);
+      scrollToTop();
+    }
+  };
+
+  const handlePrev = () => {
+    if (idx > 0) {
+      setIdx((prev) => prev - 1);
+      scrollToTop();
+    }
+  };
 
   useEffect(() => {
     try {
@@ -237,7 +260,7 @@ function QuestionsPage() {
     <div className="min-h-screen bg-gradient-soft pb-24 md:pb-12">
       <PublicNav siteName={website.data?.site_name ?? "PAA"} logoText="PAA" />
       <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-        <div className="mb-6">
+        <div ref={topRef} className="mb-6 scroll-mt-20">
           <div className="flex items-center justify-between text-sm">
             <span className="flex items-center gap-1.5 font-bold text-primary">
               <GraduationCap className="h-4 w-4" /> Jenjang {level} — {categoryName}
@@ -282,11 +305,11 @@ function QuestionsPage() {
           )}
 
           <div className="mt-8 flex items-center justify-between gap-3">
-            <Button type="button" variant="outline" onClick={() => setIdx(Math.max(0, idx - 1))} disabled={idx === 0} className="rounded-full">
+            <Button type="button" variant="outline" onClick={handlePrev} disabled={idx === 0} className="rounded-full">
               <ArrowLeft className="mr-1 h-4 w-4" /> Sebelumnya
             </Button>
             {idx < list.length - 1 ? (
-              <Button type="button" onClick={() => setIdx(idx + 1)} disabled={!answers[current.id]} className="rounded-full bg-gradient-hero shadow-soft">
+              <Button type="button" onClick={handleNext} disabled={!answers[current.id]} className="rounded-full bg-gradient-hero shadow-soft">
                 Selanjutnya <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             ) : (
