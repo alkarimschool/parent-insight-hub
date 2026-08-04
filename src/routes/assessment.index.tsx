@@ -6,10 +6,11 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, GraduationCap } from "lucide-react";
+import { ArrowRight, GraduationCap, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { EducationLevel } from "@/lib/questions.data";
 import { getAssessmentContent } from "@/lib/assessment-content";
+import { fetchAssessmentLocks, LOCK_MESSAGE } from "@/lib/locks";
 
 export const Route = createFileRoute("/assessment/")({
   head: () => ({
@@ -30,6 +31,7 @@ const LEVEL_NAMES: Record<EducationLevel, string> = {
 
 function AssessmentFormPage() {
   const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite });
+  const locks = useQuery({ queryKey: ["assessment-locks"], queryFn: fetchAssessmentLocks });
   const navigate = useNavigate();
   const search: any = useSearch({ from: "/assessment/" });
 
@@ -61,6 +63,10 @@ function AssessmentFormPage() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (locks.data?.[form.education_level]) {
+      toast.error(LOCK_MESSAGE);
+      return;
+    }
     if (!form.whatsapp.trim() || !form.child_name.trim()) {
       toast.error("Mohon isi Nomor WhatsApp dan Nama Anak.");
       return;
@@ -75,6 +81,34 @@ function AssessmentFormPage() {
     } catch {}
     navigate({ to: "/assessment/questions" });
   };
+
+  const isLocked = !!locks.data?.[form.education_level];
+
+  if (isLocked) {
+    return (
+      <div className="min-h-screen bg-gradient-soft pb-24 md:pb-12">
+        <PublicNav
+          siteName={website.data?.site_name ?? "Parent Awareness Assessment"}
+          logoText={website.data?.logo_text ?? "PAA"}
+        />
+        <div className="mx-auto max-w-xl px-4 py-20 text-center sm:px-6">
+          <span className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-muted text-muted-foreground">
+            <Lock className="h-7 w-7" />
+          </span>
+          <h1 className="mt-6 text-2xl font-bold text-foreground sm:text-3xl">
+            Asesmen {form.education_level} Sedang Dalam Pengembangan
+          </h1>
+          <p className="mt-3 text-muted-foreground">{LOCK_MESSAGE}</p>
+          <Link
+            to="/assessment/level"
+            className="mt-8 inline-flex items-center gap-2 rounded-full bg-gradient-hero px-6 py-3 text-sm font-semibold text-primary-foreground shadow-soft"
+          >
+            Pilih Jenjang Lain <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-soft pb-24 md:pb-12">
