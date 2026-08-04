@@ -167,6 +167,61 @@ export async function updateHomepageSettingsServer(inputData: any) {
   }
 }
 
+export async function updateAssessmentCardSettingsServer(inputData: any) {
+  try {
+    const payload = inputData?.data ?? inputData;
+    if (!payload || typeof payload !== "object") {
+      throw new Error("Payload data card settings tidak valid.");
+    }
+
+    console.info("[updateAssessmentCardSettingsServer] Saving card settings:", Object.keys(payload));
+
+    const { data: existing } = await supabaseAdmin.from("website_settings").select("id, data").eq("id", 1).maybeSingle();
+    const currentObj = (existing?.data as any) || {};
+    const cleanCurrent = currentObj?.data ?? currentObj;
+
+    const mergedData = {
+      ...cleanCurrent,
+      assessment_cards: payload,
+    };
+    delete (mergedData as any).data;
+
+    if (existing?.id) {
+      const { error: updateErr } = await supabaseAdmin
+        .from("website_settings")
+        .update({
+          data: mergedData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id);
+
+      if (updateErr) throw new Error(updateErr.message);
+    } else {
+      const { error: insertErr } = await supabaseAdmin.from("website_settings").insert({
+        id: 1,
+        data: mergedData,
+      });
+      if (insertErr) throw new Error(insertErr.message);
+    }
+
+    // Also sync lock status to assessment_locks table
+    for (const lvl of ["TK", "SD", "SMP", "SMA"]) {
+      if (typeof payload[lvl]?.is_locked === "boolean") {
+        await supabaseAdmin.from("assessment_locks").upsert({
+          level: lvl,
+          is_locked: payload[lvl].is_locked,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "level" });
+      }
+    }
+
+    return { ok: true };
+  } catch (err: any) {
+    console.error("[updateAssessmentCardSettingsServer] Exception:", err?.message || err);
+    return { ok: false, error: err?.message || "Gagal menyimpan data ke database" };
+  }
+}
+
 import fs from "fs";
 import path from "path";
 import { DEFAULT_PROMPTS } from "./prompt.data";

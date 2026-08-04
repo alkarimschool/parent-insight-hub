@@ -130,3 +130,103 @@ export async function fetchWebsite(): Promise<WebsiteData> {
     return DEFAULT_WEBSITE_DATA;
   }
 }
+
+export interface LevelCardSetting {
+  title: string;
+  desc: string;
+  badge_text: string;
+  badge_color: string;
+  badge_show: boolean;
+  icon: string;
+  features: string[];
+  info_message?: string;
+  button_text: string;
+  is_locked?: boolean;
+}
+
+export type AssessmentCardSettingsData = Record<string, LevelCardSetting>;
+
+export const DEFAULT_CARD_SETTINGS_DATA: AssessmentCardSettingsData = {
+  TK: {
+    title: "Pendidikan Anak Usia Dini (TK/PAUD)",
+    desc: "Hasil analisis kesiapan sekolah, motorik, sosial-emosional, dan pengenalan calistung awal anak usia 3–6 tahun.",
+    badge_text: "Usia 3–6 Tahun",
+    badge_color: "cyan",
+    badge_show: true,
+    icon: "Baby",
+    features: [
+      "Calistung & Angka Awal",
+      "Kesiapan Sekolah",
+      "Kemampuan Motorik & Emosi"
+    ],
+    info_message: "Asesmen ini dirancang untuk membantu orang tua mengidentifikasi kesiapan awal masuk sekolah.",
+    button_text: "Pilih Jenjang TK",
+    is_locked: false,
+  },
+  SD: {
+    title: "Sekolah Dasar (SD)",
+    desc: "Hasil analisis kemampuan akademik, literasi, numerasi, kebiasaan belajar, serta disiplin anak usia 7–12 tahun.",
+    badge_text: "Usia 7–12 Tahun",
+    badge_color: "blue",
+    badge_show: true,
+    icon: "BookOpen",
+    features: [
+      "Literasi & Numerasi SD",
+      "Kebiasaan & Fokus Belajar",
+      "Disiplin & Kontrol Gadget"
+    ],
+    info_message: "Asesmen ini mengukur fondasi kemampuan belajar mandiri dan karakter anak.",
+    button_text: "Pilih Jenjang SD",
+    is_locked: false,
+  },
+  SMP: {
+    title: "Sekolah Menengah Pertama (SMP)",
+    desc: "Hasil analisis potensi akademik, penalaran kritis, dinamika pergaulan remaja, serta manajemen emosi usia 13–15 tahun.",
+    badge_text: "Usia 13–15 Tahun",
+    badge_color: "indigo",
+    badge_show: true,
+    icon: "School",
+    features: [
+      "Berpikir Kritis & Problem Solving",
+      "Pergaulan & Media Sosial",
+      "Motivasi & Target Belajar"
+    ],
+    info_message: "Asesmen ini membantu orang tua memahami tantangan dan dinamika emosi usia remaja SMP.",
+    button_text: "Pilih Jenjang SMP",
+    is_locked: false,
+  },
+  SMA: {
+    title: "Sekolah Menengah Atas (SMA)",
+    desc: "Pemetaan kemampuan awal akademik, berpikir analitis, motivasi, komunikasi, karakter, serta kesiapan pembelajaran SMA.",
+    badge_text: "Usia 16–18 Tahun",
+    badge_color: "sky",
+    badge_show: true,
+    icon: "GraduationCap",
+    features: [
+      "Kesiapan Pembelajaran SMA",
+      "Kemampuan Berpikir & Analitis",
+      "Komunikasi & Kemandirian Siswa"
+    ],
+    info_message: "Asesmen ini dirancang untuk memetakan kondisi awal siswa saat menempuh pembelajaran di jenjang SMA.",
+    button_text: "Pilih Jenjang SMA",
+    is_locked: false,
+  },
+};
+
+export async function fetchAssessmentCardSettings(): Promise<AssessmentCardSettingsData> {
+  try {
+    const { data } = await supabase.from("website_settings").select("data").eq("id", 1).maybeSingle();
+    const raw = (data?.data as any) ?? null;
+    const cards = raw?.assessment_cards || raw?.data?.assessment_cards;
+    if (!cards || typeof cards !== "object") return DEFAULT_CARD_SETTINGS_DATA;
+    
+    return {
+      TK: { ...DEFAULT_CARD_SETTINGS_DATA.TK, ...(cards.TK || {}) },
+      SD: { ...DEFAULT_CARD_SETTINGS_DATA.SD, ...(cards.SD || {}) },
+      SMP: { ...DEFAULT_CARD_SETTINGS_DATA.SMP, ...(cards.SMP || {}) },
+      SMA: { ...DEFAULT_CARD_SETTINGS_DATA.SMA, ...(cards.SMA || {}) },
+    };
+  } catch {
+    return DEFAULT_CARD_SETTINGS_DATA;
+  }
+}

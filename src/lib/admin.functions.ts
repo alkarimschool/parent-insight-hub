@@ -29,6 +29,13 @@ export const saveHomepageSettingsFn = createServerFn({ method: "POST" })
     return updateHomepageSettingsServer(data);
   });
 
+export const saveCardSettingsFn = createServerFn({ method: "POST" })
+  .inputValidator((data: any) => data)
+  .handler(async ({ data }) => {
+    const { updateAssessmentCardSettingsServer } = await import("./admin.server");
+    return updateAssessmentCardSettingsServer(data);
+  });
+
 export const getPromptFn = createServerFn({ method: "POST" })
   .inputValidator((data: any) => data)
   .handler(async ({ data }) => {

@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { fetchWebsite } from "@/lib/settings";
+import { fetchWebsite, fetchAssessmentCardSettings, DEFAULT_CARD_SETTINGS_DATA } from "@/lib/settings";
 import { PublicNav, PublicFooter } from "@/components/site/PublicNav";
-import { Baby, BookOpen, GraduationCap, School, ArrowRight, Sparkles, CheckCircle2, Lock } from "lucide-react";
+import {
+  Baby, BookOpen, GraduationCap, School, ArrowRight, Sparkles, CheckCircle2, Lock,
+  Brain, User, Star, ClipboardList, ShieldCheck, Award, Smile, Zap, Target, Lightbulb
+} from "lucide-react";
 import { EducationLevel } from "@/lib/questions.data";
-import { getAssessmentContent } from "@/lib/assessment-content";
 import { fetchAssessmentLocks, LOCK_MESSAGE } from "@/lib/locks";
 import { toast } from "sonner";
 
@@ -18,55 +20,39 @@ export const Route = createFileRoute("/assessment/level")({
   component: SelectLevelPage,
 });
 
-const LEVELS: Array<{
-  key: EducationLevel;
-  title: string;
-  badge: string;
-  desc: string;
-  icon: any;
-  color: string;
-  features: string[];
-}> = [
-  {
-    key: "TK",
-    title: getAssessmentContent("TK").fullName,
-    badge: "Usia 3–6 Tahun",
-    desc: getAssessmentContent("TK").description,
-    icon: Baby,
-    color: "from-cyan-500/20 to-blue-500/10 border-cyan-500/30 text-cyan-600 dark:text-cyan-400",
-    features: ["Calistung & Angka Awal", "Kesiapan Sekolah", "Kemampuan Motorik & Emosi"],
-  },
-  {
-    key: "SD",
-    title: getAssessmentContent("SD").fullName,
-    badge: "Usia 7–12 Tahun",
-    desc: getAssessmentContent("SD").description,
-    icon: BookOpen,
-    color: "from-blue-500/20 to-indigo-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400",
-    features: ["Literasi & Numerasi SD", "Kebiasaan & Fokus Belajar", "Disiplin & Kontrol Gadget"],
-  },
-  {
-    key: "SMP",
-    title: getAssessmentContent("SMP").fullName,
-    badge: "Usia 13–15 Tahun",
-    desc: getAssessmentContent("SMP").description,
-    icon: School,
-    color: "from-indigo-500/20 to-sky-500/10 border-indigo-500/30 text-indigo-600 dark:text-indigo-400",
-    features: ["Berpikir Kritis & Problem Solving", "Pergaulan & Media Sosial", "Motivasi & Target Belajar"],
-  },
-  {
-    key: "SMA",
-    title: getAssessmentContent("SMA").fullName,
-    badge: "Usia 16–18 Tahun",
-    desc: getAssessmentContent("SMA").description,
-    icon: GraduationCap,
-    color: "from-sky-500/20 to-emerald-500/10 border-sky-500/30 text-sky-600 dark:text-sky-400",
-    features: ["Kesiapan Kuliah & Karier", "Pemikiran Analitis & Riset", "Public Speaking & Kepemimpinan"],
-  },
-];
+const ICON_MAP: Record<string, any> = {
+  Baby,
+  BookOpen,
+  School,
+  GraduationCap,
+  Brain,
+  User,
+  Star,
+  ClipboardList,
+  Sparkles,
+  ShieldCheck,
+  Award,
+  Smile,
+  Zap,
+  Target,
+  Lightbulb,
+};
+
+const COLOR_MAP: Record<string, string> = {
+  cyan: "from-cyan-500/20 to-blue-500/10 border-cyan-500/30 text-cyan-600 dark:text-cyan-400",
+  blue: "from-blue-500/20 to-indigo-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400",
+  indigo: "from-indigo-500/20 to-sky-500/10 border-indigo-500/30 text-indigo-600 dark:text-indigo-400",
+  sky: "from-sky-500/20 to-emerald-500/10 border-sky-500/30 text-sky-600 dark:text-sky-400",
+  emerald: "from-emerald-500/20 to-teal-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400",
+  amber: "from-amber-500/20 to-orange-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400",
+  purple: "from-purple-500/20 to-pink-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400",
+};
+
+const LEVEL_KEYS: EducationLevel[] = ["TK", "SD", "SMP", "SMA"];
 
 function SelectLevelPage() {
   const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite });
+  const cardSettings = useQuery({ queryKey: ["assessment-card-settings"], queryFn: fetchAssessmentCardSettings });
   const locks = useQuery({ queryKey: ["assessment-locks"], queryFn: fetchAssessmentLocks });
   const navigate = useNavigate();
 
@@ -82,6 +68,8 @@ function SelectLevelPage() {
     } catch {}
     navigate({ to: "/assessment", search: { level: lvl } as any });
   };
+
+  const cardsData = cardSettings.data || DEFAULT_CARD_SETTINGS_DATA;
 
   return (
     <div className="min-h-screen bg-gradient-soft pb-24 md:pb-12">
@@ -103,15 +91,18 @@ function SelectLevelPage() {
           </p>
         </div>
 
-        {/* 4 CARDS */}
+        {/* 4 CARDS DYNAMIC FROM DATABASE */}
         <div className="mt-12 grid gap-6 sm:grid-cols-2">
-          {LEVELS.map((lvl) => {
-            const Icon = lvl.icon;
-            const isLocked = !!locks.data?.[lvl.key];
+          {LEVEL_KEYS.map((key) => {
+            const card = cardsData[key] || DEFAULT_CARD_SETTINGS_DATA[key];
+            const Icon = ICON_MAP[card.icon] || GraduationCap;
+            const isLocked = typeof card.is_locked === "boolean" ? card.is_locked : !!locks.data?.[key];
+            const colorClass = COLOR_MAP[card.badge_color || "blue"] || COLOR_MAP.blue;
+            const showBadge = card.badge_show !== false;
 
             return (
               <div
-                key={lvl.key}
+                key={key}
                 aria-disabled={isLocked}
                 className={
                   "group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-border/60 bg-card p-6 shadow-soft sm:p-8 " +
@@ -121,7 +112,7 @@ function SelectLevelPage() {
                 }
               >
                 {/* Background Accent */}
-                <div className={`pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-gradient-to-br ${lvl.color} opacity-40 blur-2xl transition ${isLocked ? "" : "group-hover:opacity-70"}`} />
+                <div className={`pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-gradient-to-br ${colorClass} opacity-40 blur-2xl transition ${isLocked ? "" : "group-hover:opacity-70"}`} />
 
                 <div>
                   <div className="flex items-center justify-between">
@@ -132,18 +123,18 @@ function SelectLevelPage() {
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
                         🔒 Sedang Dalam Pengembangan
                       </span>
-                    ) : (
+                    ) : showBadge && card.badge_text ? (
                       <span className="rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-xs font-semibold text-muted-foreground">
-                        {lvl.badge}
+                        {card.badge_text}
                       </span>
-                    )}
+                    ) : null}
                   </div>
 
-                  <h3 className="mt-5 text-2xl font-bold text-foreground">{lvl.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{lvl.desc}</p>
+                  <h3 className="mt-5 text-2xl font-bold text-foreground">{card.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{card.desc}</p>
 
                   <div className="mt-5 space-y-2 border-t border-border/40 pt-4">
-                    {lvl.features.map((feat, idx) => (
+                    {(card.features || []).map((feat, idx) => (
                       <div key={idx} className="flex items-center gap-2 text-xs font-medium text-foreground">
                         <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
                         <span>{feat}</span>
@@ -151,18 +142,22 @@ function SelectLevelPage() {
                     ))}
                   </div>
 
-                  {isLocked && (
+                  {isLocked ? (
                     <p className="mt-4 rounded-2xl bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground">
-                      {LOCK_MESSAGE}
+                      {card.info_message || LOCK_MESSAGE}
                     </p>
-                  )}
+                  ) : card.info_message ? (
+                    <p className="mt-4 rounded-2xl bg-primary/5 p-3 text-xs leading-relaxed text-muted-foreground border border-primary/10">
+                      {card.info_message}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="mt-8 pt-2">
                   <button
                     type="button"
                     disabled={isLocked}
-                    onClick={() => handleSelectLevel(lvl.key)}
+                    onClick={() => handleSelectLevel(key)}
                     className={
                       "flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold shadow-soft transition " +
                       (isLocked
@@ -176,7 +171,7 @@ function SelectLevelPage() {
                       </>
                     ) : (
                       <>
-                        Pilih Jenjang {lvl.key} <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                        {card.button_text || `Pilih Jenjang ${key}`} <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                       </>
                     )}
                   </button>

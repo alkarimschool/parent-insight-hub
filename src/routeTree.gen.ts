@@ -22,6 +22,7 @@ import { Route as AssessmentQuestionsRouteImport } from './routes/assessment.que
 import { Route as AssessmentSelesaiRouteImport } from './routes/assessment.selesai'
 import { Route as AssessmentSubmittedRouteImport } from './routes/assessment.submitted'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminCardsRouteImport } from './routes/_authenticated/admin.cards'
 import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
 import { Route as AuthenticatedAdminParentsRouteImport } from './routes/_authenticated/admin.parents'
 import { Route as AuthenticatedAdminPromptRouteImport } from './routes/_authenticated/admin.prompt'
@@ -94,6 +95,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminCardsRoute = AuthenticatedAdminCardsRouteImport.update({
+  id: '/cards',
+  path: '/cards',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const AuthenticatedAdminLogsRoute = AuthenticatedAdminLogsRouteImport.update({
   id: '/logs',
   path: '/logs',
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/assessment/selesai': typeof AssessmentSelesaiRoute
   '/assessment/submitted': typeof AssessmentSubmittedRoute
   '/assessment/': typeof AssessmentIndexRoute
+  '/admin/cards': typeof AuthenticatedAdminCardsRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/admin/parents': typeof AuthenticatedAdminParentsRoute
   '/admin/prompt': typeof AuthenticatedAdminPromptRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/assessment/selesai': typeof AssessmentSelesaiRoute
   '/assessment/submitted': typeof AssessmentSubmittedRoute
   '/assessment': typeof AssessmentIndexRoute
+  '/admin/cards': typeof AuthenticatedAdminCardsRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/admin/parents': typeof AuthenticatedAdminParentsRoute
   '/admin/prompt': typeof AuthenticatedAdminPromptRoute
@@ -189,6 +197,7 @@ export interface FileRoutesById {
   '/assessment/selesai': typeof AssessmentSelesaiRoute
   '/assessment/submitted': typeof AssessmentSubmittedRoute
   '/assessment/': typeof AssessmentIndexRoute
+  '/_authenticated/admin/cards': typeof AuthenticatedAdminCardsRoute
   '/_authenticated/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/_authenticated/admin/parents': typeof AuthenticatedAdminParentsRoute
   '/_authenticated/admin/prompt': typeof AuthenticatedAdminPromptRoute
@@ -212,6 +221,7 @@ export interface FileRouteTypes {
     | '/assessment/selesai'
     | '/assessment/submitted'
     | '/assessment/'
+    | '/admin/cards'
     | '/admin/logs'
     | '/admin/parents'
     | '/admin/prompt'
@@ -231,6 +241,7 @@ export interface FileRouteTypes {
     | '/assessment/selesai'
     | '/assessment/submitted'
     | '/assessment'
+    | '/admin/cards'
     | '/admin/logs'
     | '/admin/parents'
     | '/admin/prompt'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '/assessment/selesai'
     | '/assessment/submitted'
     | '/assessment/'
+    | '/_authenticated/admin/cards'
     | '/_authenticated/admin/logs'
     | '/_authenticated/admin/parents'
     | '/_authenticated/admin/prompt'
@@ -365,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/cards': {
+      id: '/_authenticated/admin/cards'
+      path: '/cards'
+      fullPath: '/admin/cards'
+      preLoaderRoute: typeof AuthenticatedAdminCardsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/logs': {
       id: '/_authenticated/admin/logs'
       path: '/logs'
@@ -418,6 +437,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminCardsRoute: typeof AuthenticatedAdminCardsRoute
   AuthenticatedAdminLogsRoute: typeof AuthenticatedAdminLogsRoute
   AuthenticatedAdminParentsRoute: typeof AuthenticatedAdminParentsRoute
   AuthenticatedAdminPromptRoute: typeof AuthenticatedAdminPromptRoute
@@ -428,6 +448,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminCardsRoute: AuthenticatedAdminCardsRoute,
   AuthenticatedAdminLogsRoute: AuthenticatedAdminLogsRoute,
   AuthenticatedAdminParentsRoute: AuthenticatedAdminParentsRoute,
   AuthenticatedAdminPromptRoute: AuthenticatedAdminPromptRoute,
