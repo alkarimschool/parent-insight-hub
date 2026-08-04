@@ -34,7 +34,7 @@ export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden print:hidden hide-on-print no-print">
       <nav className="mx-auto flex h-[72px] max-w-lg items-center justify-around rounded-t-[20px] border-t border-border/50 bg-white/90 dark:bg-slate-900/90 px-2 shadow-elevated backdrop-blur-xl transition-all duration-300">
         {NAV_ITEMS.map((item) => {
           const isActive = item.exact

@@ -221,14 +221,14 @@ function ResultPage() {
         <PublicNav siteName={website.data?.site_name ?? "PAA"} logoText="PAA" />
       </div>
 
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 print:px-0 print:py-4">
+      <div className="print-report mx-auto max-w-3xl px-4 py-10 sm:px-6 print:px-0 print:py-0 print:max-w-none print:w-full">
         {/* Dynamic Badge, H1, Description, Metadata */}
         {level === "SMA" ? (
-          <div className="mb-8 text-center print:mb-6">
+          <div className="mb-8 text-center print:mb-6 print-break-inside-avoid">
             <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-4 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 mb-3 print:hidden">
               🎓 Pemetaan Kemampuan Awal Siswa Kelas X SMA
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground print:text-xl print:text-black">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground print:text-xl print:text-black print-break-after-avoid">
               Laporan Hasil Asesmen Kemampuan Awal Siswa SMA
             </h1>
             <p className="mt-2 text-sm text-muted-foreground print:text-xs print:text-gray-700 font-medium">
@@ -236,7 +236,7 @@ function ResultPage() {
             </p>
 
             {/* Kartu Informasi Siswa */}
-            <div className="mt-6 rounded-2xl border border-border/70 bg-card p-4 sm:p-5 shadow-soft text-left print:border-gray-300 print:shadow-none print:mt-4">
+            <div className="student-info report-card mt-6 rounded-2xl border border-border/70 bg-card p-4 sm:p-5 shadow-soft text-left print:border-gray-300 print:shadow-none print:mt-4 print-break-inside-avoid">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5 text-xs">
                 <div>
                   <span className="text-muted-foreground block font-medium print:text-gray-600">Nama Siswa</span>

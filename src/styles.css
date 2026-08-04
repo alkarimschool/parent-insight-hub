@@ -173,3 +173,80 @@
 @utility bg-gradient-card { background: var(--gradient-card); }
 @utility shadow-soft { box-shadow: var(--shadow-soft); }
 @utility shadow-elevated { box-shadow: var(--shadow-elevated); }
+
+/*
+ * Custom print stylesheet for professional assessment report PDF export.
+ * Hides all application navigation, header, footer, sidebars, buttons, and popups.
+ */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm 15mm 15mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Hide all non-report application chrome */
+  header,
+  footer,
+  nav,
+  aside,
+  button,
+  .print-hidden,
+  .no-print,
+  .hide-on-print,
+  [data-sonner-toaster],
+  .fixed,
+  .sticky {
+    display: none !important;
+  }
+
+  /* Full width container for print report */
+  .print-report,
+  .report-section,
+  .student-info,
+  .analysis-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  /* Avoid page breaks inside cards, headings, list items */
+  .print-break-inside-avoid,
+  .report-card,
+  .report-section,
+  .student-info,
+  .analysis-section,
+  .rounded-2xl,
+  .rounded-xl,
+  li,
+  tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  h1, h2, h3, h4, .print-break-after-avoid {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+    color: #000000 !important;
+  }
+
+  p, span, li, strong, div {
+    color: #111827 !important;
+  }
+
+  /* Ensure card borders remain clean when printed */
+  .border,
+  .border-2 {
+    border-color: #d1d5db !important;
+  }
+}
