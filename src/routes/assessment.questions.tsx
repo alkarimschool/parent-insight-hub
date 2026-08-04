@@ -6,11 +6,12 @@ import { PublicNav } from "@/components/site/PublicNav";
 import { fetchWebsite } from "@/lib/settings";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Loader2, GraduationCap } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, GraduationCap, Lock } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { submitAssessment } from "@/lib/assessment.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { LEVEL_QUESTIONS, EducationLevel } from "@/lib/questions.data";
+import { fetchAssessmentLocks, LOCK_MESSAGE } from "@/lib/locks";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/assessment/questions")({
@@ -32,6 +33,7 @@ const SCALE = [
 function QuestionsPage() {
   const navigate = useNavigate();
   const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite });
+  const locks = useQuery({ queryKey: ["assessment-locks"], queryFn: fetchAssessmentLocks });
   const submit = useServerFn(submitAssessment);
 
   const [formData, setFormData] = useState<any>(null);
