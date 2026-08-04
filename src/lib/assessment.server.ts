@@ -1114,7 +1114,7 @@ export async function retryAssessmentAnalysisServer(assessmentId: string) {
 
   const { data: ass, error } = await supabaseAdmin
     .from("assessments")
-    .select("*, parents(*), children(*), assessment_answers(*, questions(*))")
+    .select("*")
     .eq("id", assessmentId)
     .maybeSingle();
 
@@ -1122,27 +1122,29 @@ export async function retryAssessmentAnalysisServer(assessmentId: string) {
     throw new Error("Data asesmen tidak ditemukan di Supabase.");
   }
 
-  const pObj = Array.isArray(ass.parents) ? ass.parents[0] : ass.parents;
-  const cObj = Array.isArray(ass.children) ? ass.children[0] : ass.children;
-  const rawAnswers = ass.assessment_answers || [];
+  const [{ data: parent }, { data: child }, { data: rawAnswers }] = await Promise.all([
+    ass.parent_id ? supabaseAdmin.from("parents").select("*").eq("id", ass.parent_id).maybeSingle() : Promise.resolve({ data: null }),
+    ass.child_id ? supabaseAdmin.from("children").select("*").eq("id", ass.child_id).maybeSingle() : Promise.resolve({ data: null }),
+    supabaseAdmin.from("assessment_answers").select("*").eq("assessment_id", assessmentId),
+  ]);
 
   const payload: SubmitInput = {
     parent: {
-      name: pObj?.name || "Orang Tua",
-      whatsapp: pObj?.whatsapp || "-",
+      name: parent?.name || "Orang Tua",
+      whatsapp: parent?.whatsapp || "-",
     },
     child: {
-      name: cObj?.name || "Siswa",
-      gender: cObj?.gender || "L",
-      birth_date: cObj?.birth_date || "2020-01-01",
-      school: cObj?.school || "",
-      class_name: cObj?.class_name || "",
-      education_level: ass.education_level || cObj?.education_level || "SMA",
+      name: child?.name || "Siswa",
+      gender: child?.gender || "L",
+      birth_date: child?.birth_date || "2020-01-01",
+      school: child?.school || "",
+      class_name: child?.class_name || "",
+      education_level: ass.education_level || child?.education_level || "SMA",
     },
-    answers: rawAnswers.map((a: any) => ({
-      question_id: a.question_id || String(a.questions?.id || ""),
+    answers: (rawAnswers || []).map((a: any) => ({
+      question_id: a.question_id || "",
       score: a.score ?? 3,
-      text_answer: a.questions?.text || "",
+      text_answer: a.text_answer || "",
     })),
   };
 
