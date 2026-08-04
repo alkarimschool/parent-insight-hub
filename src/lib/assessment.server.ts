@@ -452,8 +452,19 @@ function generateFallbackResult(childName: string, parentName: string, avgScore:
       });
     }
 
+    const OPENING_VARIATIONS = [
+      `Berdasarkan hasil asesmen yang diisi oleh orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5), Ananda ${childName} menunjukkan gambaran kemampuan awal yang `,
+      `Berdasarkan informasi yang disampaikan orang tua melalui instrumen (Rata-rata Skor: ${avgScore.toFixed(2)}/5), Ananda ${childName} memperlihatkan profil awal yang `,
+      `Dari hasil pengisian instrumen observasi orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5), Ananda ${childName} berada pada tingkat kesiapan yang `,
+      `Mengacu pada gambaran observasi orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5), Ananda ${childName} memiliki kondisi pembelajaran SMA yang `,
+      `Hasil pemetaan kemampuan awal memperlihatkan bahwa Ananda ${childName} (Rata-rata Skor: ${avgScore.toFixed(2)}/5) menunjukkan kesiapan yang `
+    ];
+
+    const pickIdx = Math.abs((childName.length * 7 + Math.round(avgScore * 10)) % OPENING_VARIATIONS.length);
+    const openingPrefix = OPENING_VARIATIONS[pickIdx];
+
     return {
-      ringkasan_kemampuan_awal: `Berdasarkan hasil asesmen yang diisi oleh orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5), Ananda ${childName} menunjukkan gambaran kemampuan awal yang ${isPositif ? "siap, mandiri, dan memiliki landasan belajar positif untuk mengikuti proses pembelajaran di jenjang SMA" : isKurang ? "memerlukan pendampingan terstruktur dari orang tua terutama pada pemantauan kebiasaan belajar, kemandirian tugas, dan regulasi emosi" : "berkembang cukup baik dengan beberapa area kebiasaan belajar yang perlu terus dibina agar siap menghadapi tuntutan pembelajaran di jenjang SMA"}.`,
+      ringkasan_kemampuan_awal: `${openingPrefix}${isPositif ? "siap, mandiri, dan memiliki landasan belajar positif untuk mengikuti proses pembelajaran di jenjang SMA." : isKurang ? "memerlukan pendampingan terstruktur dari orang tua terutama pada pemantauan kebiasaan belajar, kemandirian tugas, dan regulasi emosi." : "berkembang cukup baik dengan beberapa area kebiasaan belajar yang perlu terus dibina agar siap menghadapi tuntutan pembelajaran di jenjang SMA."}`,
       area_yang_perlu_diperhatikan: areaPerhatian,
       kemampuan_awal_akademik: isKurang ? [
         "Pemahaman materi baru dan penyelesaian tugas sekolah membutuhkan dorongan berulang dari orang tua.",
