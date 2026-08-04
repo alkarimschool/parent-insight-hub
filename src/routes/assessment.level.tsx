@@ -52,8 +52,8 @@ const LEVEL_KEYS: EducationLevel[] = ["TK", "SD", "SMP", "SMA"];
 
 function SelectLevelPage() {
   const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite });
-  const cardSettings = useQuery({ queryKey: ["assessment-card-settings"], queryFn: fetchAssessmentCardSettings });
-  const locks = useQuery({ queryKey: ["assessment-locks"], queryFn: fetchAssessmentLocks });
+  const cardSettings = useQuery({ queryKey: ["assessment-card-settings"], queryFn: fetchAssessmentCardSettings, staleTime: 0, refetchOnMount: "always", refetchInterval: 2000 });
+  const locks = useQuery({ queryKey: ["assessment-locks"], queryFn: fetchAssessmentLocks, staleTime: 0, refetchOnMount: "always", refetchInterval: 2000 });
   const navigate = useNavigate();
 
   const handleSelectLevel = (lvl: EducationLevel) => {

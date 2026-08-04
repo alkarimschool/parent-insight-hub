@@ -33,7 +33,7 @@ const SCALE = [
 function QuestionsPage() {
   const navigate = useNavigate();
   const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite });
-  const locks = useQuery({ queryKey: ["assessment-locks"], queryFn: fetchAssessmentLocks });
+  const locks = useQuery({ queryKey: ["assessment-locks"], queryFn: fetchAssessmentLocks, staleTime: 0, refetchOnMount: "always" });
   const submit = useServerFn(submitAssessment);
 
   const [formData, setFormData] = useState<any>(null);
@@ -49,6 +49,13 @@ function QuestionsPage() {
 
   const level: EducationLevel = (formData?.education_level || "TK") as EducationLevel;
   const isLocked = !!locks.data?.[level];
+
+  useEffect(() => {
+    if (locks.data && isLocked) {
+      toast.error(LOCK_MESSAGE);
+      navigate({ to: "/assessment/level" });
+    }
+  }, [locks.data, isLocked, navigate]);
 
   const { data: dbCats } = useQuery({
     queryKey: ["assessment_categories", level],

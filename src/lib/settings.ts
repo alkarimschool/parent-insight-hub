@@ -203,18 +203,11 @@ export async function fetchAssessmentCardSettings(): Promise<AssessmentCardSetti
       }
     }
 
-    const resolveLock = (lvl: string) => {
-      if (cards[lvl] && typeof cards[lvl].is_locked === "boolean") {
-        return cards[lvl].is_locked;
-      }
-      return lockMap[lvl] ?? false;
-    };
-
     return {
-      TK: { ...DEFAULT_CARD_SETTINGS_DATA.TK, ...(cards.TK || {}), is_locked: resolveLock("TK") },
-      SD: { ...DEFAULT_CARD_SETTINGS_DATA.SD, ...(cards.SD || {}), is_locked: resolveLock("SD") },
-      SMP: { ...DEFAULT_CARD_SETTINGS_DATA.SMP, ...(cards.SMP || {}), is_locked: resolveLock("SMP") },
-      SMA: { ...DEFAULT_CARD_SETTINGS_DATA.SMA, ...(cards.SMA || {}), is_locked: resolveLock("SMA") },
+      TK: { ...DEFAULT_CARD_SETTINGS_DATA.TK, ...(cards.TK || {}), is_locked: lockMap["TK"] ?? cards.TK?.is_locked ?? false },
+      SD: { ...DEFAULT_CARD_SETTINGS_DATA.SD, ...(cards.SD || {}), is_locked: lockMap["SD"] ?? cards.SD?.is_locked ?? false },
+      SMP: { ...DEFAULT_CARD_SETTINGS_DATA.SMP, ...(cards.SMP || {}), is_locked: lockMap["SMP"] ?? cards.SMP?.is_locked ?? false },
+      SMA: { ...DEFAULT_CARD_SETTINGS_DATA.SMA, ...(cards.SMA || {}), is_locked: lockMap["SMA"] ?? cards.SMA?.is_locked ?? false },
     };
   } catch (err) {
     console.warn("[fetchAssessmentCardSettings] Error:", err);

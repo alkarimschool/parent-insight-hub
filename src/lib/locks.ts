@@ -16,36 +16,36 @@ export const DEFAULT_LOCKS: LockMap = {
 };
 
 export async function fetchAssessmentLocks(): Promise<LockMap> {
+  console.info("[LOCKS_HOMEPAGE] Fetching assessment configuration...");
   try {
-    const [{ data: wsData }, { data: lockData }] = await Promise.all([
-      supabase.from("website_settings").select("data").eq("id", 1).maybeSingle(),
-      supabase.from("assessment_locks").select("education_level, is_locked"),
-    ]);
+    const { data, error } = await supabase
+      .from("assessment_locks")
+      .select("education_level, is_locked");
 
-    const map: LockMap = { ...DEFAULT_LOCKS };
-
-    // 1. Load from assessment_locks table
-    if (lockData && Array.isArray(lockData)) {
-      for (const row of lockData as any[]) {
-        const lvl = String(row.education_level || row.level || "").toUpperCase();
-        if (lvl) map[lvl] = !!row.is_locked;
-      }
+    if (error) {
+      console.warn("[LOCKS_HOMEPAGE] Error querying assessment_locks:", error.message);
     }
 
-    // 2. Override from website_settings.data.assessment_cards (Admin Dashboard Cards settings)
-    const raw = (wsData?.data as any) ?? null;
-    const cards = raw?.assessment_cards || raw?.data?.assessment_cards;
-    if (cards && typeof cards === "object") {
-      for (const lvl of ["TK", "SD", "SMP", "SMA"]) {
-        if (cards[lvl] && typeof cards[lvl].is_locked === "boolean") {
-          map[lvl] = cards[lvl].is_locked;
+    const map: LockMap = { ...DEFAULT_LOCKS };
+    if (data && Array.isArray(data)) {
+      for (const row of data as any[]) {
+        const lvl = String(row.education_level || row.level || "").toUpperCase();
+        if (lvl) {
+          map[lvl] = Boolean(row.is_locked);
         }
       }
     }
 
+    console.info("[LOCKS_HOMEPAGE] Configuration Loaded:", {
+      TK: map.TK,
+      SD: map.SD,
+      SMP: map.SMP,
+      SMA: map.SMA,
+    });
+
     return map;
   } catch (err) {
-    console.warn("[fetchAssessmentLocks] Failed to fetch locks:", err);
+    console.error("[LOCKS_HOMEPAGE] Failed to fetch assessment_locks:", err);
     return { ...DEFAULT_LOCKS };
   }
 }

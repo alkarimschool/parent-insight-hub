@@ -174,7 +174,7 @@ export async function updateAssessmentCardSettingsServer(inputData: any) {
       throw new Error("Payload data card settings tidak valid.");
     }
 
-    console.info("[updateAssessmentCardSettingsServer] Saving card settings:", Object.keys(payload));
+    console.info("[LOCKS_ADMIN] Saving level lock configuration...", Object.keys(payload));
 
     const { data: existing } = await supabaseAdmin.from("website_settings").select("id, data").eq("id", 1).maybeSingle();
     const currentObj = (existing?.data as any) || {};
@@ -204,7 +204,7 @@ export async function updateAssessmentCardSettingsServer(inputData: any) {
       if (insertErr) throw new Error(insertErr.message);
     }
 
-    // Also sync lock status to assessment_locks table
+    // Also sync lock status to assessment_locks table (Single Source of Truth)
     for (const lvl of ["TK", "SD", "SMP", "SMA"]) {
       if (typeof payload[lvl]?.is_locked === "boolean") {
         const isLocked = Boolean(payload[lvl].is_locked);
@@ -216,6 +216,7 @@ export async function updateAssessmentCardSettingsServer(inputData: any) {
       }
     }
 
+    console.info("[LOCKS_ADMIN] Database Updated successfully");
     return { ok: true };
   } catch (err: any) {
     console.error("[updateAssessmentCardSettingsServer] Exception:", err?.message || err);

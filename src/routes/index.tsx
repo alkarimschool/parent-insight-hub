@@ -83,8 +83,8 @@ function Home() {
   const navigate = useNavigate();
   const homepage = useQuery({ queryKey: ["homepage"], queryFn: fetchHomepage, staleTime: 0 });
   const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite, staleTime: 0 });
-  const cardSettings = useQuery({ queryKey: ["assessment-card-settings"], queryFn: fetchAssessmentCardSettings, staleTime: 0 });
-  const locks = useQuery({ queryKey: ["assessment-locks"], queryFn: fetchAssessmentLocks, staleTime: 0 });
+  const cardSettings = useQuery({ queryKey: ["assessment-card-settings"], queryFn: fetchAssessmentCardSettings, staleTime: 0, refetchOnMount: "always", refetchInterval: 2000 });
+  const locks = useQuery({ queryKey: ["assessment-locks"], queryFn: fetchAssessmentLocks, staleTime: 0, refetchOnMount: "always", refetchInterval: 2000 });
 
   const h = homepage.data ?? DEFAULT_HOMEPAGE_DATA;
   const w = website.data ?? DEFAULT_WEBSITE_DATA;
