@@ -187,8 +187,8 @@ function QuestionsPage() {
       sessionStorage.removeItem("paa_form");
       toast.success("✅ Assessment berhasil dikirim dan dianalisis!");
 
-      console.log("[STAGE 8: FRONTEND_NAVIGATING]", `/assessment/result/${res.assessment_id}`);
-      await navigate({ to: "/assessment/result/$id", params: { id: res.assessment_id } });
+      console.log("[STAGE 8: FRONTEND_NAVIGATING]", "/assessment/selesai");
+      await navigate({ to: "/assessment/selesai" as any });
     } catch (e: any) {
       console.error("[STAGE: FRONTEND_SUBMIT_ERROR]", e);
       const msg =

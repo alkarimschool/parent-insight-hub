@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const NullableString = z.preprocess(
   (v) => (v === null || v === undefined ? "" : String(v).trim()),
@@ -77,8 +78,17 @@ export const submitAssessment = createServerFn({ method: "POST" })
   });
 
 export const getAssessmentResultFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().min(1) }).parse((d as any)?.data ?? d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    // RBAC: hanya admin yang boleh melihat hasil analisis AI.
+    const { data: isAdmin, error: roleError } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (roleError || !isAdmin) {
+      throw new Response("Forbidden: hasil asesmen hanya dapat diakses oleh administrator.", { status: 403 });
+    }
     const { getAssessmentResultServer } = await import("./assessment.server");
     return getAssessmentResultServer(data.id);
   });
