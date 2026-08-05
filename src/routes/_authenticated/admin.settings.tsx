@@ -23,16 +23,25 @@ function AssessmentLockPanel() {
   const qc = useQueryClient();
   const setLock = useServerFn(setAssessmentLockFn);
   const [pending, setPending] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Record<string, boolean>>({});
   const locksQuery = useQuery({ queryKey: ["assessment-locks"], queryFn: fetchAssessmentLocks });
 
-  const toggle = async (level: string, nextLocked: boolean) => {
+  useEffect(() => {
+    if (locksQuery.data) setDraft({ ...locksQuery.data });
+  }, [locksQuery.data]);
+
+  const save = async (level: string) => {
     setPending(level);
     try {
+      const nextLocked = !!draft[level];
       await setLock({ data: { level, is_locked: nextLocked } });
       await qc.invalidateQueries({ queryKey: ["assessment-locks"] });
+      await qc.invalidateQueries({ queryKey: ["assessment-card-settings"] });
+      await qc.invalidateQueries({ queryKey: ["admin-locks-edit"] });
+      await qc.invalidateQueries({ queryKey: ["admin-cards-edit"] });
       toast.success(nextLocked ? `Assessment ${level} dikunci.` : `Assessment ${level} diaktifkan.`);
     } catch (e: any) {
-      toast.error("Gagal mengubah status: " + (e?.message ?? "Error"));
+      toast.error("Gagal menyimpan status: " + (e?.message ?? "Error"));
     } finally {
       setPending(null);
     }
@@ -54,28 +63,37 @@ function AssessmentLockPanel() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         {LOCK_LEVELS.map((lvl) => {
-          const locked = !!locksQuery.data?.[lvl];
+          const saved = !!locksQuery.data?.[lvl];
+          const locked = draft[lvl] ?? saved;
+          const dirty = locked !== saved;
           return (
             <div key={lvl} className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background p-4">
               <div>
                 <div className="font-bold text-foreground">Jenjang {lvl}</div>
                 <div className={"text-xs font-semibold " + (locked ? "text-amber-600" : "text-emerald-600")}>
-                  {locked ? "🔒 Terkunci — Sedang Dalam Pengembangan" : "✅ Aktif"}
+                  {locked ? "🔒 Tidak Aktif (Locked)" : "🟢 Aktif (Unlocked)"}
                 </div>
+                {dirty && <div className="mt-0.5 text-[11px] text-muted-foreground">Belum disimpan</div>}
               </div>
-              <Button
-                type="button"
-                variant={locked ? "default" : "outline"}
-                disabled={pending === lvl || locksQuery.isLoading}
-                onClick={() => toggle(lvl, !locked)}
-                className="rounded-full"
-              >
-                {locked ? (
-                  <><LockOpen className="mr-1.5 h-4 w-4" /> Aktifkan</>
-                ) : (
-                  <><Lock className="mr-1.5 h-4 w-4" /> Kunci</>
-                )}
-              </Button>
+              <div className="flex items-center gap-3">
+                <Switch
+                  id={`lock_${lvl}`}
+                  checked={!locked}
+                  disabled={locksQuery.isLoading || pending === lvl}
+                  onCheckedChange={(v) => setDraft((d) => ({ ...d, [lvl]: !v }))}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={dirty ? "default" : "outline"}
+                  disabled={pending === lvl || locksQuery.isLoading || !dirty}
+                  onClick={() => save(lvl)}
+                  className="rounded-full"
+                >
+                  {locked ? <Lock className="mr-1.5 h-4 w-4" /> : <LockOpen className="mr-1.5 h-4 w-4" />}
+                  {pending === lvl ? "Menyimpan…" : "Simpan"}
+                </Button>
+              </div>
             </div>
           );
         })}

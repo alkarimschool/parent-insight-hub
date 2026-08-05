@@ -27,21 +27,17 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 
 function createSupabaseClient() {
-  const rawUrl =
+  const SUPABASE_URL =
     (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) ||
     process.env.SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL ||
-    "https://lqzicsebjjzhdsduqdcf.supabase.co";
-
-  const SUPABASE_URL = (!rawUrl || rawUrl.includes("pmdhjmjcalmgixvhcrwk"))
-    ? "https://lqzicsebjjzhdsduqdcf.supabase.co"
-    : rawUrl;
+    "https://pmdhjmjcalmgixvhcrwk.supabase.co";
 
   const SUPABASE_PUBLISHABLE_KEY =
     (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY) ||
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    "sb_publishable_pu4E46tx3jk_u55S6-vFDg_Bggu_6fv";
+    "sb_publishable_qtEDnfJ2uApK1ILNzAXkxw_F0UJAqua";
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     global: {
