@@ -36,11 +36,12 @@ export async function fetchAssessmentLocks(): Promise<LockMap> {
       }
     }
 
-    console.info("[LOCKS_HOMEPAGE] Configuration Loaded:", {
-      TK: map.TK,
-      SD: map.SD,
-      SMP: map.SMP,
-      SMA: map.SMA,
+    // Logging: nilai = is_active (kebalikan dari is_locked)
+    console.info("[Assessment Setting Loaded]", {
+      TK: !map.TK,
+      SD: !map.SD,
+      SMP: !map.SMP,
+      SMA: !map.SMA,
     });
 
     return map;

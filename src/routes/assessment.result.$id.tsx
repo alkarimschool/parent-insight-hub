@@ -244,7 +244,7 @@ function ResultPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground block font-medium print:text-gray-600">Kelas</span>
-                  <strong className="text-sm font-bold text-foreground block mt-0.5 print:text-black">{data?.child_class || "SMA"}</strong>
+                  <strong className="text-sm font-bold text-foreground block mt-0.5 print:text-black">{(data as any)?.child_class || "SMA"}</strong>
                 </div>
                 <div>
                   <span className="text-muted-foreground block font-medium print:text-gray-600">Jenjang</span>
