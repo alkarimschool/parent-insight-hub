@@ -61,21 +61,29 @@ function ParentsList() {
     queryKey: ["admin-parents-list-rpc"],
     queryFn: async () => {
       // 1. Direct client query to Supabase Database (Fastest & 100% reliable on Lovable Web SPA)
-      const [{ data: parents }, { data: children }, { data: assessments }] = await Promise.all([
+      const [{ data: parents, error: pErr }, { data: children, error: cErr }, { data: assessments, error: aErr }] = await Promise.all([
         supabase.from("parents").select("*").order("created_at", { ascending: false }).limit(500),
         supabase.from("children").select("*").order("created_at", { ascending: false }).limit(500),
         supabase.from("assessments").select("*").order("created_at", { ascending: false }).limit(500),
       ]);
 
-      if (parents && Array.isArray(parents) && parents.length > 0) {
-        const parentMap = new Map((parents || []).map((p: any) => [p.id, p]));
-        const childMap = new Map((children || []).map((c: any) => [c.id, c]));
+      if (pErr || aErr || cErr) {
+        console.warn("[admin.parents DB query warnings]", { pErr, cErr, aErr });
+      }
+
+      const pList = parents || [];
+      const cList = children || [];
+      const aList = assessments || [];
+
+      if (pList.length > 0 || aList.length > 0) {
+        const parentMap = new Map(pList.map((p: any) => [p.id, p]));
+        const childMap = new Map(cList.map((c: any) => [c.id, c]));
 
         const resultList: any[] = [];
         const processedParentIds = new Set<string>();
 
-        if (assessments && Array.isArray(assessments)) {
-          for (const a of assessments) {
+        if (aList && Array.isArray(aList)) {
+          for (const a of aList) {
             if (a.parent_id) processedParentIds.add(a.parent_id);
 
             const pObj = parentMap.get(a.parent_id);
@@ -95,10 +103,10 @@ function ParentsList() {
           }
         }
 
-        if (parents && Array.isArray(parents)) {
-          for (const p of parents) {
+        if (pList && Array.isArray(pList)) {
+          for (const p of pList) {
             if (!processedParentIds.has(p.id)) {
-              const foundC = (children || []).find((c: any) => c.parent_id === p.id);
+              const foundC = cList.find((c: any) => c.parent_id === p.id);
               resultList.push({
                 id: p.id,
                 status: "pending",
