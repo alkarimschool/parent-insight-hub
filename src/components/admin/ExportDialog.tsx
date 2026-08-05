@@ -10,13 +10,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { getExportDataFn } from "@/lib/admin.functions";
 import { exportToJson, exportToCsv, exportToExcel, exportToPdf, exportQaReport, ExportAssessmentRow } from "@/lib/export.utils";
 import { supabase } from "@/integrations/supabase/client";
-import { createClient } from "@supabase/supabase-js";
-import { getAdminSecretKey } from "@/lib/admin-key";
+import { createAdminFallbackClient } from "@/lib/admin-key";
 
-const adminFallbackSupabase = createClient(
-  "https://lqzicsebjjzhdsduqdcf.supabase.co",
-  getAdminSecretKey()
-);
+const adminFallbackSupabase = createAdminFallbackClient();
 
 interface ExportDialogProps {
   open: boolean;

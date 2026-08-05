@@ -5,15 +5,11 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getAdminStatsFn, getAdminRecentFn } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { createClient } from "@supabase/supabase-js";
-import { getAdminSecretKey } from "@/lib/admin-key";
+import { createAdminFallbackClient } from "@/lib/admin-key";
 import { Button } from "@/components/ui/button";
 import { ExportDialog } from "@/components/admin/ExportDialog";
 
-const adminFallbackSupabase = createClient(
-  "https://lqzicsebjjzhdsduqdcf.supabase.co",
-  getAdminSecretKey()
-);
+const adminFallbackSupabase = createAdminFallbackClient();
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: Dashboard,

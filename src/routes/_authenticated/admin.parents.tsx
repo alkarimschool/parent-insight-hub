@@ -10,13 +10,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { updateParentChildFn, getAdminParentsFn, deleteAssessmentFn, retryAssessmentFn } from "@/lib/admin.functions";
 
 import { getAssessmentContent } from "@/lib/assessment-content";
-import { createClient } from "@supabase/supabase-js";
-import { getAdminSecretKey } from "@/lib/admin-key";
+import { createAdminFallbackClient } from "@/lib/admin-key";
 
-const adminFallbackSupabase = createClient(
-  "https://lqzicsebjjzhdsduqdcf.supabase.co",
-  getAdminSecretKey()
-);
+const adminFallbackSupabase = createAdminFallbackClient();
 
 export const Route = createFileRoute("/_authenticated/admin/parents")({
   component: ParentsList,
