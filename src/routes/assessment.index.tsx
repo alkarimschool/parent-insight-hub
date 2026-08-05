@@ -13,6 +13,15 @@ import { getAssessmentContent } from "@/lib/assessment-content";
 import { fetchAssessmentLocks, LOCK_MESSAGE } from "@/lib/locks";
 
 export const Route = createFileRoute("/assessment/")({
+  validateSearch: (search: Record<string, unknown>) => {
+    const rawLvl = String(search.level || "").toUpperCase();
+    const validLevel = ["TK", "SD", "SMP", "SMA", "SMK"].includes(rawLvl)
+      ? (rawLvl as EducationLevel)
+      : undefined;
+    return {
+      level: validLevel,
+    };
+  },
   head: () => ({
     meta: [
       { title: "Mulai Assessment — Parent Awareness Assessment" },
@@ -42,28 +51,37 @@ function AssessmentFormPage() {
   }>({
     whatsapp: "",
     child_name: "",
-    education_level: (search?.level as EducationLevel) || "TK",
+    education_level: (search?.level as EducationLevel) || "SMA",
   });
 
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem("paa_form");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setForm((prev) => ({
-          ...prev,
-          ...parsed,
-          education_level: search?.level || parsed.education_level || "TK",
-        }));
-      } else if (search?.level) {
+      if (search?.level) {
         setForm((prev) => ({ ...prev, education_level: search.level }));
+      } else if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.education_level) {
+          setForm((prev) => ({ ...prev, ...parsed, education_level: parsed.education_level }));
+        }
       }
     } catch {}
   }, [search]);
 
+  // Fallback to first unlocked level (SMA) if locks are loaded and current level is locked but search was not explicitly set
+  useEffect(() => {
+    if (locks.data && !search?.level) {
+      if (locks.data[form.education_level] && !locks.data["SMA"]) {
+        setForm((prev) => ({ ...prev, education_level: "SMA" }));
+      }
+    }
+  }, [locks.data, search?.level]);
+
+  const isLocked = !!locks.data?.[form.education_level];
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (locks.data?.[form.education_level]) {
+    if (isLocked) {
       toast.error(LOCK_MESSAGE);
       return;
     }
@@ -82,34 +100,6 @@ function AssessmentFormPage() {
     navigate({ to: "/assessment/questions" });
   };
 
-  const isLocked = !!locks.data?.[form.education_level];
-
-  if (isLocked) {
-    return (
-      <div className="min-h-screen bg-gradient-soft pb-24 md:pb-12">
-        <PublicNav
-          siteName={website.data?.site_name ?? "Parent Awareness Assessment"}
-          logoText={website.data?.logo_text ?? "PAA"}
-        />
-        <div className="mx-auto max-w-xl px-4 py-20 text-center sm:px-6">
-          <span className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-muted text-muted-foreground">
-            <Lock className="h-7 w-7" />
-          </span>
-          <h1 className="mt-6 text-2xl font-bold text-foreground sm:text-3xl">
-            Asesmen {form.education_level} Sedang Dalam Pengembangan
-          </h1>
-          <p className="mt-3 text-muted-foreground">{LOCK_MESSAGE}</p>
-          <Link
-            to="/assessment/level"
-            className="mt-8 inline-flex items-center gap-2 rounded-full bg-gradient-hero px-6 py-3 text-sm font-semibold text-primary-foreground shadow-soft"
-          >
-            Pilih Jenjang Lain <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-soft pb-24 md:pb-12">
       <PublicNav
@@ -119,7 +109,7 @@ function AssessmentFormPage() {
       <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
         <div className="mb-8 text-center">
           <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary">
-            <GraduationCap className="h-4 w-4" /> {LEVEL_NAMES[form.education_level]}
+            <GraduationCap className="h-4 w-4" /> {LEVEL_NAMES[form.education_level] || "Sekolah Menengah Atas (SMA)"}
           </div>
           <h1 className="mt-4 text-3xl font-bold text-foreground sm:text-4xl">Data Anak & Kontak</h1>
           <p className="mt-2 text-muted-foreground">Isi data anak dan nomor WhatsApp untuk memulai asesmen jenjang {form.education_level}.</p>
@@ -131,7 +121,7 @@ function AssessmentFormPage() {
             <div className="flex items-center justify-between mb-2">
               <Label className="font-semibold text-foreground">Jenjang Pendidikan Terpilih *</Label>
               <Link to="/assessment/level" className="text-xs font-semibold text-primary hover:underline">
-                Ubah Jenjang
+                Lihat Semua Jenjang
               </Link>
             </div>
             <select
@@ -139,12 +129,17 @@ function AssessmentFormPage() {
               onChange={(e) => setForm({ ...form, education_level: e.target.value as EducationLevel })}
               className="w-full rounded-2xl border border-input bg-background p-3 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
             >
-              <option value="TK">👶 Pendidikan Anak Usia Dini (TK / PAUD)</option>
-              <option value="SD">📘 Sekolah Dasar (SD)</option>
-              <option value="SMP">📗 Sekolah Menengah Pertama (SMP)</option>
-              <option value="SMA">🎓 Sekolah Menengah Atas (SMA)</option>
-              <option value="SMK">🛠️ Sekolah Menengah Kejuruan (SMK)</option>
+              <option value="SMA">🎓 Sekolah Menengah Atas (SMA) — Aktif & Siap</option>
+              <option value="TK">👶 Pendidikan Anak Usia Dini (TK / PAUD) {locks.data?.TK ? "(🔒 Terkunci)" : ""}</option>
+              <option value="SD">📘 Sekolah Dasar (SD) {locks.data?.SD ? "(🔒 Terkunci)" : ""}</option>
+              <option value="SMP">📗 Sekolah Menengah Pertama (SMP) {locks.data?.SMP ? "(🔒 Terkunci)" : ""}</option>
+              <option value="SMK">🛠️ Sekolah Menengah Kejuruan (SMK) {locks.data?.SMK ? "(🔒 Terkunci)" : ""}</option>
             </select>
+            {isLocked && (
+              <p className="mt-2.5 flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                <Lock className="h-4 w-4 shrink-0" /> Asesmen {form.education_level} sedang dalam pengembangan. Silakan pilih jenjang <strong>SMA</strong> yang sudah aktif.
+              </p>
+            )}
           </div>
 
           <div className="grid gap-5">
@@ -179,8 +174,16 @@ function AssessmentFormPage() {
             <Link to="/assessment/level" className="text-sm text-muted-foreground hover:text-foreground">
               ← Pilih Jenjang
             </Link>
-            <Button type="submit" size="lg" className="rounded-full bg-gradient-hero shadow-soft">
-              Lanjut Assessment {form.education_level} <ArrowRight className="ml-1 h-4 w-4" />
+            <Button type="submit" size="lg" disabled={isLocked} className="rounded-full bg-gradient-hero shadow-soft">
+              {isLocked ? (
+                <>
+                  <Lock className="mr-1.5 h-4 w-4" /> Asesmen {form.education_level} Terkunci
+                </>
+              ) : (
+                <>
+                  Lanjut Assessment {form.education_level} <ArrowRight className="ml-1 h-4 w-4" />
+                </>
+              )}
             </Button>
           </div>
         </form>

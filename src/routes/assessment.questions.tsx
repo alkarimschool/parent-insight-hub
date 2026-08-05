@@ -40,22 +40,30 @@ function QuestionsPage() {
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("paa_form");
-      if (!raw) { navigate({ to: "/assessment/level" }); return; }
-      setFormData(JSON.parse(raw));
+      if (!raw) {
+        setFormData({ education_level: "SMA", parent_name: "Orang Tua", child_name: "Siswa SMA", whatsapp: "08123456789" });
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      if (locks.data && locks.data[parsed.education_level] && !locks.data["SMA"]) {
+        parsed.education_level = "SMA";
+        sessionStorage.setItem("paa_form", JSON.stringify(parsed));
+      }
+      setFormData(parsed);
     } catch {
-      navigate({ to: "/assessment/level" });
+      setFormData({ education_level: "SMA", parent_name: "Orang Tua", child_name: "Siswa SMA", whatsapp: "08123456789" });
     }
-  }, [navigate]);
+  }, [navigate, locks.data]);
 
-  const level: EducationLevel = (formData?.education_level || "TK") as EducationLevel;
+  const level: EducationLevel = (formData?.education_level || "SMA") as EducationLevel;
   const isLocked = !!locks.data?.[level];
 
   useEffect(() => {
-    if (locks.data && isLocked) {
+    if (locks.data && isLocked && level !== "SMA") {
       toast.error(LOCK_MESSAGE);
-      navigate({ to: "/assessment/level" });
+      navigate({ to: "/assessment", search: { level: "SMA" } as any });
     }
-  }, [locks.data, isLocked, navigate]);
+  }, [locks.data, isLocked, level, navigate]);
 
   const { data: dbCats } = useQuery({
     queryKey: ["assessment_categories", level],
