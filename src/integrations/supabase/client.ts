@@ -30,22 +30,8 @@ function createSupabaseClient() {
   const PROD_URL = "https://lqzicsebjjzhdsduqdcf.supabase.co";
   const PROD_KEY = "sb_publishable_pu4E46tx3jk_u55S6-vFDg_Bggu_6fv";
 
-  let SUPABASE_URL =
-    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) ||
-    process.env.SUPABASE_URL ||
-    process.env.VITE_SUPABASE_URL ||
-    PROD_URL;
-
-  let SUPABASE_PUBLISHABLE_KEY =
-    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY) ||
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    PROD_KEY;
-
-  if (SUPABASE_URL.includes("pmdhjmjcalmgixvhcrwk") || !SUPABASE_URL) {
-    SUPABASE_URL = PROD_URL;
-    SUPABASE_PUBLISHABLE_KEY = PROD_KEY;
-  }
+  const SUPABASE_URL = PROD_URL;
+  const SUPABASE_PUBLISHABLE_KEY = PROD_KEY;
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     global: {
