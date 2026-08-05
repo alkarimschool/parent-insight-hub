@@ -1,107 +1,70 @@
 /**
- * Aturan penulisan hasil analisis (WAJIB) — menjaga agar setiap laporan
- * bersifat unik, personal, dan tidak terasa seperti template.
- * Direktif ini di-append ke system prompt & user prompt setiap kali analisis dijalankan.
+ * Engine Analisis Narasi AI (WAJIB DIPATUHI PER PROSES ANALISIS)
+ * Menyediakan direktif 6-langkah berpikir AI & variasi narasi dinamis
+ * tanpa mengubah struktur JSON, API, backend, frontend, atau database.
  */
 
-const OPENERS = [
-  "Berdasarkan informasi yang diberikan oleh orang tua",
-  "Dari hasil observasi orang tua",
-  "Mengacu pada jawaban yang diberikan",
-  "Berdasarkan pola jawaban selama asesmen",
-  "Hasil pengisian instrumen menunjukkan bahwa",
-  "Berdasarkan keseluruhan data yang diperoleh",
-  "Dari hasil evaluasi awal",
-  "Berdasarkan informasi yang berhasil dihimpun",
-  "Berdasarkan hasil pemetaan kemampuan awal",
-  "Dari hasil identifikasi awal",
+const PERSONAS = [
+  "Psikolog Pendidikan SMA (Pendekatan Empatik, Reflektif & Mendalam)",
+  "Guru BK / Konselor Sekolah SMA (Pendekatan Praktis, Evaluatif & Membangun)",
+  "Mentor Pengembangan Remaja SMA (Pendekatan Motivatif, Proaktif & Aksi)",
+  "Konsultan Evaluasi Pembelajaran (Pendekatan Analitis, Terstruktur & Solutif)",
 ];
 
-const FLOWS = [
-  "Kondisi → Dampak → Saran",
-  "Potensi → Kondisi → Dampak",
-  "Kondisi → Potensi → Pendampingan",
-  "Observasi → Penjelasan → Rekomendasi",
+const ANALYSIS_FLOWS = [
+  "Dominansi Karakter → Tantangan Akademik → Solusi Pendampingan",
+  "Pola Berpikir → Adaptasi Sosial → Penguatan Kemandirian",
+  "Tuntutan Pembelajaran SMA → Kekuatan Spesifik → Area Pendampingan",
+  "Observasi Pembelajaran → Dampak Perilaku → Rekomendasi Khusus",
 ];
 
-const FOCUS = [
-  "aspek akademik lebih dahulu",
-  "aspek komunikasi dan sosial lebih dahulu",
-  "aspek kemandirian dan karakter lebih dahulu",
-  "aspek kebiasaan belajar lebih dahulu",
-  "aspek emosi dan motivasi lebih dahulu",
-];
-
-const TONES = [
-  "hangat dan reflektif",
-  "profesional dan lugas",
-  "naratif dan mendalam",
-  "suportif dan membangun",
-  "analitis namun mudah dipahami",
+const FOCUS_ASPECTS = [
+  "Prioritas pada cara belajar dan motivasi akademik terlebih dahulu",
+  "Prioritas pada komunikasi, sosial, dan adaptasi pertemanan terlebih dahulu",
+  "Prioritas pada kedisiplinan, komitmen, dan karakter mandiri terlebih dahulu",
+  "Prioritas pada penalaran logis, kritis, dan pemecahan masalah terlebih dahulu",
 ];
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)] as T;
 }
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j] as T, a[i] as T];
-  }
-  return a;
-}
-
 export function buildVariationDirective(): string {
   const seed = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-  const openers = shuffle(OPENERS).slice(0, 4);
 
   return `
 ==================================================
-ATURAN PENULISAN HASIL ANALISIS (WAJIB DIPATUHI)
+ENGINE ANALISIS AI BARU (WAJIB DIPATUHI SEBELUM MENULIS)
 ==================================================
-SEED KEUNIKAN LAPORAN: ${seed}
-(Seed ini hanya penanda internal untuk memastikan narasi berbeda. JANGAN pernah menuliskan seed di dalam laporan.)
+SEED KEUNIKAN: ${seed} (Penanda internal, dilarang ditulis di output)
 
-1. LAPORAN DINAMIS & PERSONAL
-   Walaupun dua orang tua memberikan jawaban yang identik, narasi WAJIB berbeda.
-   Perbedaan hanya pada CARA PENYAMPAIAN, bukan pada kesimpulan.
-   Laporan harus terasa ditulis manual oleh seorang konselor pendidikan.
+[TAHAP 1: PROSES 6-LANGKAH BERPIKIR AI SEBELUM MENULIS SEBALIKNYA MENYUSUN NARASI]
+Sebelum mengisi tiap field JSON, AI WAJIB menjalankan 6 langkah berpikir ini dari nol:
+1. Membaca & menyerap seluruh jawaban orang tua.
+2. Mencari hubungan unik antar jawaban (misal: hubungan antara fokus belajar dengan kecemasan tugas).
+3. Menentukan 3 aspek yang paling dominan secara khusus untuk siswa ini.
+4. Menentukan prioritas & urutan pembahasan narasi yang berbeda dari laporan lain.
+5. Memilih sudut pandang persona: ${pick(PERSONAS)}.
+6. Menyusun narasi baru dari nol — DILARANG sekadar mengganti kata/sinonim pada template baku!
 
-2. VARIASI BAHASA
-   Variasikan pembuka, transisi, penjelasan, dan penutup.
-   Untuk laporan ini, gunakan salah satu gaya pembuka berikut (pilih secara alami, jangan diulang):
-   - ${openers.join("\n   - ")}
-   DILARANG menggunakan frasa pembuka yang sama lebih dari satu kali dalam satu laporan.
+[TAHAP 2: ATURAN KEUNIKAN MASING-MASING FIELD (DILARANG SALING MENGULANG)]
+- ringkasan_kemampuan_awal: DILARANG pola baku (skor → kebiasaan → kemandirian → regulasi emosi). AI wajib memilih sendiri 3 aspek paling dominan dengan urutan pembahasan baru.
+- area_yang_perlu_diperhatikan (FOKUS UTAMA ~80%): Setiap indikator WAJIB memiliki penjelasan tersendiri (analisis berbeda, penyebab berbeda, dampak berbeda, rekomendasi berbeda). DILARANG 1 template untuk semua indikator!
+- kemampuan_awal_akademik: Murni analisis akademik. DILARANG mengulang isi ringkasan!
+- kemampuan_berpikir: Murni cara berpikir & penalaran kritis. DILARANG mengulang poin akademik!
+- kemampuan_komunikasi_dan_sosial: Murni interaksi & adaptasi sosial. DILARANG mengulang poin karakter!
+- karakter_dan_kemandirian: Murni kedisiplinan & komitmen. DILARANG mengulang poin sosial!
+- kesiapan_mengikuti_pembelajaran_SMA: Narasi khusus kesiapan menghadapi tuntutan SMA yang lebih kompleks.
+- potensi_pengembangan: Kombinasi potensi unik berdasarkan keseluruhan data asesmen.
+- potensi_dan_kelebihan (~20% Proporsional): DILARANG frasa umum ("Memiliki potensi yang baik", "Memiliki kemampuan dasar"). Jelaskan secara spesifik sesuai data.
+- rekomendasi_untuk_orang_tua: Rekomendasi khusus sebagai solusi langsung atas analisis yang muncul. Dilarang rekomendasi identik!
 
-3. VARIASI PENYAMPAIAN
-   Alur penyampaian untuk laporan ini: ${pick(FLOWS)}.
+[TAHAP 3: ANTI-TEMPLATE & SELF-VALIDATION MURNI]
+- Alur pembahasan untuk laporan ini: ${pick(ANALYSIS_FLOWS)}.
+- Fokus penekanan: ${pick(FOCUS_ASPECTS)}.
+- DILARANG mengulang frase pembuka yang sama ("Berdasarkan hasil...", "Secara umum...", "Terlihat bahwa...", "Siswa menunjukkan...", "Masih perlu ditingkatkan...") lebih dari 1 kali dalam satu laporan!
+- AI WAJIB melakukan self-validation sebelum output JSON. Target kemiripan narasi antar laporan MAKSIMAL 20%.
 
-4. VARIASI KOSAKATA
-   Gunakan sinonim secara alami, contoh:
-   - "cukup baik" → memadai / berkembang dengan baik / menunjukkan kemampuan yang positif / relatif baik / telah terbentuk dengan cukup baik / berada pada kategori yang sesuai
-   - "perlu ditingkatkan" → perlu mendapatkan perhatian / masih memerlukan pendampingan / masih dapat dikembangkan / menjadi prioritas pembinaan / layak menjadi fokus penguatan / memerlukan latihan yang lebih konsisten
-
-5. VARIASI PANJANG KALIMAT & PARAGRAF
-   Campurkan kalimat pendek, sedang, dan panjang.
-   Jumlah kalimat tiap bagian tidak boleh seragam (ada yang 2, 4, atau 5 kalimat).
-
-6. VARIASI FOKUS
-   Untuk laporan ini, soroti ${pick(FOCUS)} — tetapi tetap sesuai data jawaban orang tua.
-   Nada penulisan: ${pick(TONES)}.
-
-7. HINDARI TEMPLATE
-   DILARANG mengulang paragraf, susunan kalimat, atau menghasilkan laporan identik.
-   DILARANG menggunakan bahasa generik atau kesan mengisi template.
-
-8. KONSISTENSI (TIDAK BOLEH DILANGGAR)
-   Isi laporan harus tetap konsisten dengan jawaban orang tua.
-   Dilarang menambah informasi yang tidak didukung data.
-   Dilarang mengubah kesimpulan hanya demi variasi bahasa. Variasi hanya pada GAYA PENULISAN.
-
-9. TARGET
-   Kemiripan kalimat antar laporan harus di bawah 30%.
-   Struktur JSON output tetap WAJIB sama persis seperti yang diminta.
+Struktur JSON, nama key, dan urutan field WAJIB 100% SAMA SEPERTI SKEMA.
 `.trim();
 }
