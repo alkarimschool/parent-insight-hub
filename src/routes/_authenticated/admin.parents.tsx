@@ -137,6 +137,7 @@ function ParentsList() {
 
       return [];
     },
+    staleTime: 0,
     refetchInterval: 3000,
     refetchOnWindowFocus: true,
   });
