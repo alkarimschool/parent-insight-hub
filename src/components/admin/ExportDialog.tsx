@@ -42,7 +42,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
     try {
       const serverData = await getExportData({ data: filterObj });
-      if (serverData && Array.isArray(serverData)) {
+      if (serverData && Array.isArray(serverData) && serverData.length > 0) {
         setLoading(false);
         return serverData as ExportAssessmentRow[];
       }

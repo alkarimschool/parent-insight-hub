@@ -65,7 +65,7 @@ function ParentsList() {
     queryFn: async () => {
       try {
         const serverData = await getParentsList();
-        if (serverData && Array.isArray(serverData)) {
+        if (serverData && Array.isArray(serverData) && serverData.length > 0) {
           return serverData;
         }
       } catch (err) {
