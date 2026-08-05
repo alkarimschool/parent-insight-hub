@@ -5,11 +5,8 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getAdminStatsFn, getAdminRecentFn } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { createAdminFallbackClient } from "@/lib/admin-key";
 import { Button } from "@/components/ui/button";
 import { ExportDialog } from "@/components/admin/ExportDialog";
-
-const adminFallbackSupabase = createAdminFallbackClient();
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: Dashboard,
@@ -60,9 +57,9 @@ function Dashboard() {
 
       // Direct client fallback for stats
       const [{ count: totalAss }, { count: parentCount }, { data: assRows }] = await Promise.all([
-        adminFallbackSupabase.from("assessments").select("*", { count: "exact", head: true }),
-        adminFallbackSupabase.from("parents").select("*", { count: "exact", head: true }),
-        adminFallbackSupabase.from("assessments").select("education_level, status"),
+        supabase.from("assessments").select("*", { count: "exact", head: true }),
+        supabase.from("parents").select("*", { count: "exact", head: true }),
+        supabase.from("assessments").select("education_level, status"),
       ]);
 
       const rows = assRows || [];
@@ -101,9 +98,9 @@ function Dashboard() {
 
       // Direct client fallback for recent list
       const [{ data: parents }, { data: children }, { data: assessments }] = await Promise.all([
-        adminFallbackSupabase.from("parents").select("*").order("created_at", { ascending: false }).limit(50),
-        adminFallbackSupabase.from("children").select("*").order("created_at", { ascending: false }).limit(50),
-        adminFallbackSupabase.from("assessments").select("*").order("created_at", { ascending: false }).limit(50),
+        supabase.from("parents").select("*").order("created_at", { ascending: false }).limit(50),
+        supabase.from("children").select("*").order("created_at", { ascending: false }).limit(50),
+        supabase.from("assessments").select("*").order("created_at", { ascending: false }).limit(50),
       ]);
 
       const parentMap = new Map((parents || []).map((p: any) => [p.id, p]));

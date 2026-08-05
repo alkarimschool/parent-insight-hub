@@ -10,9 +10,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { updateParentChildFn, getAdminParentsFn, deleteAssessmentFn, retryAssessmentFn } from "@/lib/admin.functions";
 
 import { getAssessmentContent } from "@/lib/assessment-content";
-import { createAdminFallbackClient } from "@/lib/admin-key";
-
-const adminFallbackSupabase = createAdminFallbackClient();
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/admin/parents")({
   component: ParentsList,
@@ -75,9 +73,9 @@ function ParentsList() {
 
       // Direct client fallback to Supabase Database (Guarantees data display on Lovable SPA)
       const [{ data: parents }, { data: children }, { data: assessments }] = await Promise.all([
-        adminFallbackSupabase.from("parents").select("*").order("created_at", { ascending: false }).limit(500),
-        adminFallbackSupabase.from("children").select("*").order("created_at", { ascending: false }).limit(500),
-        adminFallbackSupabase.from("assessments").select("*").order("created_at", { ascending: false }).limit(500),
+        supabase.from("parents").select("*").order("created_at", { ascending: false }).limit(500),
+        supabase.from("children").select("*").order("created_at", { ascending: false }).limit(500),
+        supabase.from("assessments").select("*").order("created_at", { ascending: false }).limit(500),
       ]);
 
       const parentMap = new Map((parents || []).map((p: any) => [p.id, p]));
