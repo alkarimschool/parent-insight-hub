@@ -96,7 +96,7 @@ function SelectLevelPage() {
           {LEVEL_KEYS.map((key) => {
             const card = cardsData[key] || DEFAULT_CARD_SETTINGS_DATA[key];
             const Icon = ICON_MAP[card.icon] || GraduationCap;
-            const isLocked = card.is_locked === true || locks.data?.[key] === true;
+            const isLocked = locks.data?.[key] === true;
             const colorClass = COLOR_MAP[card.badge_color || "blue"] || COLOR_MAP.blue;
             const showBadge = card.badge_show !== false;
 
@@ -167,7 +167,7 @@ function SelectLevelPage() {
                   >
                     {isLocked ? (
                       <>
-                        <Lock className="h-4 w-4" /> Segera Hadir
+                        <Lock className="h-4 w-4" /> Terkunci
                       </>
                     ) : (
                       <>
