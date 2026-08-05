@@ -86,7 +86,7 @@ function Dashboard() {
     queryFn: async () => {
       try {
         const rRes = await getRecent({ data: { level: selectedLevel } });
-        if (rRes && Array.isArray(rRes) && rRes.length > 0) {
+        if (rRes && Array.isArray(rRes)) {
           return rRes;
         }
       } catch (err) {

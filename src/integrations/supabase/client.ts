@@ -31,13 +31,13 @@ function createSupabaseClient() {
     (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) ||
     process.env.SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL ||
-    "https://pmdhjmjcalmgixvhcrwk.supabase.co";
+    "https://lqzicsebjjzhdsduqdcf.supabase.co";
 
   const SUPABASE_PUBLISHABLE_KEY =
     (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY) ||
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    "sb_publishable_qtEDnfJ2uApK1ILNzAXkxw_F0UJAqua";
+    "sb_publishable_pu4E46tx3jk_u55S6-vFDg_Bggu_6fv";
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     global: {
