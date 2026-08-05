@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchHomepage, fetchWebsite, HomepageData, WebsiteData, DEFAULT_HOMEPAGE_DATA, DEFAULT_WEBSITE_DATA } from "@/lib/settings";
+import { fetchHomepage, fetchWebsite, HomepageSettingsData as HomepageData, WebsiteSettingsData, DEFAULT_HOMEPAGE_DATA, DEFAULT_WEBSITE_DATA } from "@/lib/settings";
+type WebsiteData = WebsiteSettingsData & Record<string, any>;
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";

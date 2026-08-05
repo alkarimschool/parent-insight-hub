@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabase } from "@/integrations/supabase/client";
 import { getEducationLevel } from "./questions.data";
 
 export function extractTrueLevel(a: any): string {

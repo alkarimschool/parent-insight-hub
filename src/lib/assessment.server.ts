@@ -3,6 +3,7 @@ import { callLovableAiJson } from "./ai.server";
 import { EducationLevel, LEVEL_QUESTIONS, getEducationLevel } from "./questions.data";
 import { getAssessmentContent } from "./assessment-content";
 import { DEFAULT_PROMPTS } from "./prompt.data";
+import { buildVariationDirective } from "./narrative-variation";
 
 interface SubmitInput {
   parent: { name: string; whatsapp: string };
@@ -976,6 +977,8 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
           user_template: defaultPromptForLevel.user_template,
         };
 
+    const variationDirective = buildVariationDirective();
+
     const filledPrompt = promptToUse.user_template
       .replace(/\$\{assessment\.education_level\}/g, dbEducationLevel)
       .replace(/\{\{parent_name\}\}/g, parentName)
@@ -984,7 +987,8 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
       .replace(/\{\{child_gender\}\}/g, data.child.gender === "L" ? "Laki-laki" : "Perempuan")
       .replace(/\{\{education_level\}\}/g, dbEducationLevel)
       .replace(/\{\{child_school\}\}/g, data.child.school || "-")
-      .replace(/\{\{answers\}\}/g, answersText);
+      .replace(/\{\{answers\}\}/g, answersText)
+      + `\n\n${variationDirective}`;
 
     console.log(`[6] Prompt Final berhasil dibuat | Length: ${filledPrompt.length} chars`);
 
@@ -998,18 +1002,25 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
     const tAiStart = Date.now();
     console.log(`[7] Request AI dikirim | Model: ${usedModel} | Level: ${dbEducationLevel}`);
 
-    try {
-      const aiRes = await callLovableAiJson({
-        model: usedModel,
-        systemPrompt: promptToUse.system_prompt,
-        userPrompt: filledPrompt,
-        temperature: Number(settings?.temperature ?? 0.85),
-        maxTokens: isSma ? 2048 : (settings?.max_tokens ?? 4096),
-      });
-      rawText = aiRes.text;
-      usedModel = aiRes.model;
-    } catch (aiErr: any) {
-      console.warn("[BACKGROUND_AI_WARN] AI Gateway call warning:", aiErr?.message);
+    const systemPromptWithRules = `${promptToUse.system_prompt}\n\n${variationDirective}`;
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const aiRes = await callLovableAiJson({
+          model: usedModel,
+          systemPrompt: attempt === 1 ? systemPromptWithRules : `${promptToUse.system_prompt}\n\n${buildVariationDirective()}`,
+          userPrompt: filledPrompt,
+          temperature: Number(settings?.temperature ?? 0.85),
+          maxTokens: isSma ? 2048 : (settings?.max_tokens ?? 4096),
+        });
+        rawText = aiRes.text;
+        usedModel = aiRes.model;
+        if (rawText && /\{[\s\S]*\}/.test(rawText)) break;
+        console.warn(`[BACKGROUND_AI_WARN] Percobaan ${attempt}: respons AI kosong / bukan JSON, mencoba ulang...`);
+      } catch (aiErr: any) {
+        console.warn(`[BACKGROUND_AI_WARN] Percobaan ${attempt} gagal:`, aiErr?.message);
+      }
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 800 * attempt));
     }
     const tAiDuration = Date.now() - tAiStart;
     console.log(`[8] Response AI diterima | Duration: ${tAiDuration} ms | Raw Length: ${rawText.length} chars`);
@@ -1164,8 +1175,8 @@ export async function retryAssessmentAnalysisServer(assessmentId: string) {
 
     const { data: newAss } = await supabaseAdmin.from("assessments").insert({
       id: isUUID(assessmentId) ? assessmentId : generateUUID(),
-      parent_id: isUUID(pObj?.id) ? pObj.id : (isUUID(assessmentId) ? assessmentId : null),
-      child_id: isUUID(cObj?.id) ? cObj.id : null,
+      parent_id: ((pObj?.id && isUUID(pObj.id)) ? pObj.id : (isUUID(assessmentId) ? assessmentId : null)) as any,
+      child_id: ((cObj?.id && isUUID(cObj.id)) ? cObj.id : null) as any,
       education_level: level,
       assessment_title: contentObj.reportTitle,
       status: "analyzing"
@@ -1190,7 +1201,7 @@ export async function retryAssessmentAnalysisServer(assessmentId: string) {
     },
     child: {
       name: child?.name || "Siswa",
-      gender: child?.gender || "L",
+      gender: ((child?.gender === "P" ? "P" : "L") as "L" | "P"),
       birth_date: child?.birth_date || "2020-01-01",
       school: child?.school || "",
       class_name: child?.class_name || "",
