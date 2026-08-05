@@ -203,11 +203,20 @@ export async function fetchAssessmentCardSettings(): Promise<AssessmentCardSetti
       }
     }
 
+    // Single source of truth for lock status: table `assessment_locks`.
+    // Any is_locked value stored in website_settings JSON is intentionally ignored.
+    console.info("[Assessment Setting Loaded]", {
+      TK: !lockMap["TK"],
+      SD: !lockMap["SD"],
+      SMP: !lockMap["SMP"],
+      SMA: !lockMap["SMA"],
+    });
+
     return {
-      TK: { ...DEFAULT_CARD_SETTINGS_DATA.TK, ...(cards.TK || {}), is_locked: lockMap["TK"] ?? cards.TK?.is_locked ?? false },
-      SD: { ...DEFAULT_CARD_SETTINGS_DATA.SD, ...(cards.SD || {}), is_locked: lockMap["SD"] ?? cards.SD?.is_locked ?? false },
-      SMP: { ...DEFAULT_CARD_SETTINGS_DATA.SMP, ...(cards.SMP || {}), is_locked: lockMap["SMP"] ?? cards.SMP?.is_locked ?? false },
-      SMA: { ...DEFAULT_CARD_SETTINGS_DATA.SMA, ...(cards.SMA || {}), is_locked: lockMap["SMA"] ?? cards.SMA?.is_locked ?? false },
+      TK: { ...DEFAULT_CARD_SETTINGS_DATA.TK, ...(cards.TK || {}), is_locked: lockMap["TK"] === true },
+      SD: { ...DEFAULT_CARD_SETTINGS_DATA.SD, ...(cards.SD || {}), is_locked: lockMap["SD"] === true },
+      SMP: { ...DEFAULT_CARD_SETTINGS_DATA.SMP, ...(cards.SMP || {}), is_locked: lockMap["SMP"] === true },
+      SMA: { ...DEFAULT_CARD_SETTINGS_DATA.SMA, ...(cards.SMA || {}), is_locked: lockMap["SMA"] === true },
     };
   } catch (err) {
     console.warn("[fetchAssessmentCardSettings] Error:", err);
