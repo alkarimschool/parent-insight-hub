@@ -1,28 +1,30 @@
 /**
  * Engine Analisis Narasi AI (WAJIB DIPATUHI PER PROSES ANALISIS)
- * Menyediakan direktif 6-langkah berpikir AI & variasi narasi dinamis
+ * Menyediakan direktif 7-langkah reasoning AI & variasi narasi dinamis
  * tanpa mengubah struktur JSON, API, backend, frontend, atau database.
  */
 
 const PERSONAS = [
-  "Psikolog Pendidikan SMA (Pendekatan Empatik, Reflektif & Mendalam)",
-  "Guru BK / Konselor Sekolah SMA (Pendekatan Praktis, Evaluatif & Membangun)",
-  "Mentor Pengembangan Remaja SMA (Pendekatan Motivatif, Proaktif & Aksi)",
-  "Konsultan Evaluasi Pembelajaran (Pendekatan Analitis, Terstruktur & Solutif)",
+  "Psikolog Pendidikan (Pendekatan Empatik, Reflektif, Mendalam & Personal)",
+  "Konselor Sekolah (Pendekatan Evaluatif, Terstruktur, Praktis & Membangun)",
+  "Mentor Pembimbing Belajar (Pendekatan Motivatif, Proaktif, Solutif & Aksi)",
+  "Pakar Evaluasi Perkembangan Anak & Remaja (Pendekatan Analitis, Objektif & Terukur)",
 ];
 
-const ANALYSIS_FLOWS = [
-  "Dominansi Karakter → Tantangan Akademik → Solusi Pendampingan",
-  "Pola Berpikir → Adaptasi Sosial → Penguatan Kemandirian",
-  "Tuntutan Pembelajaran SMA → Kekuatan Spesifik → Area Pendampingan",
-  "Observasi Pembelajaran → Dampak Perilaku → Rekomendasi Khusus",
+const ROTATING_NARRATIVE_FLOWS = [
+  "URUTAN IDE A: Karakter & Kemandirian → Kemampuan Akademik → Komunikasi & Sosial → Potensi & Rekomendasi",
+  "URUTAN IDE B: Komunikasi & Sosial → Kesiapan Pembelajaran → Karakter & Kemandirian → Potensi Pengembangan",
+  "URUTAN IDE C: Kemampuan Akademik → Kemampuan Berpikir → Kemandirian Belajar → Rekomendasi Orang Tua",
+  "URUTAN IDE D: Adaptasi Sosial & Pergaulan → Penalaran Berpikir → Karakter Diri → Kesiapan Sekolah",
+  "URUTAN IDE E: Potensi & Kelebihan Spesifik → Area Tantangan Utama → Kemandirian → Solusi Pendampingan",
 ];
 
 const FOCUS_ASPECTS = [
-  "Prioritas pada cara belajar dan motivasi akademik terlebih dahulu",
-  "Prioritas pada komunikasi, sosial, dan adaptasi pertemanan terlebih dahulu",
-  "Prioritas pada kedisiplinan, komitmen, dan karakter mandiri terlebih dahulu",
-  "Prioritas pada penalaran logis, kritis, dan pemecahan masalah terlebih dahulu",
+  "Fokus pembahasan utama: Prioritas pada kebiasaan belajar dan motivasi akademik terlebih dahulu.",
+  "Fokus pembahasan utama: Prioritas pada aspek komunikasi, dinamika sosial, dan adaptasi pertemanan terlebih dahulu.",
+  "Fokus pembahasan utama: Prioritas pada kedisiplinan, komitmen, dan kemandirian karakter terlebih dahulu.",
+  "Fokus pembahasan utama: Prioritas pada penalaran logis, pemecahan masalah, dan daya kritis terlebih dahulu.",
+  "Fokus pembahasan utama: Prioritas pada potensi minat serta penguatan kepercayaan diri terlebih dahulu.",
 ];
 
 function pick<T>(arr: T[]): T {
@@ -31,40 +33,47 @@ function pick<T>(arr: T[]): T {
 
 export function buildVariationDirective(): string {
   const seed = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  const chosenFlow = pick(ROTATING_NARRATIVE_FLOWS);
+  const chosenPersona = pick(PERSONAS);
+  const chosenFocus = pick(FOCUS_ASPECTS);
 
   return `
 ==================================================
-ENGINE ANALISIS AI BARU (WAJIB DIPATUHI SEBELUM MENULIS)
+ENGINE ANALISIS AI BARU (7-LANGKAH REASONING SEBELUM MENULIS)
 ==================================================
-SEED KEUNIKAN: ${seed} (Penanda internal, dilarang ditulis di output)
+SEED KEUNIKAN: ${seed} (Penanda internal, dilarang ditulis di output JSON)
 
-[TAHAP 1: PROSES 6-LANGKAH BERPIKIR AI SEBELUM MENULIS SEBALIKNYA MENYUSUN NARASI]
-Sebelum mengisi tiap field JSON, AI WAJIB menjalankan 6 langkah berpikir ini dari nol:
-1. Membaca & menyerap seluruh jawaban orang tua.
-2. Mencari hubungan unik antar jawaban (misal: hubungan antara fokus belajar dengan kecemasan tugas).
-3. Menentukan 3 aspek yang paling dominan secara khusus untuk siswa ini.
-4. Menentukan prioritas & urutan pembahasan narasi yang berbeda dari laporan lain.
-5. Memilih sudut pandang persona: ${pick(PERSONAS)}.
-6. Menyusun narasi baru dari nol — DILARANG sekadar mengganti kata/sinonim pada template baku!
+[TAHAP 1: PROSES 7-LANGKAH REASONING SEBELUM MENULIS]
+Sebelum mengisi tiap field JSON, AI WAJIB menjalankan 7 langkah reasoning secara internal dari nol:
+1. Membaca & menganalisis seluruh jawaban orang tua.
+2. Mencari hubungan unik antar jawaban (misal: hubungan antara tingkat fokus dengan regulasi emosi).
+3. Menentukan kemampuan dominan siswa secara spesifik dari data.
+4. Menentukan area yang paling membutuhkan perhatian & pendampingan terstruktur.
+5. Memilih fokus pembahasan: ${chosenFocus}.
+6. Memilih sudut pandang persona: ${chosenPersona}.
+7. Menyusun narasi baru dari nol — DILARANG mengulang template Baku!
 
-[TAHAP 2: ATURAN KEUNIKAN MASING-MASING FIELD (DILARANG SALING MENGULANG)]
-- ringkasan_kemampuan_awal: DILARANG pola baku (skor → kebiasaan → kemandirian → regulasi emosi). AI wajib memilih sendiri 3 aspek paling dominan dengan urutan pembahasan baru.
-- area_yang_perlu_diperhatikan (FOKUS UTAMA ~80%): Setiap indikator WAJIB memiliki penjelasan tersendiri (analisis berbeda, penyebab berbeda, dampak berbeda, rekomendasi berbeda). DILARANG 1 template untuk semua indikator!
-- kemampuan_awal_akademik: Murni analisis akademik. DILARANG mengulang isi ringkasan!
-- kemampuan_berpikir: Murni cara berpikir & penalaran kritis. DILARANG mengulang poin akademik!
-- kemampuan_komunikasi_dan_sosial: Murni interaksi & adaptasi sosial. DILARANG mengulang poin karakter!
-- karakter_dan_kemandirian: Murni kedisiplinan & komitmen. DILARANG mengulang poin sosial!
-- kesiapan_mengikuti_pembelajaran_SMA: Narasi khusus kesiapan menghadapi tuntutan SMA yang lebih kompleks.
-- potensi_pengembangan: Kombinasi potensi unik berdasarkan keseluruhan data asesmen.
-- potensi_dan_kelebihan (~20% Proporsional): DILARANG frasa umum ("Memiliki potensi yang baik", "Memiliki kemampuan dasar"). Jelaskan secara spesifik sesuai data.
-- rekomendasi_untuk_orang_tua: Rekomendasi khusus sebagai solusi langsung atas analisis yang muncul. Dilarang rekomendasi identik!
+[TAHAP 2: ROTASI URUTAN IDE & PEMBAHASAN (ANTI-TEMPLATE ROTATION)]
+AI WAJIB mengikuti urutan ide narasi untuk laporan ini:
+>>> ${chosenFlow} <<<
+DILARANG selalu menggunakan urutan baku (Pembuka → Skor → Kebiasaan Belajar → Kemandirian → Regulasi Emosi → Pendampingan). Susun ide sesuai urutan rotasi di atas!
 
-[TAHAP 3: ANTI-TEMPLATE & SELF-VALIDATION MURNI]
-- Alur pembahasan untuk laporan ini: ${pick(ANALYSIS_FLOWS)}.
-- Fokus penekanan: ${pick(FOCUS_ASPECTS)}.
+[TAHAP 3: ATURAN BERKARYA PER FIELD (MURNI DINAMIS & HINDARI REPETISI)]
+- ringkasan_kemampuan_awal / ringkasan_profil: Susun ringkasan baru dari awal. Gunakan sudut pandang & variasi pembuka alami yang berbeda tiap kali.
+- area_yang_perlu_diperhatikan / area_perlu_ditingkatkan: Setiap poin WAJIB dianalisis secara khusus dengan narasi berbeda (sebab, dampak, & solusi). DILARANG 1 penjelasan berulang untuk seluruh poin!
+- kemampuan_akademik: Fokus murni akademik. DILARANG mengulang isi ringkasan!
+- kemampuan_berpikir: Fokus murni penalaran & cara berpikir. DILARANG mengulang poin akademik!
+- kemampuan_komunikasi_dan_sosial / interaksi_sosial: Fokus murni komunikasi & adaptasi pertemanan. DILARANG mengulang poin karakter!
+- karakter_dan_kemandirian: Fokus murni kedisiplinan & komitmen. DILARANG mengulang poin sosial!
+- kesiapan_pembelajaran: Narasi khusus kesiapan menghadapi tuntutan belajar di jenjang ini.
+- potensi_pengembangan / potensi_dikembangkan: Temukan potensi paling relevan dari data asesmen.
+- potensi_dan_kelebihan: DILARANG frasa generik ("Memiliki potensi yang baik", "Secara umum baik"). Jelaskan secara spesifik sesuai data.
+- rekomendasi_orangtua: Rekomendasi wajib dibuat khusus sebagai solusi langsung atas hasil analisis. Dilarang rekomendasi identik!
+
+[TAHAP 4: ANTI-TEMPLATE ABSOLUT & THRESHOLD 20%]
 - DILARANG mengulang frase pembuka yang sama ("Berdasarkan hasil...", "Secara umum...", "Terlihat bahwa...", "Siswa menunjukkan...", "Masih perlu ditingkatkan...") lebih dari 1 kali dalam satu laporan!
-- AI WAJIB melakukan self-validation sebelum output JSON. Target kemiripan narasi antar laporan MAKSIMAL 20%.
+- AI WAJIB melakukan self-validation sebelum output JSON. Target kemiripan narasi antar laporan MAKSIMAL 20%. Apabila kemiripan narasi >20%, AI WAJIB menulis ulang seluruh field.
 
-Struktur JSON, nama key, dan urutan field WAJIB 100% SAMA SEPERTI SKEMA.
+Struktur JSON, nama key, dan urutan field WAJIB 100% SAMA SEPERTI SKEMA LAPORAN JENJANG TERKAIT.
 `.trim();
 }
