@@ -3,6 +3,7 @@ import { callLovableAiJson } from "./ai.server";
 import { EducationLevel, LEVEL_QUESTIONS, getEducationLevel } from "./questions.data";
 import { getAssessmentContent } from "./assessment-content";
 import { DEFAULT_PROMPTS } from "./prompt.data";
+import { buildVariationDirective } from "./narrative-variation";
 
 interface SubmitInput {
   parent: { name: string; whatsapp: string };
