@@ -1175,8 +1175,8 @@ export async function retryAssessmentAnalysisServer(assessmentId: string) {
 
     const { data: newAss } = await supabaseAdmin.from("assessments").insert({
       id: isUUID(assessmentId) ? assessmentId : generateUUID(),
-      parent_id: (pObj?.id && isUUID(pObj.id)) ? pObj.id : (isUUID(assessmentId) ? assessmentId : null),
-      child_id: (cObj?.id && isUUID(cObj.id)) ? cObj.id : null,
+      parent_id: ((pObj?.id && isUUID(pObj.id)) ? pObj.id : (isUUID(assessmentId) ? assessmentId : null)) as any,
+      child_id: ((cObj?.id && isUUID(cObj.id)) ? cObj.id : null) as any,
       education_level: level,
       assessment_title: contentObj.reportTitle,
       status: "analyzing"
