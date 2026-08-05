@@ -10,6 +10,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { getExportDataFn } from "@/lib/admin.functions";
 import { exportToJson, exportToCsv, exportToExcel, exportToPdf, exportQaReport, ExportAssessmentRow } from "@/lib/export.utils";
 import { supabase } from "@/integrations/supabase/client";
+import { createClient } from "@supabase/supabase-js";
+import { getAdminSecretKey } from "@/lib/admin-key";
+
+const adminFallbackSupabase = createClient(
+  "https://lqzicsebjjzhdsduqdcf.supabase.co",
+  getAdminSecretKey()
+);
 
 interface ExportDialogProps {
   open: boolean;
@@ -52,7 +59,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
     // Direct client fallback to Supabase Database
     try {
-      let query = supabase.from("assessments").select("*, parents(*), children(*), ai_results(*)").order("created_at", { ascending: false });
+      let query = adminFallbackSupabase.from("assessments").select("*, parents(*), children(*), ai_results(*)").order("created_at", { ascending: false });
 
       if (level && level !== "ALL") {
         query = query.eq("education_level", level.toUpperCase());
@@ -74,7 +81,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       const aIds = list.map((a: any) => a.id).filter(Boolean);
       let answersMap = new Map<string, Record<string, number>>();
       if (aIds.length > 0) {
-        const { data: ansRows } = await supabase.from("assessment_answers").select("assessment_id, question_id, score").in("assessment_id", aIds);
+        const { data: ansRows } = await adminFallbackSupabase.from("assessment_answers").select("assessment_id, question_id, score").in("assessment_id", aIds);
         if (ansRows && Array.isArray(ansRows)) {
           ansRows.forEach((ans: any) => {
             if (!answersMap.has(ans.assessment_id)) answersMap.set(ans.assessment_id, {});
