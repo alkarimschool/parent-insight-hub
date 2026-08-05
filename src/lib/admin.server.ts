@@ -799,3 +799,113 @@ export async function deleteAssessmentServer(targetId: string) {
 
   return { ok: true, id: targetId };
 }
+
+export async function getExportDataServer(filters?: {
+  level?: string;
+  startDate?: string;
+  endDate?: string;
+  childName?: string;
+  whatsapp?: string;
+  status?: string;
+}) {
+  let query = supabaseAdmin
+    .from("assessments")
+    .select("*, parents(*), children(*), ai_results(*)")
+    .order("created_at", { ascending: false });
+
+  if (filters?.level && filters.level.toUpperCase() !== "ALL") {
+    query = query.eq("education_level", filters.level.toUpperCase());
+  }
+
+  if (filters?.status && filters.status.toUpperCase() !== "ALL") {
+    query = query.eq("status", filters.status.toLowerCase());
+  }
+
+  if (filters?.startDate) {
+    const startIso = new Date(`${filters.startDate}T00:00:00.000Z`).toISOString();
+    query = query.gte("created_at", startIso);
+  }
+
+  if (filters?.endDate) {
+    const endIso = new Date(`${filters.endDate}T23:59:59.999Z`).toISOString();
+    query = query.lte("created_at", endIso);
+  }
+
+  const { data: assessments, error } = await query;
+  if (error) {
+    console.warn("[getExportDataServer Error]", error.message);
+  }
+
+  const list = assessments || [];
+
+  // Fetch assessment_answers for score calculation & Q1-Q40 output
+  const assessmentIds = list.map((a: any) => a.id).filter(Boolean);
+  let answersMap = new Map<string, Record<string, number>>();
+
+  if (assessmentIds.length > 0) {
+    const { data: ansRows } = await supabaseAdmin
+      .from("assessment_answers")
+      .select("assessment_id, question_id, score")
+      .in("assessment_id", assessmentIds);
+
+    if (ansRows && Array.isArray(ansRows)) {
+      ansRows.forEach((ans: any) => {
+        if (!answersMap.has(ans.assessment_id)) {
+          answersMap.set(ans.assessment_id, {});
+        }
+        const m = answersMap.get(ans.assessment_id)!;
+        m[ans.question_id] = Number(ans.score || 3);
+      });
+    }
+  }
+
+  const exportRows = list.map((a: any) => {
+    const pObj = Array.isArray(a.parents) ? a.parents[0] : a.parents;
+    const cObj = Array.isArray(a.children) ? a.children[0] : a.children;
+    const rObj = Array.isArray(a.ai_results) ? a.ai_results[0] : a.ai_results;
+
+    const childName = cObj?.name || "Siswa";
+    const parentName = pObj?.name || "Orang Tua";
+    const whatsapp = pObj?.whatsapp || "";
+
+    const ansObj = answersMap.get(a.id) || {};
+    const scores = Object.values(ansObj);
+    const avgScore = scores.length > 0 ? (scores.reduce((sum, s) => sum + s, 0) / scores.length).toFixed(2) : "3.80";
+
+    const aiContent = rObj?.content || rObj?.result_json || {};
+
+    let category = "Sangat Siap & Mandiri";
+    const numAvg = Number(avgScore);
+    if (numAvg < 2.8) {
+      category = "Perlu Pendampingan Intensif";
+    } else if (numAvg < 3.5) {
+      category = "Berkembang Sesuai Usia";
+    }
+
+    return {
+      id: a.id,
+      created_at: a.created_at || new Date().toISOString(),
+      child_name: childName,
+      parent_name: parentName,
+      whatsapp: whatsapp,
+      education_level: extractTrueLevel(a),
+      average_score: avgScore,
+      category: category,
+      answers: ansObj,
+      ai_result: aiContent,
+    };
+  });
+
+  // Client-side text filter pass if childName or whatsapp search text provided
+  let filtered = exportRows;
+  if (filters?.childName) {
+    const term = filters.childName.toLowerCase();
+    filtered = filtered.filter((r) => r.child_name.toLowerCase().includes(term));
+  }
+  if (filters?.whatsapp) {
+    const term = filters.whatsapp.toLowerCase();
+    filtered = filtered.filter((r) => r.whatsapp.toLowerCase().includes(term));
+  }
+
+  return filtered;
+}

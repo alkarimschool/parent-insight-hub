@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutDashboard, Users, ListChecks, MessageSquare, Settings, Globe, ScrollText, LogOut, Waves, Menu, X, Layers } from "lucide-react";
+import { LayoutDashboard, Users, ListChecks, MessageSquare, Settings, Globe, ScrollText, LogOut, Waves, Menu, X, Layers, Download } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 
 export const Route = createFileRoute("/_authenticated/admin")({

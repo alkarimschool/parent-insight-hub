@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Users, ClipboardCheck, Clock, CheckCircle2, Baby, BookOpen, School, GraduationCap, Wrench, ArrowRight, ExternalLink } from "lucide-react";
+import { Users, ClipboardCheck, Clock, CheckCircle2, Baby, BookOpen, School, GraduationCap, Wrench, ArrowRight, ExternalLink, Download, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getAdminStatsFn, getAdminRecentFn } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { ExportDialog } from "@/components/admin/ExportDialog";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: Dashboard,
@@ -36,6 +38,7 @@ function Card({ title, value, icon: Icon, color, to }: { title: string; value: n
 
 function Dashboard() {
   const [selectedLevel, setSelectedLevel] = useState<string>("ALL");
+  const [exportOpen, setExportOpen] = useState(false);
 
   const getStats = useServerFn(getAdminStatsFn);
   const getRecent = useServerFn(getAdminRecentFn);
@@ -138,13 +141,35 @@ function Dashboard() {
           <h1 className="text-2xl font-bold text-foreground">Dashboard Admin</h1>
           <p className="text-sm text-muted-foreground">Ringkasan statistik assessment & koneksi ke Database Orang Tua.</p>
         </div>
-        <Link
-          to="/admin/parents"
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-hero px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-soft transition hover:opacity-95"
-        >
-          <Users className="h-4 w-4" /> Kelola Database Orang Tua <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            onClick={() => setExportOpen(true)}
+            className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 text-xs font-bold shadow-soft gap-2"
+          >
+            <Download className="h-4 w-4" />
+            📥 Export Hasil Analisis AI
+          </Button>
+
+          <Button
+            onClick={() => setExportOpen(true)}
+            variant="outline"
+            className="rounded-full border-amber-500/40 text-amber-800 dark:text-amber-300 hover:bg-amber-500/10 px-4 py-2 text-xs font-bold gap-2"
+          >
+            <ShieldCheck className="h-4 w-4 text-amber-600" />
+            📊 Export QA Report
+          </Button>
+
+          <Link
+            to="/admin/parents"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-hero px-4 py-2 text-xs font-bold text-primary-foreground shadow-soft transition hover:opacity-95"
+          >
+            <Users className="h-4 w-4" /> Database Orang Tua <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
+
+      <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
 
       {/* STATS CARDS */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

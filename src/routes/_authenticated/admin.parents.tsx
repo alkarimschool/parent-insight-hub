@@ -4,13 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { ExternalLink, Edit3, Trash2, Save, X, Search, GraduationCap, MessageSquare, AlertTriangle, Loader2, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ExternalLink, Edit3, Trash2, Save, X, Search, GraduationCap, MessageSquare, AlertTriangle, Loader2, RefreshCw, AlertCircle, CheckCircle2, Download, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { updateParentChildFn, getAdminParentsFn, deleteAssessmentFn, retryAssessmentFn } from "@/lib/admin.functions";
 
 import { getAssessmentContent } from "@/lib/assessment-content";
 import { supabase } from "@/integrations/supabase/client";
+import { ExportDialog } from "@/components/admin/ExportDialog";
 
 export const Route = createFileRoute("/_authenticated/admin/parents")({
   component: ParentsList,
@@ -53,6 +54,7 @@ function ParentsList() {
   };
 
   const [q, setQ] = useState("");
+  const [exportOpen, setExportOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<any>(null);
   const [deletingRow, setDeletingRow] = useState<any>(null);
   const [saving, setSaving] = useState(false);
@@ -216,7 +218,7 @@ function ParentsList() {
         </p>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -226,7 +228,28 @@ function ParentsList() {
             className="pl-9 text-xs"
           />
         </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setExportOpen(true)}
+            className="rounded-xl text-xs font-semibold gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft"
+          >
+            <Download className="h-4 w-4" />
+            📥 Export Hasil Analisis AI
+          </Button>
+
+          <Button
+            onClick={() => setExportOpen(true)}
+            variant="outline"
+            className="rounded-xl text-xs font-semibold gap-2 border-amber-500/40 text-amber-800 dark:text-amber-300 hover:bg-amber-500/10"
+          >
+            <ShieldCheck className="h-4 w-4 text-amber-600" />
+            📊 Export QA Report
+          </Button>
+        </div>
       </div>
+
+      <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
 
       {/* TABLE */}
       <div className="overflow-x-auto rounded-3xl border border-border/60 bg-card shadow-soft">

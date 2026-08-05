@@ -107,3 +107,10 @@ export const retryAssessmentFn = createServerFn({ method: "POST" })
     const { retryAssessmentAnalysisServer } = await import("./assessment.server");
     return retryAssessmentAnalysisServer(data.id);
   });
+
+export const getExportDataFn = createServerFn({ method: "POST" })
+  .inputValidator((data: any) => data)
+  .handler(async ({ data }) => {
+    const { getExportDataServer } = await import("./admin.server");
+    return getExportDataServer(data);
+  });

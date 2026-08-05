@@ -44,7 +44,9 @@ export async function callLovableAiJson(opts: AiCallOptions): Promise<{ text: st
             contents: [{ parts: [{ text: opts.userPrompt }] }],
             generationConfig: {
               response_mime_type: "application/json",
-              temperature: opts.temperature ?? 0.85,
+              temperature: opts.temperature ?? 0.90,
+              topP: 0.95,
+              topK: 40,
               maxOutputTokens: opts.maxTokens ?? 4096,
             },
           }),
@@ -60,7 +62,8 @@ export async function callLovableAiJson(opts: AiCallOptions): Promise<{ text: st
           signal: controller.signal,
           body: JSON.stringify({
             model: opts.model,
-            temperature: opts.temperature ?? 0.85,
+            temperature: opts.temperature ?? 0.90,
+            top_p: 0.95,
             max_tokens: opts.maxTokens ?? 4096,
             response_format: { type: "json_object" },
             messages: [

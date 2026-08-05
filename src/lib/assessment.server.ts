@@ -3,7 +3,7 @@ import { callLovableAiJson } from "./ai.server";
 import { EducationLevel, LEVEL_QUESTIONS, getEducationLevel } from "./questions.data";
 import { getAssessmentContent } from "./assessment-content";
 import { DEFAULT_PROMPTS } from "./prompt.data";
-import { buildVariationDirective } from "./narrative-variation";
+import { buildVariationDirective, FIELD_VARIATION_TEMPLATES } from "./narrative-variation";
 
 interface SubmitInput {
   parent: { name: string; whatsapp: string };
@@ -453,66 +453,29 @@ function generateFallbackResult(childName: string, parentName: string, avgScore:
       });
     }
 
-    const OPENING_VARIATIONS = [
-      `Berdasarkan hasil asesmen yang diisi oleh orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5), Ananda ${childName} menunjukkan gambaran kemampuan awal yang `,
-      `Berdasarkan informasi yang disampaikan orang tua melalui instrumen (Rata-rata Skor: ${avgScore.toFixed(2)}/5), Ananda ${childName} memperlihatkan profil awal yang `,
-      `Dari hasil pengisian instrumen observasi orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5), Ananda ${childName} berada pada tingkat kesiapan yang `,
-      `Mengacu pada gambaran observasi orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5), Ananda ${childName} memiliki kondisi pembelajaran SMA yang `,
-      `Hasil pemetaan kemampuan awal memperlihatkan bahwa Ananda ${childName} (Rata-rata Skor: ${avgScore.toFixed(2)}/5) menunjukkan kesiapan yang `
+    const DYNAMIC_OPENERS = [
+      `Mempertimbangkan hasil instrumen observasi dari Bapak/Ibu ${parentName} (Skor Rata-rata: ${avgScore.toFixed(2)}/5), Ananda ${childName} secara keseluruhan memiliki `,
+      `Berdasarkan pencermatan data asesmen awal yang diisi oleh orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5), profil kesiapan Ananda ${childName} menunjukkan kondisi yang `,
+      `Dari rangkuman data pengamatan orang tua di rumah (Skor Rata-rata: ${avgScore.toFixed(2)}/5), gambaran umum perkembangan Ananda ${childName} berada pada tahap yang `,
+      `Melalui potret asesmen yang disampaikan orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5), Ananda ${childName} memperlihatkan landasan belajar yang `,
+      `Hasil pemetaan awal dari lembar observasi orang tua (Skor Rata-rata: ${avgScore.toFixed(2)}/5) mencerminkan bahwa Ananda ${childName} memiliki kesiapan yang `
     ];
 
-    const pickIdx = Math.abs((childName.length * 7 + Math.round(avgScore * 10)) % OPENING_VARIATIONS.length);
-    const openingPrefix = OPENING_VARIATIONS[pickIdx];
+    const hashVal = Math.abs(childName.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) + Math.round(avgScore * 100));
+    const strategyIdx = ((hashVal % 10) + 1);
+    const template = FIELD_VARIATION_TEMPLATES[strategyIdx] || FIELD_VARIATION_TEMPLATES[1];
 
     return {
-      ringkasan_kemampuan_awal: `${openingPrefix}${isPositif ? "siap, mandiri, dan memiliki landasan belajar positif untuk mengikuti proses pembelajaran di jenjang SMA." : isKurang ? "memerlukan pendampingan terstruktur dari orang tua terutama pada pemantauan kebiasaan belajar, kemandirian tugas, dan regulasi emosi." : "berkembang cukup baik dengan beberapa area kebiasaan belajar yang perlu terus dibina agar siap menghadapi tuntutan pembelajaran di jenjang SMA."}`,
-      area_yang_perlu_diperhatikan: areaPerhatian,
-      kemampuan_awal_akademik: isKurang ? [
-        "Pemahaman materi baru dan penyelesaian tugas sekolah membutuhkan dorongan berulang dari orang tua.",
-        "Kemandirian dan konsistensi belajar mandiri di rumah masih perlu dibina secara teratur."
-      ] : [
-        "Mampu memahami materi pelajaran baru dengan cepat serta menyelesaikan tugas dengan tepat waktu.",
-        "Menunjukkan rasa ingin tahu yang tinggi dan motivasi belajar yang positif."
-      ],
-      kemampuan_berpikir: isKurang ? [
-        "Perlu latihan pemecahan masalah (problem solving) secara logis dan terstruktur ketika menghadapi kesulitan tugas.",
-        "Perlu pendampingan saat menganalisis permasalahan sebelum mengambil keputusan."
-      ] : [
-        "Mampu berpikir logis dan menganalisis permasalahan dengan baik dalam situasi harian.",
-        "Mampu mencari solusi mandiri saat menghadapi kesulitan belajar."
-      ],
-      kemampuan_komunikasi_dan_sosial: isKurang ? [
-        "Kepercayaan diri dalam menyampaikan pendapat dan adaptasi di lingkungan baru masih memerlukan penguatan dari orang tua.",
-        "Perlu dorongan untuk lebih aktif dan kooperatif dalam kegiatan kelompok."
-      ] : [
-        "Percaya diri dalam menyampaikan pendapat serta mudah beradaptasi dengan lingkungan pertemanan baru.",
-        "Mampu bekerja sama secara efektif dalam kegiatan kelompok."
-      ],
-      karakter_dan_kemandirian: isKurang ? [
-        "Sikap disiplin dan rasa tanggung jawab harian masih perlu diawasi dan dibimbing secara konsisten.",
-        "Regulasi emosi ketika menghadapi tekanan, kritik, atau kegagalan memerlukan kesabaran pendampingan orang tua."
-      ] : [
-        "Menunjukkan sikap disiplin, kejujuran, dan rasa tanggung jawab pribadi yang matang.",
-        "Mampu mengendalikan emosi dengan baik saat menghadapi tekanan atau kegagalan."
-      ],
-      kesiapan_mengikuti_pembelajaran_SMA: isKurang ? [
-        "Anak memerlukan penyesuaian dan pendampingan intensif agar mampu mengikuti ritme pembelajaran SMA yang lebih kompleks dan padat."
-      ] : [
-        "Anak telah memiliki kesiapan dasar yang baik untuk mengikuti pembelajaran SMA dan siap merencanakan minat masa depan."
-      ],
-      potensi_pengembangan: [
-        "Peluang besar untuk mengasah keterampilan berpikir kritis dan analisis terstruktur melalui kegiatan diskusi harian di rumah.",
-        "Potensi pengembangan kepemimpinan dan kemandirian otonom dengan memberikan kepercayaan tugas rumah secara bertahap."
-      ],
-      potensi_dan_kelebihan: kelebihan,
-      rekomendasi_untuk_orang_tua: isKurang ? [
-        "Dampingi anak menyusun jadwal rutinitas harian yang jelas antara waktu belajar, istirahat, dan kegiatan pribadi.",
-        "Hindari memberikan kritik tajam saat anak mengalami kegagalan, berikan apresiasi pada usaha dan bantu anak menemukan solusi.",
-        "Lakukan komunikasi terbuka setiap minggu untuk mengevaluasi hambatan tugas sekolah dan perasaan anak."
-      ] : [
-        "Berikan otonomi dan kepercayaan penuh dalam pengelolaan waktu belajar mandiri anak.",
-        "Fasilitasi ruang diskusi dan eksplorasi minat masa depan sesuai dengan potensi yang diminati anak."
-      ]
+      ringkasan_kemampuan_awal: template.ringkasan(parentName, childName, avgScore.toFixed(2)),
+      area_yang_perlu_diperhatikan: template.areaPerhatian,
+      kemampuan_awal_akademik: template.akademik,
+      kemampuan_berpikir: template.berpikir,
+      kemampuan_komunikasi_dan_sosial: template.sosialisasi,
+      karakter_dan_kemandirian: template.karakter,
+      kesiapan_mengikuti_pembelajaran_SMA: template.kesiapanSma,
+      potensi_pengembangan: template.potensi,
+      potensi_dan_kelebihan: template.kelebihan,
+      rekomendasi_untuk_orang_tua: template.rekomendasi,
     };
   }
 
@@ -1115,23 +1078,46 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
 
     const tUpdateStart = Date.now();
 
-    await Promise.all([
-      supabaseAdmin.from("ai_results").upsert({
-        assessment_id: assessmentId,
-        content: parsedResult,
-        raw_text: rawText,
-        model: usedModel,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "assessment_id" }),
+    try {
+      const { data: existingAiRes } = await supabaseAdmin
+        .from("ai_results")
+        .select("id")
+        .eq("assessment_id", assessmentId)
+        .maybeSingle();
 
-      supabaseAdmin.from("assessments").update({
+      if (existingAiRes) {
+        await supabaseAdmin
+          .from("ai_results")
+          .update({
+            content: parsedResult,
+            raw_text: rawText,
+            model: usedModel,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingAiRes.id);
+      } else {
+        await supabaseAdmin.from("ai_results").insert({
+          assessment_id: assessmentId,
+          content: parsedResult,
+          raw_text: rawText,
+          model: usedModel,
+        });
+      }
+    } catch (dbErr: any) {
+      console.warn("[DB_AI_RESULTS_SAVE_WARN]", dbErr?.message);
+    }
+
+    try {
+      await supabaseAdmin.from("assessments").update({
         status: "analyzed",
         education_level: dbEducationLevel,
         assessment_title: levelContentObj.reportTitle,
         ai_prompt: filledPrompt,
         updated_at: new Date().toISOString(),
-      }).eq("id", assessmentId)
-    ]);
+      }).eq("id", assessmentId);
+    } catch (aUpErr: any) {
+      console.warn("[DB_ASSESSMENTS_UPDATE_WARN]", aUpErr?.message);
+    }
 
     const tUpdateDuration = Date.now() - tUpdateStart;
     console.log(`[10] Hasil analisis berhasil disimpan | Duration: ${tUpdateDuration} ms`);
