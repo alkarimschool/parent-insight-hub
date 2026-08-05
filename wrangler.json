@@ -1,21 +1,17 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "parent-insight-hub",
+  "name": "parentawereness",
   "compatibility_date": "2026-07-24",
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  "build": {
-    "command": "npm run build"
-  },
   "main": ".output/server/index.mjs",
   "assets": {
     "directory": ".output/public",
-    "binding": "STATIC_ASSETS"
+    "binding": "ASSETS"
   },
   "vars": {
     "SUPABASE_URL": "https://lqzicsebjjzhdsduqdcf.supabase.co",
     "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_pu4E46tx3jk_u55S6-vFDg_Bggu_6fv"
-  },
-  "pages_build_output_dir": ".output/public"
+  }
 }
