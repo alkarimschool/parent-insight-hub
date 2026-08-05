@@ -461,21 +461,33 @@ function generateFallbackResult(childName: string, parentName: string, avgScore:
       `Hasil pemetaan awal dari lembar observasi orang tua (Skor Rata-rata: ${avgScore.toFixed(2)}/5) mencerminkan bahwa Ananda ${childName} memiliki kesiapan yang `
     ];
 
-    const hashVal = Math.abs(childName.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) + Math.round(avgScore * 100));
-    const strategyIdx = ((hashVal % 10) + 1);
+    // Dynamic strategy index using timestamp seed and random entropy so emergency fallback produces non-identical text
+    const randomEntropy = Math.floor(Math.random() * 1000000) + Date.now();
+    const strategyIdx = (randomEntropy % 10) + 1;
     const template = FIELD_VARIATION_TEMPLATES[strategyIdx] || FIELD_VARIATION_TEMPLATES[1];
 
+    const pickOpener = DYNAMIC_OPENERS[Math.floor(Math.random() * DYNAMIC_OPENERS.length)];
+    const baseSummary = template.ringkasan(parentName, childName, avgScore.toFixed(2));
+    const dynamicSummary = `${pickOpener}${baseSummary.replace(/^[A-Z][a-z]+\s+[A-Z][a-z]+\s+/, "")}`;
+
+    // Clause & Sentence Rotation
+    const rotateArr = (arr: any[]) => {
+      if (!Array.isArray(arr)) return arr;
+      const copy = [...arr];
+      return copy.sort(() => Math.random() - 0.5);
+    };
+
     return {
-      ringkasan_kemampuan_awal: template.ringkasan(parentName, childName, avgScore.toFixed(2)),
-      area_yang_perlu_diperhatikan: template.areaPerhatian,
-      kemampuan_awal_akademik: template.akademik,
-      kemampuan_berpikir: template.berpikir,
-      kemampuan_komunikasi_dan_sosial: template.sosialisasi,
-      karakter_dan_kemandirian: template.karakter,
-      kesiapan_mengikuti_pembelajaran_SMA: template.kesiapanSma,
-      potensi_pengembangan: template.potensi,
-      potensi_dan_kelebihan: template.kelebihan,
-      rekomendasi_untuk_orang_tua: template.rekomendasi,
+      ringkasan_kemampuan_awal: dynamicSummary,
+      area_yang_perlu_diperhatikan: rotateArr(template.areaPerhatian),
+      kemampuan_awal_akademik: rotateArr(template.akademik),
+      kemampuan_berpikir: rotateArr(template.berpikir),
+      kemampuan_komunikasi_dan_sosial: rotateArr(template.sosialisasi),
+      karakter_dan_kemandirian: rotateArr(template.karakter),
+      kesiapan_mengikuti_pembelajaran_SMA: rotateArr(template.kesiapanSma),
+      potensi_pengembangan: rotateArr(template.potensi),
+      potensi_dan_kelebihan: rotateArr(template.kelebihan),
+      rekomendasi_untuk_orang_tua: rotateArr(template.rekomendasi),
     };
   }
 
@@ -1012,7 +1024,7 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
           systemPrompt: attempt === 1 ? systemPromptWithRules : `${promptToUse.system_prompt}\n\n${buildVariationDirective()}`,
           userPrompt: filledPrompt,
           temperature: Number(settings?.temperature ?? 0.85),
-          maxTokens: isSma ? 2048 : (settings?.max_tokens ?? 4096),
+          maxTokens: settings?.max_tokens ?? 4096,
         });
         rawText = aiRes.text;
         usedModel = aiRes.model;

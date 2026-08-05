@@ -8,8 +8,8 @@ export interface AiCallOptions {
 }
 
 export async function callLovableAiJson(opts: AiCallOptions): Promise<{ text: string; model: string }> {
-  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  const lovableKey = process.env.LOVABLE_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.VITE_GEMINI_API_KEY;
+  const lovableKey = process.env.LOVABLE_API_KEY || process.env.LOVABLE_AI_API_KEY;
 
   if (!geminiKey && !lovableKey) {
     console.warn("[AI_SERVER] No direct GEMINI_API_KEY or LOVABLE_API_KEY found in process.env. Will fallback to rule-based analysis if AI request fails.");
@@ -24,7 +24,7 @@ export async function callLovableAiJson(opts: AiCallOptions): Promise<{ text: st
       console.info(`[STAGE 4: AI_ANALYSIS_START] Attempt ${attempt}/${maxRetries + 1} | Model: ${opts.model} | SystemPrompt length: ${opts.systemPrompt.length} chars | UserPrompt length: ${opts.userPrompt.length} chars`);
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s fast timeout
+      const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s complete generation timeout
 
       let res: Response;
       let usedModelName = opts.model;
