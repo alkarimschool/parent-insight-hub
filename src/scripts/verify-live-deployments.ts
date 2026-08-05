@@ -1,30 +1,19 @@
 import { chromium } from "playwright-core";
-import fs from "fs";
 import path from "path";
 
 async function verifyLiveDeployments() {
-  const possiblePaths = [
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
-  ];
-
-  let executablePath = possiblePaths.find((p) => fs.existsSync(p));
-  if (!executablePath) return;
+  const executablePath = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+  const artifactsDir = "C:\\Users\\AZAM\\.gemini\\antigravity-ide\\brain\\0a38a485-06d3-4265-8749-75d2c9e7ce9a";
 
   const browser = await chromium.launch({ executablePath, headless: true });
-  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
-  const page = await context.newPage();
-
-  const artifactsDir = "C:\\Users\\AZAM\\.gemini\\antigravity-ide\\brain\\0a38a485-06d3-4265-8749-75d2c9e7ce9a";
+  const page = await browser.newPage();
 
   console.log("▶ [1/2] Verifying Cloudflare Production URL (https://parentawereness.sdalamalkarim.workers.dev)...");
   try {
     await page.goto("https://parentawereness.sdalamalkarim.workers.dev/auth", { waitUntil: "networkidle", timeout: 25000 });
     await page.evaluate(() => localStorage.setItem("paa_admin_logged_in", "true"));
     await page.goto("https://parentawereness.sdalamalkarim.workers.dev/admin/parents", { waitUntil: "networkidle", timeout: 25000 });
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
 
     const cfScreenshotPath = path.join(artifactsDir, "cloudflare_live_verified.png");
     await page.screenshot({ path: cfScreenshotPath, fullPage: false });
@@ -43,7 +32,13 @@ async function verifyLiveDeployments() {
     await page.goto("https://parentawareness.lovable.app/auth", { waitUntil: "networkidle", timeout: 25000 });
     await page.evaluate(() => localStorage.setItem("paa_admin_logged_in", "true"));
     await page.goto("https://parentawareness.lovable.app/admin/parents", { waitUntil: "networkidle", timeout: 25000 });
-    await page.waitForTimeout(2000);
+    
+    // Wait for Supabase React Query data rows to render
+    try {
+      await page.waitForSelector("tbody tr td:nth-child(2)", { timeout: 8000 });
+    } catch {
+      await page.waitForTimeout(3000);
+    }
 
     const lovableScreenshotPath = path.join(artifactsDir, "lovable_live_verified.png");
     await page.screenshot({ path: lovableScreenshotPath, fullPage: false });

@@ -4,9 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { ExternalLink, Edit3, Trash2, Save, X, Search, GraduationCap, MessageSquare, AlertTriangle, Loader2, RefreshCw, AlertCircle, CheckCircle2, Download, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { useServerFn } from "@tanstack/react-start";
 import { updateParentChildFn, getAdminParentsFn, deleteAssessmentFn, retryAssessmentFn } from "@/lib/admin.functions";
 
 import { getAssessmentContent } from "@/lib/assessment-content";
@@ -31,10 +29,10 @@ function formatWaLink(phone: string, childName: string, level: string, assessmen
 
 function ParentsList() {
   const qc = useQueryClient();
-  const getParentsList = useServerFn(getAdminParentsFn);
-  const updateParentChild = useServerFn(updateParentChildFn);
-  const retryAnalysis = useServerFn(retryAssessmentFn);
-  const deleteAssessment = useServerFn(deleteAssessmentFn);
+  const getParentsList = getAdminParentsFn;
+  const updateParentChild = updateParentChildFn;
+  const retryAnalysis = retryAssessmentFn;
+  const deleteAssessment = deleteAssessmentFn;
   const [retryingId, setRetryingId] = useState<string | null>(null);
 
   const handleRetryAnalysis = async (r: any) => {

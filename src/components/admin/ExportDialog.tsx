@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, FileJson, FileSpreadsheet, FileText, FileCode, ShieldCheck, Loader2, Filter, RefreshCw, BarChart2 } from "lucide-react";
 import { toast } from "sonner";
-import { useServerFn } from "@tanstack/react-start";
 import { getExportDataFn } from "@/lib/admin.functions";
 import { exportToJson, exportToCsv, exportToExcel, exportToPdf, exportQaReport, ExportAssessmentRow } from "@/lib/export.utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +16,7 @@ interface ExportDialogProps {
 }
 
 export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
-  const getExportData = useServerFn(getExportDataFn);
+  const getExportData = getExportDataFn;
 
   const [level, setLevel] = useState<string>("ALL");
   const [startDate, setStartDate] = useState<string>("");

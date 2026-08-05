@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Users, ClipboardCheck, Clock, CheckCircle2, Baby, BookOpen, School, GraduationCap, Wrench, ArrowRight, ExternalLink, Download, ShieldCheck } from "lucide-react";
 import { useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import { getAdminStatsFn, getAdminRecentFn } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -40,8 +39,8 @@ function Dashboard() {
   const [selectedLevel, setSelectedLevel] = useState<string>("ALL");
   const [exportOpen, setExportOpen] = useState(false);
 
-  const getStats = useServerFn(getAdminStatsFn);
-  const getRecent = useServerFn(getAdminRecentFn);
+  const getStats = getAdminStatsFn;
+  const getRecent = getAdminRecentFn;
 
   const stats = useQuery({
     queryKey: ["admin-stats-multi-level"],
