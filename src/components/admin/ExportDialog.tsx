@@ -40,17 +40,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       status,
     };
 
-    try {
-      const serverData = await getExportData({ data: filterObj });
-      if (serverData && Array.isArray(serverData) && serverData.length > 0) {
-        setLoading(false);
-        return serverData as ExportAssessmentRow[];
-      }
-    } catch (err) {
-      console.warn("[ExportDialog] getExportData serverFn error, executing client fallback:", err);
-    }
-
-    // Direct client fallback to Supabase Database
+    // 1. Direct client query to Supabase Database (Guarantees instant loading on Lovable Web SPA)
     try {
       let query = supabase.from("assessments").select("*, parents(*), children(*), ai_results(*)").order("created_at", { ascending: false });
 
@@ -70,62 +60,69 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       const { data: assessments } = await query;
       const list = assessments || [];
 
-      // Fetch answers map
-      const aIds = list.map((a: any) => a.id).filter(Boolean);
-      let answersMap = new Map<string, Record<string, number>>();
-      if (aIds.length > 0) {
-        const { data: ansRows } = await supabase.from("assessment_answers").select("assessment_id, question_id, score").in("assessment_id", aIds);
-        if (ansRows && Array.isArray(ansRows)) {
-          ansRows.forEach((ans: any) => {
-            if (!answersMap.has(ans.assessment_id)) answersMap.set(ans.assessment_id, {});
-            answersMap.get(ans.assessment_id)![ans.question_id] = Number(ans.score || 3);
-          });
+      if (list.length > 0) {
+        // Fetch answers map
+        const aIds = list.map((a: any) => a.id).filter(Boolean);
+        let answersMap = new Map<string, Record<string, number>>();
+        if (aIds.length > 0) {
+          const { data: ansRows } = await supabase.from("assessment_answers").select("assessment_id, question_id, score").in("assessment_id", aIds);
+          if (ansRows && Array.isArray(ansRows)) {
+            ansRows.forEach((ans: any) => {
+              if (!answersMap.has(ans.assessment_id)) answersMap.set(ans.assessment_id, {});
+              answersMap.get(ans.assessment_id)![ans.question_id] = Number(ans.score || 3);
+            });
+          }
         }
+
+        const mapped = list.map((a: any) => {
+          const p = Array.isArray(a.parents) ? a.parents[0] : a.parents;
+          const c = Array.isArray(a.children) ? a.children[0] : a.children;
+          const r = Array.isArray(a.ai_results) ? a.ai_results[0] : a.ai_results;
+
+          return {
+            id: a.id,
+            created_at: a.created_at || new Date().toISOString(),
+            status: a.status || "analyzed",
+            education_level: a.education_level || c?.education_level || "SMA",
+            parent_name: p?.name || "Orang Tua",
+            parent_whatsapp: p?.whatsapp || "-",
+            child_name: c?.name || "Anak",
+            child_school: c?.school || "-",
+            child_birth_date: c?.birth_date || "",
+            overall_score: Number(r?.overall_score || 0),
+            summary: r?.summary || "",
+            analysis_text: r?.analysis_text || "",
+            recommendations: Array.isArray(r?.recommendations) ? r.recommendations.join("\n") : (r?.recommendations || ""),
+            answers: answersMap.get(a.id) || {},
+          } as ExportAssessmentRow;
+        });
+
+        const filtered = mapped.filter((row) => {
+          if (childName && !row.child_name.toLowerCase().includes(childName.toLowerCase())) return false;
+          if (whatsapp && !row.parent_whatsapp.includes(whatsapp)) return false;
+          return true;
+        });
+
+        setLoading(false);
+        return filtered;
       }
-
-      const rows: ExportAssessmentRow[] = list.map((a: any) => {
-        const pObj = Array.isArray(a.parents) ? a.parents[0] : a.parents;
-        const cObj = Array.isArray(a.children) ? a.children[0] : a.children;
-        const rObj = Array.isArray(a.ai_results) ? a.ai_results[0] : a.ai_results;
-
-        const ansObj = answersMap.get(a.id) || {};
-        const scores = Object.values(ansObj);
-        const avgScore = scores.length > 0 ? (scores.reduce((sum, s) => sum + s, 0) / scores.length).toFixed(2) : "3.80";
-
-        let category = "Sangat Siap & Mandiri";
-        const numAvg = Number(avgScore);
-        if (numAvg < 2.8) category = "Perlu Pendampingan Intensif";
-        else if (numAvg < 3.5) category = "Berkembang Sesuai Usia";
-
-        return {
-          id: a.id,
-          created_at: a.created_at || new Date().toISOString(),
-          child_name: cObj?.name || "Siswa",
-          parent_name: pObj?.name || "Orang Tua",
-          whatsapp: pObj?.whatsapp || "",
-          education_level: a.education_level || cObj?.education_level || "SMA",
-          average_score: avgScore,
-          category,
-          answers: ansObj,
-          ai_result: rObj?.content || rObj?.result_json || {},
-        };
-      });
-
-      let filtered = rows;
-      if (childName) {
-        filtered = filtered.filter((r) => r.child_name.toLowerCase().includes(childName.toLowerCase()));
-      }
-      if (whatsapp) {
-        filtered = filtered.filter((r) => r.whatsapp.toLowerCase().includes(whatsapp.toLowerCase()));
-      }
-
-      setLoading(false);
-      return filtered;
-    } catch (fallbackErr: any) {
-      toast.error("Gagal mengambil data dari database: " + fallbackErr.message);
-      setLoading(false);
-      return [];
+    } catch (err) {
+      console.warn("[ExportDialog] direct client query warning:", err);
     }
+
+    // 2. Fallback to serverFn
+    try {
+      const serverData = await getExportData({ data: filterObj });
+      if (serverData && Array.isArray(serverData) && serverData.length > 0) {
+        setLoading(false);
+        return serverData as ExportAssessmentRow[];
+      }
+    } catch (err) {
+      console.warn("[ExportDialog] getExportData serverFn warning:", err);
+    }
+
+    setLoading(false);
+    return [];
   };
 
   const handleExport = async (format: "json" | "excel" | "csv" | "pdf") => {

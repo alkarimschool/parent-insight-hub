@@ -46,16 +46,7 @@ function Dashboard() {
   const stats = useQuery({
     queryKey: ["admin-stats-multi-level"],
     queryFn: async () => {
-      try {
-        const sRes = await getStats();
-        if (sRes && typeof sRes === "object" && sRes.total !== undefined) {
-          return sRes;
-        }
-      } catch (err) {
-        console.warn("[admin.index] getStats server fn error, running client fallback:", err);
-      }
-
-      // Direct client fallback for stats
+      // 1. Direct client query to Supabase Database (Guarantees instant loading on Lovable Web SPA)
       const [{ count: totalAss }, { count: parentCount }, { data: assRows }] = await Promise.all([
         supabase.from("assessments").select("*", { count: "exact", head: true }),
         supabase.from("parents").select("*", { count: "exact", head: true }),
@@ -69,16 +60,30 @@ function Dashboard() {
       const smp = rows.filter((r: any) => (r.education_level || "").toUpperCase() === "SMP").length;
       const sma = rows.filter((r: any) => ["SMA", "SMK"].includes((r.education_level || "").toUpperCase())).length;
 
-      return {
-        total: totalAss || 0,
-        today: totalAss || 0,
-        analyzed: analyzed,
-        parents: parentCount || 0,
-        tk,
-        sd,
-        smp,
-        sma,
-      };
+      if ((totalAss || 0) > 0 || (parentCount || 0) > 0) {
+        return {
+          total: totalAss || 0,
+          today: totalAss || 0,
+          analyzed: analyzed,
+          parents: parentCount || 0,
+          tk,
+          sd,
+          smp,
+          sma,
+        };
+      }
+
+      // 2. ServerFn fallback
+      try {
+        const sRes = await getStats();
+        if (sRes && typeof sRes === "object" && sRes.total !== undefined) {
+          return sRes;
+        }
+      } catch (err) {
+        console.warn("[admin.index] getStats server fn warning:", err);
+      }
+
+      return { total: 0, today: 0, analyzed: 0, parents: 0, tk: 0, sd: 0, smp: 0, sma: 0 };
     },
     refetchInterval: 3000,
     refetchOnWindowFocus: true,
@@ -87,46 +92,51 @@ function Dashboard() {
   const recentList = useQuery({
     queryKey: ["admin-recent-list", selectedLevel],
     queryFn: async () => {
-      try {
-        const rRes = await getRecent({ data: { level: selectedLevel } });
-        if (rRes && Array.isArray(rRes)) {
-          return rRes;
-        }
-      } catch (err) {
-        console.warn("[admin.index] getRecent server fn error, running client fallback:", err);
-      }
-
-      // Direct client fallback for recent list
+      // 1. Direct client query for recent list
       const [{ data: parents }, { data: children }, { data: assessments }] = await Promise.all([
         supabase.from("parents").select("*").order("created_at", { ascending: false }).limit(50),
         supabase.from("children").select("*").order("created_at", { ascending: false }).limit(50),
         supabase.from("assessments").select("*").order("created_at", { ascending: false }).limit(50),
       ]);
 
-      const parentMap = new Map((parents || []).map((p: any) => [p.id, p]));
-      const childMap = new Map((children || []).map((c: any) => [c.id, c]));
+      if (assessments && Array.isArray(assessments) && assessments.length > 0) {
+        const parentMap = new Map((parents || []).map((p: any) => [p.id, p]));
+        const childMap = new Map((children || []).map((c: any) => [c.id, c]));
 
-      let resultList = (assessments || []).map((a: any) => {
-        const pObj = parentMap.get(a.parent_id);
-        const cObj = childMap.get(a.child_id);
-        const lvl = a.education_level || cObj?.education_level || "SMA";
-        return {
-          id: a.id,
-          status: a.status || "analyzed",
-          education_level: lvl,
-          created_at: a.created_at || new Date().toISOString(),
-          parent_id: a.parent_id,
-          child_id: a.child_id,
-          parents: pObj ? { id: pObj.id, name: pObj.name, whatsapp: pObj.whatsapp } : { id: a.parent_id, name: "Orang Tua", whatsapp: "-" },
-          children: cObj ? { id: cObj.id, name: cObj.name, school: cObj.school || "", birth_date: cObj.birth_date } : { id: a.child_id, name: "Anak", school: "" },
-        };
-      });
+        let resultList = (assessments || []).map((a: any) => {
+          const pObj = parentMap.get(a.parent_id);
+          const cObj = childMap.get(a.child_id);
+          const lvl = a.education_level || cObj?.education_level || "SMA";
+          return {
+            id: a.id,
+            status: a.status || "analyzed",
+            education_level: lvl,
+            created_at: a.created_at || new Date().toISOString(),
+            parent_id: a.parent_id,
+            child_id: a.child_id,
+            parents: pObj ? { id: pObj.id, name: pObj.name, whatsapp: pObj.whatsapp } : { id: a.parent_id, name: "Orang Tua", whatsapp: "-" },
+            children: cObj ? { id: cObj.id, name: cObj.name, school: cObj.school || "", birth_date: cObj.birth_date } : { id: a.child_id, name: "Anak", school: "" },
+          };
+        });
 
-      if (selectedLevel && selectedLevel !== "ALL") {
-        resultList = resultList.filter((r: any) => (r.education_level || "").toUpperCase() === selectedLevel.toUpperCase());
+        if (selectedLevel && selectedLevel !== "ALL") {
+          resultList = resultList.filter((r: any) => r.education_level?.toUpperCase() === selectedLevel.toUpperCase());
+        }
+
+        return resultList;
       }
 
-      return resultList;
+      // 2. ServerFn fallback
+      try {
+        const rRes = await getRecent({ data: { level: selectedLevel } });
+        if (rRes && Array.isArray(rRes) && rRes.length > 0) {
+          return rRes;
+        }
+      } catch (err) {
+        console.warn("[admin.index] getRecent server fn warning:", err);
+      }
+
+      return [];
     },
     refetchInterval: 3000,
     refetchOnWindowFocus: true,
