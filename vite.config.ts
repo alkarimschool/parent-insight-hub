@@ -4,18 +4,10 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 export default defineConfig({
   plugins: [],
   define: {
-    'process.env.SUPABASE_URL': JSON.stringify(
-      process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://lqzicsebjjzhdsduqdcf.supabase.co"
-    ),
-    'process.env.VITE_SUPABASE_URL': JSON.stringify(
-      process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://lqzicsebjjzhdsduqdcf.supabase.co"
-    ),
-    'process.env.SUPABASE_PUBLISHABLE_KEY': JSON.stringify(
-      process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_pu4E46tx3jk_u55S6-vFDg_Bggu_6fv"
-    ),
-    'process.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify(
-      process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_pu4E46tx3jk_u55S6-vFDg_Bggu_6fv"
-    ),
+    'process.env.SUPABASE_URL': JSON.stringify("https://lqzicsebjjzhdsduqdcf.supabase.co"),
+    'process.env.VITE_SUPABASE_URL': JSON.stringify("https://lqzicsebjjzhdsduqdcf.supabase.co"),
+    'process.env.SUPABASE_PUBLISHABLE_KEY': JSON.stringify("sb_publishable_pu4E46tx3jk_u55S6-vFDg_Bggu_6fv"),
+    'process.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify("sb_publishable_pu4E46tx3jk_u55S6-vFDg_Bggu_6fv"),
     ...(process.env.SUPABASE_SERVICE_ROLE_KEY
       ? { 'process.env.SUPABASE_SERVICE_ROLE_KEY': JSON.stringify(process.env.SUPABASE_SERVICE_ROLE_KEY) }
       : {}),
