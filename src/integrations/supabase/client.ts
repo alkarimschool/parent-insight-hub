@@ -6,10 +6,12 @@ function createSupabaseClient() {
   const PROD_URL = "https://lqzicsebjjzhdsduqdcf.supabase.co";
   const PROD_KEY = "sb_publishable_pu4E46tx3jk_u55S6-vFDg_Bggu_6fv";
 
-  const SUPABASE_URL = PROD_URL;
-  const SUPABASE_PUBLISHABLE_KEY = PROD_KEY;
-
-  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  return createClient<Database>(PROD_URL, PROD_KEY, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${PROD_KEY}`,
+      },
+    },
     auth: {
       storage: typeof window !== 'undefined' ? localStorage : undefined,
       persistSession: true,
