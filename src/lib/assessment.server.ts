@@ -688,11 +688,29 @@ async function getOrSeedQuestionsForLevel(level: EducationLevel) {
 
 const promptCache = new Map<string, { prompt: any; settings: any; cachedAt: number }>();
 
-async function getCachedPromptAndSettings(level: EducationLevel) {
+export function clearPromptCache(level?: string) {
+  if (level) {
+    promptCache.delete(level);
+  } else {
+    promptCache.clear();
+  }
+}
+
+export function clearAssessmentMemoryCache(assessmentId?: string) {
+  if (assessmentId) {
+    inMemoryAssessmentCache.delete(assessmentId);
+  } else {
+    inMemoryAssessmentCache.clear();
+  }
+}
+
+async function getCachedPromptAndSettings(level: EducationLevel, forceFresh = false) {
   const now = Date.now();
-  const cached = promptCache.get(level);
-  if (cached && now - cached.cachedAt < 60000) {
-    return { prompt: cached.prompt, settings: cached.settings };
+  if (!forceFresh) {
+    const cached = promptCache.get(level);
+    if (cached && now - cached.cachedAt < 60000) {
+      return { prompt: cached.prompt, settings: cached.settings };
+    }
   }
 
   let prompt = null;
@@ -700,7 +718,7 @@ async function getCachedPromptAndSettings(level: EducationLevel) {
   try {
     const { getPromptServer } = await import("./admin.server");
     const [p, { data: set }] = await Promise.all([
-      getPromptServer(level),
+      getPromptServer(level, forceFresh),
       supabaseAdmin.from("ai_settings").select("*").eq("is_active", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
     prompt = p;
@@ -909,8 +927,15 @@ export async function saveAssessmentSubmission(data: SubmitInput) {
   };
 }
 
-export async function runBackgroundAiAnalysis(assessmentId: string, data: SubmitInput) {
+export async function runBackgroundAiAnalysis(assessmentId: string, data: SubmitInput, options?: { forceFreshPrompt?: boolean }) {
   const tTotalStart = Date.now();
+  const forceFresh = options?.forceFreshPrompt ?? false;
+
+  if (forceFresh) {
+    clearAssessmentMemoryCache(assessmentId);
+    console.log("Loading Latest Prompt...");
+  }
+
   try {
     console.log(`[4] Worker mulai berjalan | Assessment ID: ${assessmentId}`);
     
@@ -962,9 +987,19 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
 
     const answersText = answersFormattedText.join("\n") + analyticalHeader;
 
-    // Use in-memory cache for prompt & settings
-    const { prompt: activePrompt, settings } = await getCachedPromptAndSettings(dbEducationLevel);
-    console.log(`[5] Prompt ${dbEducationLevel} berhasil diambil | Source: ${activePrompt?.id ? "Admin DB" : "Default Fallback"}`);
+    // Direct DB Prompt fetch when forceFresh is true, bypassing cache
+    const { prompt: activePrompt, settings } = await getCachedPromptAndSettings(dbEducationLevel, forceFresh);
+    
+    const sysVersion = activePrompt?.updated_at || activePrompt?.id || `v_${Date.now()}`;
+    const userVersion = activePrompt?.updated_at || activePrompt?.id || `v_${Date.now()}`;
+    
+    if (forceFresh) {
+      console.log("System Prompt Version:", sysVersion);
+      console.log("User Template Version:", userVersion);
+      console.log("Prompt Source: Database");
+    } else {
+      console.log(`[5] Prompt ${dbEducationLevel} berhasil diambil | Source: ${activePrompt?.id ? "Admin DB" : "Default Fallback"}`);
+    }
 
     const defaultPromptForLevel = DEFAULT_PROMPTS[dbEducationLevel] || DEFAULT_PROMPTS.TK;
     const promptToUse = (activePrompt && activePrompt.user_template && activePrompt.system_prompt)
@@ -991,6 +1026,9 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
       + `\n\n${variationDirective}`;
 
     console.log(`[6] Prompt Final berhasil dibuat | Length: ${filledPrompt.length} chars`);
+    if (forceFresh) {
+      console.log("Gemini Request Created");
+    }
 
     const totalScore = data.answers.reduce((acc, curr) => acc + Number(curr?.score ?? (curr as any)?.value ?? 3), 0);
     const avgScore = totalScore / (data.answers.length || 1);
@@ -1028,17 +1066,20 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
     const tParseStart = Date.now();
     if (rawText) {
       try {
-        parsedResult = JSON.parse(rawText);
-      } catch {
-        const match = rawText.match(/\{[\s\S]*\}/);
-        parsedResult = match ? JSON.parse(match[0]) : null;
+        const cleaned = rawText
+          .replace(/^```json\s*/i, "")
+          .replace(/^```\s*/i, "")
+          .replace(/\s*```$/i, "")
+          .trim();
+        parsedResult = JSON.parse(cleaned);
+        console.log(`[9] JSON berhasil diparsing | Duration: ${Date.now() - tParseStart} ms | Valid: true`);
+      } catch (pErr: any) {
+        console.warn("[BACKGROUND_AI_PARSE_ERROR] Failed to parse AI JSON response:", pErr.message);
       }
     }
-    const tParseDuration = Date.now() - tParseStart;
-    console.log(`[9] JSON berhasil diparsing | Duration: ${tParseDuration} ms | Valid: ${Boolean(parsedResult)}`);
 
-    if (!parsedResult || typeof parsedResult !== "object" || (!parsedResult.ringkasan && !parsedResult.status_perkembangan && !parsedResult.kekuatan_anak && !parsedResult.status_perkembangan_sd && !parsedResult.status_perkembangan_smp && !parsedResult.status_kesiapan_sma && !parsedResult.ringkasan_kemampuan_awal)) {
-      console.log("[BACKGROUND_AI_FALLBACK] Using interactive fallback generator for assessment:", assessmentId);
+    if (!parsedResult) {
+      console.warn(`[BACKGROUND_AI_FALLBACK] Using interactive fallback generator for assessment: ${assessmentId}`);
       parsedResult = generateFallbackResult(data.child.name, parentName, avgScore, dbEducationLevel, data.answers, dbQuestions);
       rawText = JSON.stringify(parsedResult);
     }
@@ -1059,6 +1100,9 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
       sections: levelContentObj.sections,
     };
 
+    // Purge memory cache to guarantee result freshness
+    clearAssessmentMemoryCache(assessmentId);
+
     inMemoryAssessmentCache.set(assessmentId, {
       assessment_id: assessmentId,
       education_level: dbEducationLevel,
@@ -1077,6 +1121,7 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
         content: parsedResult,
         raw_text: rawText,
         model: usedModel,
+        updated_at: new Date().toISOString(),
       }, { onConflict: "assessment_id" }),
 
       supabaseAdmin.from("assessments").update({
@@ -1093,6 +1138,10 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
 
     const tTotalDuration = Date.now() - tTotalStart;
     console.log(`[11] Status berubah menjadi Analisis Selesai | Total Worker Time: ${tTotalDuration} ms`);
+
+    if (forceFresh) {
+      console.log("Analysis Saved Successfully");
+    }
 
     return { success: true, assessment_id: assessmentId };
   } catch (err: any) {
@@ -1131,6 +1180,12 @@ export async function submitAndAnalyze(data: SubmitInput) {
 
 export async function retryAssessmentAnalysisServer(assessmentId: string) {
   if (!assessmentId) throw new Error("ID Asesmen tidak valid.");
+
+  console.log("Loading Latest Prompt...");
+
+  // Purge all prompt and assessment memory caches to force fresh DB retrieval
+  clearPromptCache();
+  clearAssessmentMemoryCache(assessmentId);
 
   let ass: any = null;
   const { data: directAss } = await supabaseAdmin
@@ -1188,6 +1243,7 @@ export async function retryAssessmentAnalysisServer(assessmentId: string) {
     }
   }
 
+  // Fetch parent, child, and fresh assessment_answers directly from Database
   const [{ data: parent }, { data: child }, { data: rawAnswers }] = await Promise.all([
     ass?.parent_id ? supabaseAdmin.from("parents").select("*").eq("id", ass.parent_id).maybeSingle() : Promise.resolve({ data: null }),
     ass?.child_id ? supabaseAdmin.from("children").select("*").eq("id", ass.child_id).maybeSingle() : Promise.resolve({ data: null }),
@@ -1220,7 +1276,11 @@ export async function retryAssessmentAnalysisServer(assessmentId: string) {
         })),
   };
 
-  await runBackgroundAiAnalysis(realAssessmentId, payload);
+  // Run analysis with forceFreshPrompt: true
+  await runBackgroundAiAnalysis(realAssessmentId, payload, { forceFreshPrompt: true });
+
+  // Evict cache again after completion so getAssessmentResultServer fetches updated ai_results row from DB
+  clearAssessmentMemoryCache(realAssessmentId);
 
   return { success: true, assessment_id: realAssessmentId, message: "Proses analisis ulang telah berhasil diselesaikan." };
 }

@@ -296,9 +296,13 @@ function writePromptsToFile(data: Record<string, any>) {
   }
 }
 
-export async function getPromptServer(levelInput?: string) {
+export async function getPromptServer(levelInput?: string, forceFresh = false) {
   const level = String(levelInput || "TK").toUpperCase().trim();
   
+  if (forceFresh) {
+    delete IN_MEMORY_PROMPTS_CACHE[level];
+  }
+
   // 1. Try DB first (ai_prompts table)
   try {
     const { data: dbPrompt, error } = await supabaseAdmin
@@ -310,7 +314,7 @@ export async function getPromptServer(levelInput?: string) {
       .maybeSingle();
 
     if (!error && dbPrompt && dbPrompt.system_prompt) {
-      console.info(`[getPromptServer] Found prompt for level ${level} in ai_prompts table`);
+      console.info(`[getPromptServer] Found prompt for level ${level} in ai_prompts table (Fresh DB: ${forceFresh})`);
       IN_MEMORY_PROMPTS_CACHE[level] = dbPrompt;
       return dbPrompt;
     }
@@ -318,8 +322,8 @@ export async function getPromptServer(levelInput?: string) {
     console.warn(`[getPromptServer] Error querying ai_prompts:`, e);
   }
 
-  // 2. Try in-memory cache
-  if (IN_MEMORY_PROMPTS_CACHE[level] && IN_MEMORY_PROMPTS_CACHE[level].system_prompt) {
+  // 2. Try in-memory cache if not forceFresh
+  if (!forceFresh && IN_MEMORY_PROMPTS_CACHE[level] && IN_MEMORY_PROMPTS_CACHE[level].system_prompt) {
     console.info(`[getPromptServer] Found prompt for level ${level} in IN_MEMORY_PROMPTS_CACHE`);
     return IN_MEMORY_PROMPTS_CACHE[level];
   }
@@ -429,6 +433,11 @@ export async function updatePromptServer(inputData: any) {
     const currentStorage = readPromptsFromFile();
     currentStorage[level] = updatedPromptObj;
     writePromptsToFile(currentStorage);
+
+    try {
+      const { clearPromptCache } = await import("./assessment.server");
+      clearPromptCache(level);
+    } catch {}
 
     console.info(`[updatePromptServer] Saved prompt for level ${level} (DB persistent: ${savedToDb}).`);
     return { ok: true, data: updatedPromptObj };
