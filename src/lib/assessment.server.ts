@@ -1104,8 +1104,7 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
             content: parsedResult,
             raw_text: rawText,
             model: usedModel,
-            updated_at: new Date().toISOString(),
-          })
+          } as any)
           .eq("id", existingAiRes.id);
       } else {
         await supabaseAdmin.from("ai_results").insert({

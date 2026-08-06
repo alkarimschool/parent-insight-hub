@@ -19,7 +19,7 @@ async function fetchDbAiResults() {
   console.log(`Found ${aiResults.length} existing AI results in Supabase DB.`);
   aiResults.forEach((res, idx) => {
     console.log(`\n--- Result #${idx + 1} (Model: ${res.model}, ID: ${res.id}) ---`);
-    console.log("Keys in payload:", Object.keys(res.result_json || {}));
+    console.log("Keys in payload:", Object.keys((res as any).result_json || {}));
   });
 }
 
