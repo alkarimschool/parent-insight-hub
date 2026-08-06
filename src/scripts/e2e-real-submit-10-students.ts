@@ -104,7 +104,7 @@ async function runE2eAcceptanceTest() {
       .eq("assessment_id", res.assessment_id)
       .maybeSingle();
 
-    const jsonRes = dbResult?.content || dbResult?.result_json;
+    const jsonRes = dbResult?.content || (dbResult as any)?.result_json;
 
     if (dbResult && jsonRes) {
       studentResults.push({

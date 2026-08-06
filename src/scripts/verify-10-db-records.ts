@@ -83,7 +83,7 @@ async function verify10DbRecords() {
         .eq("assessment_id", assessment.id)
         .maybeSingle();
 
-      const jsonRes = aiRes?.content || aiRes?.result_json;
+      const jsonRes = aiRes?.content || (aiRes as any)?.result_json;
       if (aiRes && jsonRes) {
         studentResults.push({
           name: child.name,

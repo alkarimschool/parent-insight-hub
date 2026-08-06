@@ -30,7 +30,7 @@ async function testFullSubmit() {
     console.log("✅ submitAndAnalyze completed successfully!");
     console.log("   Assessment ID:", result.assessment_id);
     console.log("   Status:", result.status);
-    console.log("   Child Name:", result.child_name);
+    console.log("   Child Name:", (result as any).child_name);
   } catch (err: any) {
     console.error("❌ submitAndAnalyze failed:", err.message || err);
   }
