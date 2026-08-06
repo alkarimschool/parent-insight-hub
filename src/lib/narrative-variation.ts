@@ -445,6 +445,72 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)] as T;
 }
 
+// ===== Khusus field "Ringkasan Kemampuan Awal" =====
+export const SUMMARY_OPENERS = [
+  "Secara umum",
+  "Berdasarkan gambaran yang diberikan orang tua",
+  "Hasil pemetaan menunjukkan",
+  "Dari hasil observasi",
+  "Potret kemampuan awal siswa memperlihatkan",
+  "Informasi yang disampaikan orang tua menunjukkan",
+  "Gambaran awal kemampuan siswa mengindikasikan",
+  "Secara keseluruhan",
+  "Dari keseluruhan hasil observasi",
+  "Berdasarkan profil awal yang diperoleh",
+];
+
+export const SUMMARY_FOCUS_POINTS = [
+  "kesiapan belajar",
+  "karakter",
+  "komunikasi",
+  "motivasi",
+  "pola belajar",
+  "regulasi emosi",
+  "kemandirian",
+  "adaptasi",
+  "kemampuan berpikir",
+  "potensi pengembangan",
+];
+
+export function buildSummaryFieldDirective(): string {
+  const opener = pick(SUMMARY_OPENERS);
+  const focusA = pick(SUMMARY_FOCUS_POINTS);
+  let focusB = pick(SUMMARY_FOCUS_POINTS);
+  if (focusB === focusA) focusB = SUMMARY_FOCUS_POINTS[(SUMMARY_FOCUS_POINTS.indexOf(focusA) + 3) % SUMMARY_FOCUS_POINTS.length]!;
+  const sentenceCount = 3 + Math.floor(Math.random() * 3); // 3–5
+
+  return `
+==================================================
+PENYEMPURNAAN KHUSUS FIELD "Ringkasan Kemampuan Awal" (ringkasan_kemampuan_awal / ringkasan)
+==================================================
+PENTING: Aturan di bawah HANYA berlaku untuk field ringkasan pembuka laporan. Struktur JSON, nama key, urutan field, skor, kategori, dan isi bagian analisis lain TIDAK BOLEH berubah.
+
+[TARGET PENULISAN]
+Ringkasan harus rapi, singkat, alami, mudah dibaca, dan terasa ditulis langsung oleh Psikolog Pendidikan atau Konselor Sekolah.
+
+[ATURAN]
+1. Tulis TEPAT ${sentenceCount} kalimat (rentang wajib 3–5 kalimat), satu paragraf pendek.
+2. Fungsi tiap kalimat berbeda:
+   - Kalimat pertama: gambaran umum kondisi siswa.
+   - Kalimat kedua: hasil utama berdasarkan pengamatan orang tua.
+   - Kalimat ketiga: kecenderungan kemampuan atau area yang perlu diperhatikan.
+   - Kalimat terakhir: transisi halus menuju analisis berikutnya.
+3. Hindari paragraf panjang, kalimat berbelit, dan nuansa template.
+4. Nama siswa maksimal disebut SATU kali (kecuali benar-benar diperlukan).
+5. Frasa berikut maksimal muncul SATU kali di seluruh ringkasan: "Berdasarkan hasil asesmen", "Dari hasil asesmen", "Melalui asesmen", "Potret asesmen", "Observasi orang tua", "Berdasarkan informasi", "Rata-rata skor".
+
+[VARIASI WAJIB]
+- Gunakan pembuka bernuansa: "${opener}..." (boleh diparafrase secara alami, jangan disalin kaku dan jangan memakai pola pembuka yang sama berulang).
+- Mulai pembahasan dari sudut fokus: ${focusA}, lalu kaitkan dengan ${focusB}.
+- Yang divariasikan bukan hanya sinonim, melainkan urutan ide, sudut pandang, fokus pembahasan, alur paragraf, gaya penjelasan, panjang kalimat, transisi, dan penutup.
+- Meskipun dua siswa memiliki skor, jawaban, dan kategori yang identik, ringkasan WAJIB berbeda: susun ulang narasi dari nol.
+
+[SELF REVIEW SEBELUM OUTPUT]
+✓ Tidak ada kalimat/frasa terduplikasi. ✓ Nama siswa tidak diulang-ulang. ✓ Alur membaca mengalir dan terasa natural. ✓ Tidak terasa hasil template.
+✓ Jika diperkirakan >20% mirip ringkasan lain, tulis ulang dengan struktur dan alur yang berbeda.
+`.trim();
+}
+
 export function buildVariationDirective(): string {
   const seed = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   const chosenStrategy = pick(DYNAMIC_ANALYSIS_STRATEGIES);
@@ -480,5 +546,7 @@ DILARANG menggunakan urutan kaku yang sama (Pembuka → Skor → Kebiasaan Belaj
 - Jika kemiripan struktur kalimat, frasa pembuka, atau urutan penjelasan antar laporan masih >20%, AI WAJIB MENULIS ULANG seluruh field dari awal hingga unik tanpa menggeser makna data asesmen.
 
 Struktur JSON, nama key, dan urutan field WAJIB 100% SAMA SEPERTI SKEMA LAPORAN JENJANG TERKAIT.
+
+${buildSummaryFieldDirective()}
 `.trim();
 }
