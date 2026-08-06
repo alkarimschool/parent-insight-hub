@@ -160,7 +160,7 @@ async function runQANarrativeStressTest() {
       case1Results.push({
         id: sub.assessment_id,
         name: studentName,
-        content: sub.content,
+        content: (sub as any).content,
       });
     } catch (err: any) {
       console.error(`     ❌ Error generating for ${studentName}:`, err.message);

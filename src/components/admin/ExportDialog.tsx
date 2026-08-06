@@ -93,12 +93,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             analysis_text: r?.analysis_text || "",
             recommendations: Array.isArray(r?.recommendations) ? r.recommendations.join("\n") : (r?.recommendations || ""),
             answers: answersMap.get(a.id) || {},
-          } as ExportAssessmentRow;
+          } as unknown as ExportAssessmentRow;
         });
 
         const filtered = mapped.filter((row) => {
           if (childName && !row.child_name.toLowerCase().includes(childName.toLowerCase())) return false;
-          if (whatsapp && !row.parent_whatsapp.includes(whatsapp)) return false;
+          if (whatsapp && !String((row as any).parent_whatsapp || "").includes(whatsapp)) return false;
           return true;
         });
 

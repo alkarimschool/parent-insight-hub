@@ -164,7 +164,7 @@ function QuestionsPage() {
     }
     if (!formData || !formData.whatsapp?.trim() || !formData.child_name?.trim()) {
       toast.error("Data anak/WhatsApp belum lengkap. Silakan kembali ke pengisian data.");
-      navigate({ to: "/assessment" });
+      navigate({ to: "/assessment", search: { level: undefined } });
       return;
     }
     if (answered < list.length) {
@@ -342,7 +342,7 @@ function QuestionsPage() {
         </div>
 
         <div className="mt-3.5 text-center text-[11px] sm:text-xs text-muted-foreground">
-          Jawaban tersimpan otomatis. <Link to="/assessment" className="underline">Kembali ke data</Link>
+          Jawaban tersimpan otomatis. <Link to="/assessment" search={{ level: undefined }} className="underline">Kembali ke data</Link>
         </div>
       </div>
     </div>

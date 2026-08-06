@@ -107,6 +107,7 @@ function AboutPage() {
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
               to="/assessment"
+              search={{ level: undefined }}
               className="inline-flex items-center gap-2 rounded-full bg-background px-6 py-3 text-sm font-semibold text-primary shadow-soft hover:opacity-95"
             >
               Mulai Assessment <ArrowRight className="h-4 w-4" />
