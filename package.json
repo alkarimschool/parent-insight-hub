@@ -11,6 +11,7 @@
     "deploy": "npm run build && wrangler deploy",
     "preview": "vite preview",
     "lint": "eslint .",
+    "test": "vitest run",
     "format": "prettier --write ."
   },
   "dependencies": {
