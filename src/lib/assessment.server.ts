@@ -63,7 +63,7 @@ const LEVEL_PROFILES: Record<EducationLevel, {
   kesimpulan: (childName: string, parentName: string) => string;
 }> = {
   TK: {
-    ringkasan: (name, isHigh) => `Berdasarkan asesmen perkembangan anak usia dini (TK / PAUD), ${name} menunjukkan kesiapan tumbuh kembang, komunikasi, dan calistung awal yang ${isHigh ? "sangat optimal" : "baik dan berkembang positif"}. Anak aktif, memiliki rasa ingin tahu tinggi, dan siap mengikuti kegiatan sekolah.`,
+    ringkasan: (name, isHigh) => `Secara umum, Ananda ${name} memperlihatkan kesiapan tumbuh kembang pra-sekolah yang ${isHigh ? "sangat optimal dan matang" : "berkembang positif sesuai tahap usianya"}. Pengamatan orang tua mengonfirmasi antusiasme tinggi anak dalam bermain, berkomunikasi, dan mengenal konsep pra-calistung. Pendampingan harian yang hangat di rumah menjadi kunci utama untuk merangsang rasa ingin tahunya lebih lanjut. Laporan berikut menyajikan gambaran menyeluruh aspek perkembangan anak.`,
     kelebihan: (name) => [
       `Mampu menyampaikan keinginan dan berkomunikasi verbal dengan jelas.`,
       `Mengenal huruf dasar, angka, warna, bentuk, dan membilang benda harian.`,
@@ -93,7 +93,7 @@ const LEVEL_PROFILES: Record<EducationLevel, {
   },
 
   SD: {
-    ringkasan: (name, isHigh) => `Berdasarkan asesmen karakter dan kebiasaan belajar Sekolah Dasar (SD), ${name} menunjukkan performa akademik, literasi, numerasi, dan disiplin yang ${isHigh ? "sangat memuaskan" : "baik dan terus berkembang"}. Anak memiliki fondasi belajar mandiri yang kuat.`,
+    ringkasan: (name, isHigh) => `Hasil pemetaan menunjukkan bahwa Ananda ${name} memiliki pondasi kebiasaan belajar dan kedisiplinan SD yang ${isHigh ? "sangat kokoh dan mandiri" : "baik serta terus berkembang"}. Informasi keluarga mencerminkan kemampuannya dalam mengikuti rutinitas sekolah dan memahami instruksi harian. Penguatan fokus serta ketahanan belajar mandiri tetap perlu didampingi secara teratur. Uraian di bawah ini mengulas rincian profil belajar anak secara mendalam.`,
     kelebihan: (name) => [
       `Kelancaran membaca pemahaman cerita dan kerapihan menulis kalimat.`,
       `Pemahaman operasi matematika dasar (penjumlahan, pengurangan, perkalian/pembagian sederhana).`,
@@ -123,7 +123,7 @@ const LEVEL_PROFILES: Record<EducationLevel, {
   },
 
   SMP: {
-    ringkasan: (name, isHigh) => `Berdasarkan asesmen perkembangan remaja awal dan akademik SMP, ${name} menunjukkan motivasi belajar, pemikiran kritis, dan pergaulan positif yang ${isHigh ? "sangat menonjol" : "baik dan terus berkembang"}. Anak memiliki kesadaran diri yang tinggi dalam belajar.`,
+    ringkasan: (name, isHigh) => `Dari hasil observasi, Ananda ${name} menunjukkan dinamika perkembangan remaja awal yang ${isHigh ? "sangat berdaya dan tajam secara analitis" : "positif dengan inisiatif belajar yang berkembang"}. Keterangan orang tua menggarisbawahi keterbukaan komunikasi dan kesadaran dirinya dalam mengelola tugas sekolah. Pembinaan regulasi emosi dan manajemen durasi aktivitas luar sekolah menjadi aspek yang perlu diperhatikan. Gambaran berikut menguraikan potensi dan panduan pendampingan remaja.`,
     kelebihan: (name) => [
       `Mampu berpikir kritis, menganalisis materi SMP, dan mengajukan argumen logis.`,
       `Memiliki motivasi dan target nilai akademik pribadi.`,
@@ -153,7 +153,7 @@ const LEVEL_PROFILES: Record<EducationLevel, {
   },
 
   SMA: {
-    ringkasan: (name, isHigh) => `Berdasarkan asesmen kesiapan perguruan tinggi, minat karier, dan pemikiran analitis SMA, ${name} menunjukkan kemandirian belajar, riset, dan kepemimpinan yang ${isHigh ? "sangat matang & unggul" : "baik dan siap dikembangkan"}. Anak sangat siap melangkah ke jenjang masa depan.`,
+    ringkasan: (name, isHigh) => `Potret kemampuan awal siswa memperlihatkan kesiapan akademik dan kemandirian SMA yang ${isHigh ? "sangat matang serta unggul" : "baik dan siap dikembangkan lebih jauh"}. Catatan pengamatan di rumah mengonfirmasi tanggung jawab pribadi anak dalam mengarungi ritme pembelajaran yang padat. Penguatan kedalaman penalaran kritis dan penetapan skala prioritas menjadi fokus pembinaan selanjutnya. Laporan ini menyajikan analisis komprehensif untuk mendukung perencanaan masa depannya.`,
     kelebihan: (name) => [
       `Pemikiran analitis tingkat tinggi, kemampuan riset/studi literatur mandiri, dan penyusunan argumen berbasis data.`,
       `Public speaking dan kemampuan presentasi yang percaya diri dan terstruktur.`,
@@ -266,7 +266,7 @@ function generateFallbackResult(childName: string, parentName: string, avgScore:
     return {
       judul: "Laporan Assessment Potensi Akademik & Karakter SD",
       status_perkembangan_sd: status_sd,
-      ringkasan_profil_sd: `Berdasarkan analisis jawaban orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5 - Pola ${isPositif ? "Sangat Baik/Positif" : isKurang ? "Perlu Perhatian/Kurang" : "Campuran/Normal"}), Ananda ${childName} menunjukkan kondisi belajar dan pembetukan karakter SD yang ${isPositif ? "sangat mandiri dan unggul di hampir seluruh aspek" : isKurang ? "membutuhkan pendampingan belajar dan kedisiplinan secara intensif" : "seimbang dan berkembang sesuai tahap usia Sekolah Dasar"}.`,
+      ringkasan_profil_sd: `${isPositif ? "Hasil pemetaan menunjukkan" : isKurang ? "Dari hasil observasi" : "Secara umum"}, Ananda ${childName} memperlihatkan profil belajar dan pembiasaan karakter Sekolah Dasar yang ${isPositif ? "sangat mandiri serta unggul pada berbagai aspek harian" : isKurang ? "membutuhkan pendampingan terstruktur dalam kedisiplinan dan rutinitas belajar" : "berjalan seimbang sesuai tahap perkembangannya"}. Pengamatan orang tua mengonfirmasi sikap anak saat menghadapi tugas sekolah dan instruksi di rumah. Pembinaan konsistensi fokus serta ketahanan belajar tetap menjadi area yang perlu diperhatikan secara berkala. Pemetaan awal ini menjadi pijakan untuk merancang pendampingan di rumah secara efektif.`,
       kelebihan_pembelajaran: kelebihan,
       area_belajar_ditingkatkan: area_ditingkatkan,
       literasi_dan_numerasi: {
@@ -368,7 +368,7 @@ function generateFallbackResult(childName: string, parentName: string, avgScore:
     return {
       judul: "Laporan Assessment Potensi Belajar & Dinamika Remaja SMP",
       status_perkembangan_smp: status_smp,
-      ringkasan_dinamika_smp: `Berdasarkan analisis jawaban aktual orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5 - Pola ${isPositif ? "Sangat Optimal/Positif" : isKurang ? "Kurang/Perlu Bimbingan" : "Campuran/Seimbang"}), Ananda ${childName} menunjukkan dinamika remaja awal usia 12-15 tahun yang ${isPositif ? "sangat berdaya, mandiri dalam belajar, dan tajam dalam pemikiran kritis" : isKurang ? "membutuhkan pendampingan motivasi belajar dan komunikasi terbuka untuk mengatasi kendala emosi serta durasi screen time" : "berjalan positif dengan beberapa area kemandirian yang masih perlu dikokohkan"}.`,
+      ringkasan_dinamika_smp: `${isPositif ? "Informasi yang disampaikan orang tua menunjukkan" : isKurang ? "Dari keseluruhan hasil observasi" : "Potret kemampuan awal siswa memperlihatkan"}, Ananda ${childName} menunjukkan dinamika remaja awal yang ${isPositif ? "sangat berdaya, mandiri dalam belajar, dan tajam dalam pemikiran analitis" : isKurang ? "membutuhkan pendampingan motivasi serta komunikasi terbuka di rumah" : "berkembang positif dengan kemandirian belajar yang makin kokoh"}. Pengamatan keluarga menguraikan respons anak terhadap tanggung jawab sekolah dan pergaulan sebayanya. Penguatan daya tahan fokus serta keseimbangan aktivitas harian menjadi aspek penting yang perlu terus dibina. Rincian laporan di bawah ini menyajikan panduan lengkap pendampingannya.`,
       kekuatan_akademik_smp: keunggulan_smp,
       area_pengembangan_smp: pengembangan_smp,
       kemampuan_berpikir_kritis: {
@@ -453,24 +453,12 @@ function generateFallbackResult(childName: string, parentName: string, avgScore:
       });
     }
 
-    const DYNAMIC_OPENERS = [
-      `Mempertimbangkan hasil instrumen observasi dari Bapak/Ibu ${parentName} (Skor Rata-rata: ${avgScore.toFixed(2)}/5), Ananda ${childName} secara keseluruhan memiliki `,
-      `Berdasarkan pencermatan data asesmen awal yang diisi oleh orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5), profil kesiapan Ananda ${childName} menunjukkan kondisi yang `,
-      `Dari rangkuman data pengamatan orang tua di rumah (Skor Rata-rata: ${avgScore.toFixed(2)}/5), gambaran umum perkembangan Ananda ${childName} berada pada tahap yang `,
-      `Melalui potret asesmen yang disampaikan orang tua (Rata-rata Skor: ${avgScore.toFixed(2)}/5), Ananda ${childName} memperlihatkan landasan belajar yang `,
-      `Hasil pemetaan awal dari lembar observasi orang tua (Skor Rata-rata: ${avgScore.toFixed(2)}/5) mencerminkan bahwa Ananda ${childName} memiliki kesiapan yang `
-    ];
-
-    // Dynamic strategy index using timestamp seed and random entropy so emergency fallback produces non-identical text
     const randomEntropy = Math.floor(Math.random() * 1000000) + Date.now();
     const strategyIdx = (randomEntropy % 10) + 1;
     const template = FIELD_VARIATION_TEMPLATES[strategyIdx] || FIELD_VARIATION_TEMPLATES[1];
 
-    const pickOpener = DYNAMIC_OPENERS[Math.floor(Math.random() * DYNAMIC_OPENERS.length)];
-    const baseSummary = template.ringkasan(parentName, childName, avgScore.toFixed(2));
-    const dynamicSummary = `${pickOpener}${baseSummary.replace(/^[A-Z][a-z]+\s+[A-Z][a-z]+\s+/, "")}`;
+    const dynamicSummary = template.ringkasan(parentName, childName, avgScore.toFixed(2));
 
-    // Clause & Sentence Rotation
     const rotateArr = (arr: any[]) => {
       if (!Array.isArray(arr)) return arr;
       const copy = [...arr];
@@ -1104,8 +1092,7 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
             content: parsedResult,
             raw_text: rawText,
             model: usedModel,
-            updated_at: new Date().toISOString(),
-          })
+          } as any)
           .eq("id", existingAiRes.id);
       } else {
         await supabaseAdmin.from("ai_results").insert({

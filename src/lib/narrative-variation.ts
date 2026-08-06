@@ -1,6 +1,6 @@
 export const FIELD_VARIATION_TEMPLATES: Record<number, Record<string, any>> = {
   1: {
-    ringkasan: (pName: string, cName: string, score: string) => `Mempertimbangkan instrumen pengamatan Bapak/Ibu ${pName} (Rata-rata Skor: ${score}/5), Ananda ${cName} memperlihatkan karakter dasar yang disiplin dan penuh rasa tanggung jawab. Pembiasaan di rumah menjadi fondasi kuat yang mendorong konsistensi belajarnya.`,
+    ringkasan: (pName: string, cName: string, score: string) => `Secara umum, Ananda ${cName} menunjukkan pondasi kedisiplinan dan rasa tanggung jawab harian yang positif. Pengamatan orang tua mengonfirmasi bahwa kebiasaan tertata di rumah mendukung konsistensi belajarnya. Meskipun demikian, penguatan manajemen skala prioritas tetap perlu diperhatikan agar ritme aktivitas harian tetap seimbang. Pemetaan awal ini menjadi pijakan dasar dalam merancang pendampingan yang lebih terarah.`,
     areaPerhatian: [
       "Pengelolaan Skala Prioritas Rutinitas: Perlu pendampingan dalam mengimbangi tugas sekolah yang padat dengan waktu istirahat agar tidak kelelahan emosional.",
       "Penguatan Inisiatif Belajar Otonom: Penting dibimbing untuk mulai mengambil keputusan belajar mandiri tanpa menunggu instruksi ulang."
@@ -37,7 +37,7 @@ export const FIELD_VARIATION_TEMPLATES: Record<number, Record<string, any>> = {
     ]
   },
   2: {
-    ringkasan: (pName: string, cName: string, score: string) => `Melalui pencermatan lembar asesmen dari Bapak/Ibu ${pName} (Skor Rata-rata: ${score}/5), profil Ananda ${cName} menonjol pada daya serap akademik dan dorongan rasa ingin tahu yang tinggi. Motivasi internalnya menjadi mesin penggerak utama dalam memahami pelajaran.`,
+    ringkasan: (pName: string, cName: string, score: string) => `Hasil pemetaan menunjukkan bahwa Ananda ${cName} memiliki daya serap materi yang cepat disertai rasa ingin tahu akademik yang tinggi. Informasi dari rumah memperlihatkan motivasi internal yang kuat saat mempelajari konsep-konsep baru. Namun, ketahanan fokus pada soal berorientasi analisis mendalam masih membutuhkan dorongan konsisten. Gambaran ini akan memandu penguatan strategi belajar secara komprehensif.`,
     areaPerhatian: [
       "Kemandirian Eksplorasi Soal Hots: Perlu pendampingan saat berhadapan dengan tingkat kesulitan soal analisis tinggi agar tidak cepat frustrasi.",
       "Pencegahan Kejenuhan Belajar: Penting variasi aktivitas agar dorongan belajar yang tinggi tetap terjaga secara berkelanjutan."
@@ -74,7 +74,7 @@ export const FIELD_VARIATION_TEMPLATES: Record<number, Record<string, any>> = {
     ]
   },
   3: {
-    ringkasan: (pName: string, cName: string, score: string) => `Berdasarkan rangkuman observasi Bapak/Ibu ${pName} (Rata-rata Skor: ${score}/5), Ananda ${cName} memiliki keunggulan pada penalaran analitis dan kemampuan berpikir kritis. Cara berpikirnya objektif dalam mengurai persoalan harian.`,
+    ringkasan: (pName: string, cName: string, score: string) => `Dari hasil observasi, Ananda ${cName} menonjol dalam penalaran analitis dan kecenderungan berpikir logis. Orang tua mencatat kemampuan kritisnya yang baik ketika mengurai persoalan harian. Di sisi lain, keseimbangan antara proses analisis dan eksekusi tugas tepat waktu masih perlu terus diasah. Temuan ini menjadi acuan penting untuk melatih efisiensi belajar selanjutnya.`,
     areaPerhatian: [
       "Keseimbangan Analisis & Eksekusi Praktis: Perlu didampingi agar tidak terlalu lama berada dalam tahap pertimbangan sehingga lupa mengeksekusi tugas tepat waktu.",
       "Pengelolaan Ekspektasi Hasil: Perlu pembinaan agar siap menerima ketidaksempurnaan atau perubahan rencana."
@@ -111,7 +111,7 @@ export const FIELD_VARIATION_TEMPLATES: Record<number, Record<string, any>> = {
     ]
   },
   4: {
-    ringkasan: (pName: string, cName: string, score: string) => `Dari potret asesmen yang disampaikan Bapak/Ibu ${pName} (Skor Rata-rata: ${score}/5), Ananda ${cName} tumbuh dengan kecerdasan interpersonal dan kemampuan sosialisasi yang luwes. Kehangatan komunikasinya membuat anak mudah beradaptasi.`,
+    ringkasan: (pName: string, cName: string, score: string) => `Potret kemampuan awal siswa memperlihatkan kecerdasan interpersonal yang luwes serta kemudahan dalam beradaptasi. Pengamatan keluarga mencerminkan kehangatan komunikasi dan rasa percaya diri anak saat berinteraksi. Meski begitu, pendampingan dalam regulasi fokus belajar di tengah aktivitas sosial tetap diperlukan. Informasi ini menjadi landasan untuk mengoptimalkan potensi akademiknya.`,
     areaPerhatian: [
       "Pengendalian Pengaruh Teman Sebaya: Perlu pembinaan agar kehangatan sosial tidak mengaburkan prioritas tugas belajar pribadi.",
       "Manajemen Screen Time Gadget: Perlu pendampingan batas waktu penggunaan media sosial agar tidak menyita waktu belajar."
@@ -148,7 +148,7 @@ export const FIELD_VARIATION_TEMPLATES: Record<number, Record<string, any>> = {
     ]
   },
   5: {
-    ringkasan: (pName: string, cName: string, score: string) => `Mengacu pada informasi asesmen Bapak/Ibu ${pName} (Rata-rata Skor: ${score}/5), Ananda ${cName} memperlihatkan kesiapan umum yang seimbang untuk melangkah ke tuntutan ritme pembelajaran SMA yang lebih kompleks.`,
+    ringkasan: (pName: string, cName: string, score: string) => `Gambaran awal kemampuan siswa mengindikasikan kesiapan yang seimbang dalam menghadapi tuntutan pembelajaran sekolah. Keterangan orang tua menggambarkan konsistensi sikap belajar dan ketertiban administrasi tugas harian. Pendampingan berkelanjutan diperlukan untuk menyesuaikan kedalaman materi dan strategi ujian. Uraian berikut menyajikan gambaran detail tiap dimensi perkembangan.`,
     areaPerhatian: [
       "Penyelarasan Strategi Belajar SMA: Perlu pendampingan transisi agar cara belajar SMP disesuaikan dengan kedalaman SMA.",
       "Penguatan Ketahanan Mental Ujian: Perlu dorongan rasa percaya diri saat menghadapi evaluasi berkala."
@@ -185,7 +185,7 @@ export const FIELD_VARIATION_TEMPLATES: Record<number, Record<string, any>> = {
     ]
   },
   6: {
-    ringkasan: (pName: string, cName: string, score: string) => `Hasil pengamatan Bapak/Ibu ${pName} (Skor Rata-rata: ${score}/5) menunjukkan bahwa Ananda ${cName} memiliki potensi bakat dan keunggulan spesifik yang sangat menonjol jika terus dieksplorasi secara terarah.`,
+    ringkasan: (pName: string, cName: string, score: string) => `Secara keseluruhan, Ananda ${cName} memperlihatkan keunggulan minat spesifik yang sangat menonjol pada bidang yang disukainya. Pengamatan di rumah menggarisbawahi antusiasme dan daya ingat tinggi yang ia tampilkan saat mengeksplorasi topik kegemarannya. Tantangan utama terletak pada pembagian alokasi perhatian agar mata pelajaran umum tetap berimbang. Laporan ini merinci langkah strategis untuk mematangkan bakat tersebut.`,
     areaPerhatian: [
       "Fokus Pembagian Perhatian: Perlu pendampingan agar pengembangan keunggulan minat tidak mengabaikan mata pelajaran umum.",
       "Konsistensi Latihan Rutin: Perlu pembiasaan disiplin agar minat bakat terasah secara profesional."
@@ -222,7 +222,7 @@ export const FIELD_VARIATION_TEMPLATES: Record<number, Record<string, any>> = {
     ]
   },
   7: {
-    ringkasan: (pName: string, cName: string, score: string) => `Melalui lembar observasi Bapak/Ibu ${pName} (Rata-rata Skor: ${score}/5), Ananda ${cName} memperlihatkan ketahanan regulasi emosi dan ketenangan diri yang positif saat berhadapan dengan dinamika pembelajaran.`,
+    ringkasan: (pName: string, cName: string, score: string) => `Dari keseluruhan hasil observasi, Ananda ${cName} memiliki kestabilan regulasi emosi dan ketenangan yang baik dalam menghadapi tekanan belajar. Orang tua mengonfirmasi sikap dewasa anak dalam menyikapi teguran maupun kendala tugas sekolah. Dorongan keterbukaan dalam mengungkapkan rasa lelah atau kesulitan akademik tetap menjadi perhatian penting. Analisis berikut menguraikan potensi dan rekomendasi pendampingannya.`,
     areaPerhatian: [
       "Pengungkapan Perasaan Kekecewaan: Perlu dorongan agar anak mau menceritakan kesulitannya secara terbuka tanpa dipendam.",
       "Peningkatan Ambisi Target Belajar: Perlu dorongan untuk berani menetapkan target pencapaian yang lebih tinggi."
@@ -259,7 +259,7 @@ export const FIELD_VARIATION_TEMPLATES: Record<number, Record<string, any>> = {
     ]
   },
   8: {
-    ringkasan: (pName: string, cName: string, score: string) => `Hasil analisis instrumen dari Bapak/Ibu ${pName} (Rata-rata Skor: ${score}/5) menunjukkan bahwa Ananda ${cName} tumbuh dengan baik berkat dukungan komunikasi terbuka dan iklim positif keluarga di rumah.`,
+    ringkasan: (pName: string, cName: string, score: string) => `Berdasarkan profil awal yang diperoleh, Ananda ${cName} tumbuh dengan dukungan komunikasi terbuka serta rasa aman emosional yang kokoh. Keterangan dari rumah menunjukkan transparansi anak dan penerimaan positif terhadap arahan orang tua. Kemandirian dalam menginisiasi tugas tanpa perlu selalu diingatkan masih perlu dimaksimalkan. Rekomendasi di bawah ini disusun untuk memperkuat sinergi pendampingan.`,
     areaPerhatian: [
       "Kemandirian Mengatasi Hambatan: Perlu pembiasaan agar anak mencoba menyelesaikan masalah sekolahnya sendiri terlebih dahulu.",
       "Penguatan Inisiatif Tanpa Pengingat: Penting dilatih bergerak mandiri sebelum orang tua memberikan petunjuk."
@@ -296,7 +296,7 @@ export const FIELD_VARIATION_TEMPLATES: Record<number, Record<string, any>> = {
     ]
   },
   9: {
-    ringkasan: (pName: string, cName: string, score: string) => `Berdasarkan pengamatan yang diisi Bapak/Ibu ${pName} (Skor Rata-rata: ${score}/5), Ananda ${cName} memiliki kesadaran pengelolaan waktu dan penataan rutinitas harian yang makin matang.`,
+    ringkasan: (pName: string, cName: string, score: string) => `Informasi yang disampaikan orang tua menunjukkan bahwa Ananda ${cName} mulai membangun kedisiplinan rutinitas dan penataan waktu harian yang tertata. Pengamatan keluarga mencatat ketepatan waktunya dalam menyelesaikan kewajiban akademis utama. Namun demikian, keluwesan dalam menghadapi perubahan jadwal mendadak masih memerlukan bimbingan. Rincian berikut memberikan panduan dalam mengasah efisiensi belajarnya.`,
     areaPerhatian: [
       "Fleksibilitas Perubahan Perencanaan: Perlu bimbingan agar tidak stres saat jadwal yang disusun terganggu aktivitas mendadak.",
       "Pengesampingan Distraksi Gadget: Perlu konsistensi menjaga komitmen durasi main game/gadget."
@@ -333,7 +333,7 @@ export const FIELD_VARIATION_TEMPLATES: Record<number, Record<string, any>> = {
     ]
   },
   10: {
-    ringkasan: (pName: string, cName: string, score: string) => `Melalui lembar asesmen dari Bapak/Ibu ${pName} (Rata-rata Skor: ${score}/5), profil Ananda ${cName} mencerminkan pembiasaan positif yang tertanam konsisten dan kesiapan pendampingan terstruktur di rumah.`,
+    ringkasan: (pName: string, cName: string, score: string) => `Berdasarkan gambaran yang diberikan orang tua, Ananda ${cName} telah memiliki pembiasaan positif dan kesantunan sikap yang konsisten dalam keseharian. Observasi keluarga menekankan komitmen anak dalam menjalankan rutinitas serta menjaga kepercayaan rumah. Pengembangan keberanian untuk mengambil tantangan belajar baru menjadi fokus pembinaan selanjutnya. Poin-poin di bawah ini mengulas rekomendasi pengembangannya secara menyeluruh.`,
     areaPerhatian: [
       "Peningkatan Daya Saing Mandiri: Perlu pemicu semangat agar anak tidak sekadar berada di zona nyaman.",
       "Pengayaan Pengalaman Baru: Penting dorongan untuk berani mencoba tantangan di luar bidang kebiasaannya."
@@ -376,6 +376,32 @@ export const PERSONA_ENGINE = [
   "Guru BK / Konselor Sekolah (Pendekatan Evaluatif, Terstruktur, Praktis & Membangun)",
   "Konselor Akademik (Pendekatan Terstruktur, Analitis, Objektif & Solutif)",
   "Konselor Remaja / Mentor Pembimbing (Pendekatan Motivatif, Proaktif, Solutif & Aksi)",
+];
+
+export const DYNAMIC_OPENERS = [
+  "Secara umum...",
+  "Berdasarkan gambaran yang diberikan orang tua...",
+  "Hasil pemetaan menunjukkan...",
+  "Dari hasil observasi...",
+  "Potret kemampuan awal siswa memperlihatkan...",
+  "Informasi yang disampaikan orang tua menunjukkan...",
+  "Gambaran awal kemampuan siswa mengindikasikan...",
+  "Secara keseluruhan...",
+  "Dari keseluruhan hasil observasi...",
+  "Berdasarkan profil awal yang diperoleh..."
+];
+
+export const DYNAMIC_FOCUS_POINTS = [
+  "kesiapan belajar",
+  "karakter",
+  "komunikasi",
+  "motivasi",
+  "pola belajar",
+  "regulasi emosi",
+  "kemandirian",
+  "adaptasi",
+  "kemampuan berpikir",
+  "potensi pengembangan"
 ];
 
 export const DYNAMIC_ANALYSIS_STRATEGIES = [
@@ -449,6 +475,8 @@ export function buildVariationDirective(): string {
   const seed = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   const chosenStrategy = pick(DYNAMIC_ANALYSIS_STRATEGIES);
   const chosenPersona = pick(PERSONA_ENGINE);
+  const chosenOpener = pick(DYNAMIC_OPENERS);
+  const chosenFocus = pick(DYNAMIC_FOCUS_POINTS);
 
   return `
 ==================================================
@@ -474,11 +502,38 @@ AI WAJIB menerapkan strategi analisis berikut untuk laporan ini:
 
 DILARANG menggunakan urutan kaku yang sama (Pembuka → Skor → Kebiasaan Belajar → Kemandirian → Regulasi Emosi → Pendampingan). Wajib mengikuti urutan ide strategi di atas!
 
-[KOMPONEN 3: ANTI-REPETITION ENGINE & SELF-VALIDATION]
-- DILARANG mengulang frase pembuka yang sama ("Berdasarkan hasil...", "Secara umum...", "Terlihat bahwa...", "Siswa menunjukkan...", "Masih perlu ditingkatkan...") lebih dari 1 kali dalam satu laporan!
-- AI WAJIB melakukan self-validation sebelum menghasilkan output JSON.
-- Jika kemiripan struktur kalimat, frasa pembuka, atau urutan penjelasan antar laporan masih >20%, AI WAJIB MENULIS ULANG seluruh field dari awal hingga unik tanpa menggeser makna data asesmen.
+[KOMPONEN KHUSUS: PENYEMPURNAAN FIELD "RINGKASAN KEMAMPUAN AWAL"]
+Wajib menerapkan aturan penulisan khusus untuk field Ringkasan Kemampuan Awal (misal: ringkasan_kemampuan_awal / ringkasan_profil_sd / ringkasan_dinamika_smp / penjelasan_status):
+1. Ditulis sebagai pembuka laporan yang rapi, singkat, alami, dan mudah dibaca oleh Psikolog Pendidikan / Konselor Sekolah.
+2. PANJANG WAJIB 3–5 KALIMAT dengan fungsi kalimat berikut:
+   - Kalimat 1: Memberikan gambaran umum kondisi siswa.
+   - Kalimat 2: Menjelaskan hasil utama berdasarkan observasi orang tua.
+   - Kalimat 3: Menjelaskan kecenderungan kemampuan atau area yang perlu diperhatikan.
+   - Kalimat Terakhir (Kalimat 4 atau 5): Menjadi transisi menuju analisis berikutnya secara mengalir.
+3. VARIABEL STRATEGIS UNTUK LAPORAN INI:
+   - Rekomendasi Titik Awal Pembahasan / Fokus Utama: "${chosenFocus}"
+   - Contoh Variasi Pembuka Acak (Gunakan acak, jangan kaku): "${chosenOpener}"
+4. HINDARI PARAGRAF TERLALU PANJANG ATAU BERBELIT.
+5. HINDARI PENGULANGAN NAMA SISWA LEBIH DARI 1 KALI dalam bagian ringkasan ini kecuali sangat diperlukan.
+6. HINDARI PENGULANGAN FRASA BERULANG LEBIH DARI 1 KALI DI SELURUH LAPORAN:
+   - "Berdasarkan hasil asesmen..."
+   - "Dari hasil asesmen..."
+   - "Melalui asesmen..."
+   - "Potret asesmen..."
+   - "Observasi orang tua..."
+   - "Berdasarkan informasi..."
+   - "Rata-rata skor..."
+7. ANTI TEMPLATE: Walaupun dua siswa memiliki skor, jawaban, dan kategori SAMA, Ringkasan TIDAK BOLEH SAMA. AI wajib menyusun ulang narasi dari awal dengan memvariasikan urutan ide, sudut pandang, fokus pembahasan, alur paragraf, gaya penjelasan, panjang kalimat, transisi, dan penutup.
 
-Struktur JSON, nama key, dan urutan field WAJIB 100% SAMA SEPERTI SKEMA LAPORAN JENJANG TERKAIT.
+[KOMPONEN 3: ANTI-REPETITION ENGINE & SELF-VALIDATION]
+- AI WAJIB melakukan pemeriksaan internal (Self-Review) sebelum mengirim hasil:
+  ✓ Tidak ada kalimat yang terduplikasi.
+  ✓ Tidak ada frasa yang berulang.
+  ✓ Nama siswa tidak diulang berkali-kali.
+  ✓ Alur membaca mengalir alami.
+  ✓ Ringkasan terasa seperti ditulis langsung oleh seorang profesional (bukan template/mesin).
+- Jika kemiripan narasi dengan laporan sebelumnya diperkirakan >20%, AI WAJIB menulis ulang menggunakan struktur dan alur yang berbeda.
+
+Struktur JSON, nama key, dan urutan field WAJIB 100% SAMA SEPERTI SKEMA LAPORAN JENJANG TERKAIT. JANGAN MENGUBAH NAMA KEY JSON MAUPUN URUTAN FIELD LAINNYA.
 `.trim();
 }
