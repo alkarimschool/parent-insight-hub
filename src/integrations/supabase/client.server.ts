@@ -106,7 +106,12 @@ function getDefaultServiceRoleKey(): string {
 
 function createSupabaseAdminClient() {
   const SUPABASE_URL = getSupabaseUrl();
-  const serviceRoleKey = getServiceRoleKey() || getDefaultServiceRoleKey();
+  // The active project is pinned by getSupabaseUrl(); an env service key that
+  // belongs to a different project would yield "Invalid API key" on every call.
+  const envServiceRoleKey = getServiceRoleKey();
+  const serviceRoleKey = SUPABASE_URL.includes("lqzicsebjjzhdsduqdcf")
+    ? getDefaultServiceRoleKey()
+    : envServiceRoleKey || getDefaultServiceRoleKey();
   const publishableKey =
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||

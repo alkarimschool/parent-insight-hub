@@ -10,7 +10,9 @@ import { ArrowRight, GraduationCap, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { EducationLevel } from "@/lib/questions.data";
 import { getAssessmentContent } from "@/lib/assessment-content";
-import { fetchAssessmentLocks, LOCK_MESSAGE } from "@/lib/locks";
+import { fetchAssessmentLocks, LOCK_MESSAGE, firstUnlockedLevel } from "@/lib/locks";
+import { getAssessmentLocksFn } from "@/lib/locks.functions";
+import { redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/assessment/")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -28,6 +30,18 @@ export const Route = createFileRoute("/assessment/")({
       { name: "description", content: "Isi data anak dan nomor WhatsApp untuk memulai asesmen perkembangan." },
     ],
   }),
+  beforeLoad: async ({ search }: any) => {
+    if (!search?.level) return;
+    let locks: Record<string, boolean> | undefined;
+    try {
+      locks = (await getAssessmentLocksFn()) as any;
+    } catch (e) {
+      console.warn("[LOCK_GUARD] gagal membaca status kunci:", e);
+    }
+    if (locks?.[search.level] === true) {
+      throw redirect({ to: "/assessment/level" });
+    }
+  },
   component: AssessmentFormPage,
 });
 
@@ -51,7 +65,7 @@ function AssessmentFormPage() {
   }>({
     whatsapp: "",
     child_name: "",
-    education_level: (search?.level as EducationLevel) || "SMA",
+    education_level: (search?.level as EducationLevel) || "TK",
   });
 
   useEffect(() => {
@@ -68,14 +82,15 @@ function AssessmentFormPage() {
     } catch {}
   }, [search]);
 
-  // Fallback to first unlocked level (SMA) if locks are loaded and current level is locked but search was not explicitly set
+  // Fallback to the first unlocked level when the current one is locked (no hardcoded level)
   useEffect(() => {
-    if (locks.data && !search?.level) {
-      if (locks.data[form.education_level] && !locks.data["SMA"]) {
-        setForm((prev) => ({ ...prev, education_level: "SMA" }));
+    if (locks.data && !search?.level && locks.data[form.education_level]) {
+      const next = firstUnlockedLevel(locks.data);
+      if (next && next !== form.education_level) {
+        setForm((prev) => ({ ...prev, education_level: next as EducationLevel }));
       }
     }
-  }, [locks.data, search?.level]);
+  }, [locks.data, search?.level, form.education_level]);
 
   const isLocked = !!locks.data?.[form.education_level];
 
@@ -129,15 +144,15 @@ function AssessmentFormPage() {
               onChange={(e) => setForm({ ...form, education_level: e.target.value as EducationLevel })}
               className="w-full rounded-2xl border border-input bg-background p-3 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
             >
-              <option value="SMA">🎓 Sekolah Menengah Atas (SMA) — Aktif & Siap</option>
               <option value="TK">👶 Pendidikan Anak Usia Dini (TK / PAUD) {locks.data?.TK ? "(🔒 Terkunci)" : ""}</option>
               <option value="SD">📘 Sekolah Dasar (SD) {locks.data?.SD ? "(🔒 Terkunci)" : ""}</option>
               <option value="SMP">📗 Sekolah Menengah Pertama (SMP) {locks.data?.SMP ? "(🔒 Terkunci)" : ""}</option>
+              <option value="SMA">🎓 Sekolah Menengah Atas (SMA) {locks.data?.SMA ? "(🔒 Terkunci)" : ""}</option>
               <option value="SMK">🛠️ Sekolah Menengah Kejuruan (SMK) {locks.data?.SMK ? "(🔒 Terkunci)" : ""}</option>
             </select>
             {isLocked && (
               <p className="mt-2.5 flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs font-semibold text-amber-700 dark:text-amber-400">
-                <Lock className="h-4 w-4 shrink-0" /> Asesmen {form.education_level} sedang dalam pengembangan. Silakan pilih jenjang <strong>SMA</strong> yang sudah aktif.
+                <Lock className="h-4 w-4 shrink-0" /> Asesmen {form.education_level} sedang dalam pengembangan. Silakan pilih jenjang lain yang berstatus terbuka.
               </p>
             )}
           </div>
