@@ -12,7 +12,12 @@ export const setAssessmentLockFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z.object({ level: z.string().min(1), is_locked: z.boolean() }).parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Forbidden");
     const { setLockServer } = await import("./locks.server");
     return setLockServer(data.level, data.is_locked);
   });

@@ -15,6 +15,11 @@ export const DEFAULT_LOCKS: LockMap = {
   SMK: false,
 };
 
+/** Returns the first level that is not locked (no hardcoded level anywhere). */
+export function firstUnlockedLevel(map: LockMap): LockLevel | undefined {
+  return LOCK_LEVELS.find((lvl) => map[lvl] !== true);
+}
+
 export async function fetchAssessmentLocks(): Promise<LockMap> {
   console.info("[LOCKS_HOMEPAGE] Fetching assessment configuration...");
   try {
