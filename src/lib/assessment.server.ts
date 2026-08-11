@@ -3,7 +3,7 @@ import { callLovableAiJson } from "./ai.server";
 import { EducationLevel, LEVEL_QUESTIONS, getEducationLevel } from "./questions.data";
 import { getAssessmentContent } from "./assessment-content";
 import { DEFAULT_PROMPTS } from "./prompt.data";
-import { buildVariationDirective, FIELD_VARIATION_TEMPLATES } from "./narrative-variation";
+import { buildVariationDirective, buildTkVariationDirective, FIELD_VARIATION_TEMPLATES } from "./narrative-variation";
 
 interface SubmitInput {
   parent: { name: string; whatsapp: string };
@@ -1009,7 +1009,7 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
           user_template: defaultPromptForLevel.user_template,
         };
 
-    const variationDirective = buildVariationDirective();
+    const variationDirective = dbEducationLevel === "TK" ? buildTkVariationDirective() : buildVariationDirective();
 
     const filledPrompt = promptToUse.user_template
       .replace(/\$\{assessment\.education_level\}/g, dbEducationLevel)
@@ -1043,7 +1043,7 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
       try {
         const aiRes = await callLovableAiJson({
           model: usedModel,
-          systemPrompt: attempt === 1 ? systemPromptWithRules : `${promptToUse.system_prompt}\n\n${buildVariationDirective()}`,
+          systemPrompt: attempt === 1 ? systemPromptWithRules : `${promptToUse.system_prompt}\n\n${dbEducationLevel === "TK" ? buildTkVariationDirective() : buildVariationDirective()}`,
           userPrompt: filledPrompt,
           temperature: Number(settings?.temperature ?? 0.85),
           maxTokens: settings?.max_tokens ?? 4096,
