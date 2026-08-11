@@ -76,20 +76,26 @@ function calculateCosineSimilarity(textA: string, textB: string): number {
   return (dotProduct / (Math.sqrt(magA) * Math.sqrt(magB))) * 100;
 }
 
-// 5. Aggregate Text from Output Object
+// 5. Aggregate Text from Output Object & Check for Score Leaks
 function getFullNarrativeText(report: any): string {
   const parts: string[] = [
-    report.penjelasan_status || "",
-    ...(report.kekuatan_anak || []),
-    ...(report.area_perlu_ditingkatkan || []),
-    ...(report.potensi_dikembangkan || []),
-    ...(report.kemampuan_akademik?.kekuatan_akademik || []),
-    ...(report.kemampuan_akademik?.area_akademik_dikembangkan || []),
-    ...(report.prioritas_stimulasi || []),
-    ...(report.rekomendasi_orangtua || []),
-    ...(report.catatan || [])
+    report.kesimpulan_umum_perkembangan || report.penjelasan_status || "",
+    ...(report.area_yang_perlu_diperhatikan || report.area_perlu_ditingkatkan || []),
+    typeof report.gambaran_perkembangan === "object" && report.gambaran_perkembangan
+      ? Object.values(report.gambaran_perkembangan).join(" ")
+      : "",
+    ...(report.potensi_dan_kelebihan_anak || report.potensi_dikembangkan || report.kekuatan_anak || []),
+    ...(report.rekomendasi_stimulasi_untuk_orang_tua || report.rekomendasi_orangtua || []),
+    typeof report.catatan_untuk_orang_tua === "string"
+      ? report.catatan_untuk_orang_tua
+      : (report.catatan || []).join(" ")
   ];
   return parts.join(" ");
+}
+
+function hasScoreNumberLeak(text: string): boolean {
+  // Check if text contains score patterns like "4.25", "3.8/5", "skor: 4", "rata-rata: 4"
+  return /\b(skor|nilai|rata-rata|skor:|nilai:|\d\.\d{1,2}\/5|\d\.\d{1,2}\s*out\s*of)\b/i.test(text);
 }
 
 // 6. Test Data Generator
@@ -156,7 +162,8 @@ function runTkStressTest() {
     const textI = getFullNarrativeText(reportsCaseA[i]);
     const sentences = extractSentences(textI);
     sentences.forEach(s => sentenceMapA.set(s, (sentenceMapA.get(s) || 0) + 1));
-    openingsA.push(reportsCaseA[i].penjelasan_status.split(".")[0]);
+    const openingText = reportsCaseA[i].kesimpulan_umum_perkembangan || reportsCaseA[i].penjelasan_status || "";
+    openingsA.push(openingText.split(".")[0]);
 
     for (let j = i + 1; j < reportsCaseA.length; j++) {
       const textJ = getFullNarrativeText(reportsCaseA[j]);
@@ -280,17 +287,18 @@ function runTkStressTest() {
   [0, 1, 2].forEach(idx => {
     const r = reportsCaseA[idx];
     console.log(`\n--- LAPORAN ${idx + 1}: ${r.status_perkembangan} | ${names[idx]} ---`);
-    console.log(`[Penjelasan Status]: ${r.penjelasan_status}`);
-    console.log(`[Kekuatan Utama]: ${r.kekuatan_anak.slice(0, 2).join(" | ")}`);
-    console.log(`[Area Perhatian]: ${r.area_perlu_ditingkatkan.slice(0, 2).join(" | ")}`);
-    console.log(`[Rekomendasi Utama]: ${r.rekomendasi_orangtua.slice(0, 2).join(" | ")}`);
+    console.log(`[Kesimpulan Umum]: ${r.kesimpulan_umum_perkembangan || r.penjelasan_status}`);
+    console.log(`[Area Perhatian]: ${(r.area_yang_perlu_diperhatikan || r.area_perlu_ditingkatkan || []).slice(0, 2).join(" | ")}`);
+    console.log(`[Gambaran Motorik]: ${r.gambaran_perkembangan?.motorik || r.motorik || "-"}`);
+    console.log(`[Potensi & Kelebihan]: ${(r.potensi_dan_kelebihan_anak || r.potensi_dikembangkan || []).slice(0, 2).join(" | ")}`);
+    console.log(`[Rekomendasi Utama]: ${(r.rekomendasi_stimulasi_untuk_orang_tua || r.rekomendasi_orangtua || []).slice(0, 2).join(" | ")}`);
   });
 
   console.log("\n==========================================================================");
   console.log("✅ SUMMARY EVALUASI TEST PASSED:");
   console.log(`  1. Status Perkembangan TK Objektif: PASSED 100%`);
   console.log(`  2. Rata-rata Kemiripan Narasi (Jaccard): ${((avgJaccardA + avgJaccardB + avgJaccardC) / 3).toFixed(2)}% (< 20% TARGET PASSED)`);
-  console.log(`  3. Total Duplicate Sentences: ${dupSentencesA + dupSentencesB + dupSentencesC} (TARGET 0 PASSED)`);
+  console.log(`  3. Total Duplicate Sentences: ${dupSentencesA + dupSentencesB + dupSentencesC}`);
   console.log("==========================================================================\n");
 }
 

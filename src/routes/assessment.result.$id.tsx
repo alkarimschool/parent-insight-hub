@@ -98,6 +98,32 @@ function List({ items }: { items?: string[] }) {
   );
 }
 
+function ChecklistItems({ items, iconType = "square" }: { items?: string[]; iconType?: "square" | "check" }) {
+  if (!items?.length) return <p className="italic text-muted-foreground print:text-gray-500">Tidak ada catatan spesifik.</p>;
+  return (
+    <ul className="space-y-2.5">
+      {items.map((it, i) => (
+        <li key={i} className="flex items-start gap-2.5 text-sm leading-relaxed text-foreground print:text-black print:text-xs">
+          <span className="mt-0.5 shrink-0 text-base font-bold text-primary print:text-emerald-700">
+            {iconType === "check" ? "✓" : "☐"}
+          </span>
+          <span>{it}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function AspectCard({ label, content }: { label: string; content?: string | string[] }) {
+  const text = Array.isArray(content) ? content.join(" ") : (content || "-");
+  return (
+    <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm print:border-gray-300 print:bg-white print:p-3 print:shadow-none print-break-inside-avoid">
+      <h4 className="text-xs font-bold uppercase tracking-wider text-primary print:text-black mb-1.5">{label}</h4>
+      <p className="text-xs leading-relaxed text-foreground/90 print:text-black print:text-[11px]">{text}</p>
+    </div>
+  );
+}
+
 function ResultPage() {
   const { id } = Route.useParams();
   const website = useQuery({ queryKey: ["website"], queryFn: fetchWebsite });
@@ -297,57 +323,115 @@ function ResultPage() {
           </div>
         ) : level === "TK" ? (
           /* ========================================================================= */
-          /* TK — PEMETAAN AWAL TUMBUH KEMBANG ANAK (7 BAGIAN)                         */
+          /* TK / PAUD — PEMETAAN AWAL TUMBUH KEMBANG ANAK (EXACT 7 SECTIONS, 0 SCORE) */
           /* ========================================================================= */
-          <div className="grid gap-5">
-            {/* Status Perkembangan */}
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 shadow-soft text-center print:border-emerald-600 print:bg-transparent">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">🌱 Status Perkembangan</span>
-              <h2 className="mt-1 text-xl font-extrabold text-emerald-800 dark:text-emerald-300 print:text-black">
+          <div className="tk-report-container space-y-6">
+            {/* Header Khusus Cetak / PDF */}
+            <div className="hidden print:block print:mb-6 print:border-b-2 print:border-emerald-700 print:pb-4">
+              <div className="text-center">
+                <h1 className="text-xl font-extrabold uppercase tracking-wide text-black">
+                  PEMETAAN AWAL TUMBUH KEMBANG ANAK
+                </h1>
+                <p className="text-xs font-semibold text-gray-700">Sekolah Alam Al-Karim (PAUD / TK)</p>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs text-black border-t border-gray-300 pt-3">
+                <div><span>Nama Anak:</span> <strong>{childName}</strong></div>
+                <div><span>Jenjang:</span> <strong>TK / PAUD</strong></div>
+                <div><span>Kelas:</span> <strong>{(data as any)?.child_class || "TK"}</strong></div>
+                <div>
+                  <span>Tanggal:</span>{" "}
+                  <strong>
+                    {data?.created_at ? new Date(data.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            {/* 1. Status Perkembangan */}
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 shadow-soft text-center print:border-emerald-600 print:bg-emerald-50/50 print:p-4 print-break-inside-avoid">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 print:text-emerald-900">
+                🌱 1. Status Perkembangan
+              </span>
+              <h2 className="mt-1 text-2xl font-black text-emerald-900 dark:text-emerald-200 print:text-black print:text-xl">
                 {c.status_perkembangan || "Berkembang Sesuai Harapan"}
               </h2>
-              <p className="mt-2 text-xs text-emerald-900/70 dark:text-emerald-200/80 print:text-black">
-                Hasil ini merupakan pemetaan awal berdasarkan observasi orang tua, bukan diagnosis.
+              <p className="mt-2 text-xs leading-relaxed text-emerald-900/80 dark:text-emerald-200/90 print:text-gray-800">
+                * Catatan: Hasil ini merupakan pemetaan awal berdasarkan observasi orang tua di rumah, BUKAN diagnosis medis maupun psikologis.
               </p>
             </div>
 
-            {/* 1. Kesimpulan Umum Perkembangan */}
-            <Section title="1. Kesimpulan Umum Perkembangan">
-              <p className="text-sm leading-relaxed text-foreground print:text-black">
+            {/* 2. Kesimpulan Umum Perkembangan */}
+            <Section title="2. Kesimpulan Umum Perkembangan">
+              <p className="text-sm leading-relaxed text-foreground print:text-black print:text-xs">
                 {c.kesimpulan_umum_perkembangan || c.penjelasan_status || c.ringkasan}
               </p>
             </Section>
 
-            {/* 2. Area yang Perlu Diperhatikan */}
-            <Section title="2. Area yang Perlu Diperhatikan">
-              <List items={c.area_yang_perlu_diperhatikan || c.area_perlu_ditingkatkan} />
+            {/* 3. Area yang Perlu Diperhatikan */}
+            <Section title="3. Area yang Perlu Diperhatikan">
+              <ChecklistItems items={c.area_yang_perlu_diperhatikan || c.area_perlu_ditingkatkan} iconType="square" />
             </Section>
 
-            {/* 3. Motorik */}
-            <Section title="3. Motorik (Kasar & Halus)">
-              <List items={c.motorik} />
+            {/* Page Break setelah Bagian 3 untuk Cetak A4 */}
+            <div className="hidden print:block print:break-before-page" />
+
+            {/* 4. Gambaran Perkembangan (5 Aspek) */}
+            <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-soft print:border-gray-300 print:bg-white print:p-4 print:shadow-none print-break-inside-avoid">
+              <h3 className="flex items-center gap-2 text-lg font-bold text-foreground print:text-black print:text-base mb-3">
+                <Sparkles className="h-4 w-4 text-primary print:hidden" />
+                4. Gambaran Perkembangan (5 Aspek)
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-3">
+                <AspectCard
+                  label="Motorik (Kasar & Halus)"
+                  content={c.gambaran_perkembangan?.motorik || c.motorik}
+                />
+                <AspectCard
+                  label="Bahasa & Komunikasi"
+                  content={c.gambaran_perkembangan?.bahasa_dan_komunikasi || c.bahasa_dan_kognitif || c.bahasa}
+                />
+                <AspectCard
+                  label="Kognitif & Penalaran Awal"
+                  content={c.gambaran_perkembangan?.kognitif || c.kognitif}
+                />
+                <AspectCard
+                  label="Sosial-Emosional"
+                  content={c.gambaran_perkembangan?.sosial_emosional || c.sosial_emosional_dan_kemandirian || c.sosem}
+                />
+                <AspectCard
+                  label="Kemandirian Harian"
+                  content={c.gambaran_perkembangan?.kemandirian || c.kemandirian}
+                />
+              </div>
+            </div>
+
+            {/* 5. Potensi & Kelebihan */}
+            <Section title="5. Potensi & Kelebihan Anak">
+              <ChecklistItems items={c.potensi_dan_kelebihan_anak || c.kekuatan_anak} iconType="check" />
             </Section>
 
-            {/* 4. Bahasa & Kognitif */}
-            <Section title="4. Bahasa & Kognitif">
-              <List items={c.bahasa_dan_kognitif} />
+            {/* 6. Rekomendasi Stimulasi di Rumah */}
+            <Section title="6. Rekomendasi Stimulasi di Rumah">
+              <ChecklistItems items={c.rekomendasi_stimulasi_untuk_orang_tua || c.rekomendasi_orangtua} iconType="square" />
             </Section>
 
-            {/* 5. Sosial-Emosional & Kemandirian */}
-            <Section title="5. Sosial-Emosional & Kemandirian">
-              <List items={c.sosial_emosional_dan_kemandirian} />
+            {/* 7. Catatan untuk Orang Tua */}
+            <Section title="7. Catatan untuk Orang Tua">
+              <p className="text-sm leading-relaxed text-foreground print:text-black print:text-xs">
+                {Array.isArray(c.catatan_untuk_orang_tua || c.catatan)
+                  ? (c.catatan_untuk_orang_tua || c.catatan).join(" ")
+                  : (c.catatan_untuk_orang_tua || c.catatan || `Apresiasi setinggi-tingginya kepada Ibu/Bapak ${parentName} yang senantiasa mendampingi tumbuh kembang Ananda ${childName} dengan hangat. Setiap anak berkembang dengan kecepatannya sendiri.`)}
+              </p>
             </Section>
 
-            {/* 6. Potensi & Kelebihan Anak */}
-            <Section title="6. Potensi & Kelebihan Anak">
-              <List items={c.potensi_dan_kelebihan_anak || c.kekuatan_anak} />
-            </Section>
+            {/* Footer Resmi Cetak / PDF */}
+            <div className="hidden print:block print:mt-8 print:border-t print:border-gray-300 print:pt-3 print:text-center text-[10px] text-gray-600">
+              <p className="font-semibold">Pemetaan Awal Tumbuh Kembang Anak • Sekolah Alam Al-Karim</p>
+              <p className="text-[9px] text-gray-500 mt-0.5">Laporan Asesmen Observasi Keluarga di Rumah</p>
+            </div>
 
-            {/* 7. Rekomendasi Stimulasi untuk Orang Tua */}
-            <Section title="7. Rekomendasi Stimulasi untuk Orang Tua">
-              <List items={c.rekomendasi_stimulasi_untuk_orang_tua || c.rekomendasi_orangtua} />
-            </Section>
-
+            {/* Action Buttons */}
             <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">
               <Link to="/" className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-accent">
                 <Home className="h-4 w-4" /> Kembali ke Beranda
@@ -357,7 +441,7 @@ function ResultPage() {
                 onClick={() => window.print()}
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-hero px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-95"
               >
-                <Printer className="h-4 w-4" /> Cetak / Export PDF ({content.shortName})
+                <Printer className="h-4 w-4" /> Cetak / Export PDF (Laporan TK)
               </button>
             </div>
           </div>

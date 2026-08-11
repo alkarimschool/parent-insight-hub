@@ -606,7 +606,6 @@ ${buildSummaryFieldDirective()}
 `.trim();
 }
 
-<<<<<<< HEAD
 /**
  * Logika Status Perkembangan TK Objektif Berdasarkan Skor Rata-Rata:
  * 4.50 – 5.00 → "Berkembang Sesuai Harapan"
@@ -659,80 +658,11 @@ RATA-RATA SKOR: ${avgScore ? avgScore.toFixed(2) : "4.00"}
 4. ALUR & URUTAN PEMBAHASAN UNIK LAPORAN INI:
    >>> ${chosenFlow} <<<
    Bahas aspek-aspek tumbuh kembang dengan urutan ide di atas!
-5. PARAGRAF PEMBUKA (penjelasan_status):
+5. PARAGRAF PEMBUKA (kesimpulan_umum_perkembangan):
    - Wajib 3–5 kalimat yang mengalir alami dari Konselor PAUD.
    - Contoh variasi nada pembuka: "${chosenOpener}..."
    - Menyebut nama anak (${childName || "Ananda"}) MAKSIMAL 1 Kali di paragraf pembuka.
-6. HINDARI FRASA TEMPLATE BERULANG ("Berdasarkan hasil asesmen", "Melalui observasi orang tua", "Rata-rata skor", "Secara umum Ananda memiliki...").
+6. HINDARI FRASA TEMPLATE BERULANG ("Berdasarkan hasil asesmen", "Melalui observasi orang tua", "Rata-rata skor", "Secara umum Ananda memiliki..."). DILARANG MENAMPILKAN ANGKA SKOR APAPUN!
 7. AREA PERHATIAN & REKOMENDASI PERSONAL: Harus ditargetkan pada indikator yang memerlukan stimulasi paling nyata dari jawaban orang tua.
 `.trim();
 }
-
-=======
-// ============================================================
-// TK ONLY — Variation engine for "Pemetaan Awal Tumbuh Kembang Anak"
-// ============================================================
-const TK_OPENERS = [
-  "Secara umum,",
-  "Dari kebiasaan sehari-hari di rumah,",
-  "Hasil pemetaan awal memperlihatkan",
-  "Gambaran tumbuh kembang saat ini menunjukkan",
-  "Potret perkembangan yang terlihat",
-  "Melihat pola jawaban Ibu/Bapak,",
-];
-
-const TK_FOCUS_ENTRY = [
-  "mulai dari cara anak bergerak dan bermain",
-  "mulai dari cara anak berkomunikasi",
-  "mulai dari rasa ingin tahu anak",
-  "mulai dari cara anak bergaul dengan teman",
-  "mulai dari kemandirian harian anak",
-  "mulai dari kesiapan anak mengikuti kegiatan",
-];
-
-const TK_TONES = [
-  "hangat dan menenangkan",
-  "sederhana dan lugas",
-  "apresiatif namun tetap jujur",
-  "ramah seperti berbincang dengan orang tua",
-];
-
-const TK_EXPLANATION_STYLES = [
-  "jelaskan temuan lewat contoh situasi harian di rumah",
-  "jelaskan temuan dengan menghubungkan antar ranah perkembangan",
-  "jelaskan temuan dengan menyoroti perubahan yang bisa diamati orang tua",
-  "jelaskan temuan dengan menekankan apa yang sudah bisa dilakukan anak lebih dahulu",
-];
-
-export function buildTkVariationDirective(): string {
-  const seed = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-  const opener = pick(TK_OPENERS);
-  const entry = pick(TK_FOCUS_ENTRY);
-  const tone = pick(TK_TONES);
-  const style = pick(TK_EXPLANATION_STYLES);
-
-  return `
-==================================================
-ENGINE VARIASI NARASI KHUSUS JENJANG TK
-==================================================
-SEED KEUNIKAN: ${seed} (penanda internal, dilarang muncul di output JSON)
-
-VARIABEL LAPORAN INI:
-- Nuansa penulisan: ${tone}
-- Titik masuk pembahasan: ${entry}
-- Contoh pembuka acak (jangan disalin mentah): "${opener}"
-- Cara menjelaskan temuan: ${style}
-
-ATURAN VARIASI (BERLAKU DI SELURUH 7 BAGIAN, BUKAN HANYA PEMBUKA):
-1. Variasikan struktur kalimat, urutan ide, fokus pembahasan, pilihan kata, cara menjelaskan temuan, cara menjelaskan area perhatian, cara menjelaskan potensi, dan cara memberi rekomendasi.
-2. DILARANG memakai template A/B/C atau kerangka kalimat yang berulang antar laporan.
-3. Dua anak dengan skor identik WAJIB menerima narasi yang berbeda, meski kesimpulan status boleh sama.
-4. Nama anak maksimal 2x di seluruh laporan; frasa "Berdasarkan hasil asesmen" dan sejenisnya maksimal 1x.
-5. Urutan "area_yang_perlu_diperhatikan" mengikuti data anak, bukan urutan tetap.
-6. Bahasa mudah dipahami orang tua, tidak akademis, tanpa istilah klinis/diagnosis.
-7. Self-review sebelum output: pastikan kemiripan dengan laporan lain diperkirakan di bawah 20%.
-
-Struktur JSON, nama key, dan urutan 7 bagian WAJIB tetap sama persis dengan skema laporan TK.
-`.trim();
-}
->>>>>>> 626f1cd79a6d1036ebfdc6f0081efc50323667c6
