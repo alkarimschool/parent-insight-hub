@@ -636,34 +636,161 @@ export const TK_ASPECT_FLOWS = [
   "Motorik & Koordinasi Fizikal → Kognitif → Sosial-Emosional → Kemandirian → Bahasa & Komunikasi",
 ];
 
-export function buildTkVariationDirective(childName?: string, parentName?: string, avgScore?: number): string {
+export interface TkChildProfile {
+  dominant_aspects: string[];
+  attention_aspects: string[];
+  strong_aspects: string[];
+  behavior_patterns: string[];
+  communication_pattern: string;
+  social_emotional_pattern: string;
+  motor_pattern: string;
+  cognitive_pattern: string;
+  independence_pattern: string;
+  notable_observations: string[];
+  narrative_focus: string[];
+}
+
+export function buildTkChildProfile(
+  answers: any[] = [],
+  questions: any[] = [],
+  childName: string = "Ananda",
+  avgScore: number = 4.0
+): TkChildProfile {
+  const parsed = (answers || []).map((ans, idx) => {
+    let text = `Indikator ke-${idx + 1}`;
+    let category = "Umum";
+    const score = Number(ans?.score ?? ans?.value ?? 3);
+
+    const foundQ = (questions || []).find(
+      (q: any) => (q.id && q.id === ans?.question_id) || q.order_index === idx + 1
+    ) || (questions || [])[idx];
+
+    if (foundQ) {
+      text = foundQ.text || text;
+      category = foundQ.question_categories?.name || foundQ.category || foundQ.category_name || "Umum";
+    }
+    return { text, category, score };
+  });
+
+  const highAns = parsed.filter(a => a.score >= 4);
+  const lowAns = parsed.filter(a => a.score <= 2);
+  const midAns = parsed.filter(a => a.score === 3);
+
+  const catScores: Record<string, number[]> = {};
+  parsed.forEach(a => {
+    const cat = a.category || "Umum";
+    if (!catScores[cat]) catScores[cat] = [];
+    catScores[cat].push(a.score);
+  });
+
+  const catAvgs: Record<string, number> = {};
+  Object.keys(catScores).forEach(cat => {
+    const sum = catScores[cat].reduce((acc, v) => acc + v, 0);
+    catAvgs[cat] = sum / catScores[cat].length;
+  });
+
+  const strongCats = Object.keys(catAvgs).filter(c => catAvgs[c] >= 4.0);
+  const attentionCats = Object.keys(catAvgs).filter(c => catAvgs[c] <= 2.5);
+
+  const clean = (t: string) => t.replace(/^apakah anak |bagaimana |menurut anda, |sejauh mana |anak /gi, "").trim();
+
+  const strongAspects = highAns.slice(0, 4).map(a => `[${a.category}] ${clean(a.text)}`);
+  const attentionAspects = lowAns.slice(0, 4).map(a => `[${a.category}] ${clean(a.text)}`);
+  const behaviorPatterns: string[] = [];
+
+  if (highAns.length >= 8) {
+    behaviorPatterns.push("Mampu berkegiatan secara mandiri dengan antusiasme tinggi");
+  }
+  if (lowAns.length >= 3) {
+    behaviorPatterns.push("Membutuhkan pendampingan terstruktur dan pembiasaan berulang di rumah");
+  }
+  if (midAns.length >= 5) {
+    behaviorPatterns.push("Menunjukkan kecenderungan berkembang yang membutuhkan dorongan konsistensi fokus");
+  }
+
+  const commAns = parsed.filter(a => a.category.toLowerCase().includes("bahasa") || a.category.toLowerCase().includes("komunikasi") || a.category.toLowerCase().includes("bicara"));
+  const commAvg = commAns.length > 0 ? commAns.reduce((a, b) => a + b.score, 0) / commAns.length : avgScore;
+  const communicationPattern = commAvg >= 4.0
+    ? "Verbal lancar, percaya diri menyampaikan kebutuhan dan menceritakan pengalaman harian."
+    : commAvg >= 3.0
+    ? "Mampu berkomunikasi dasar dengan baik, memerlukan pengayaan kosakata dan dorongan ekspresi bercerita."
+    : "Memerlukan perhatian khusus pada kelancaran ekspresi verbal dan pembiasaan dialog dua arah.";
+
+  const socialAns = parsed.filter(a => a.category.toLowerCase().includes("sosial") || a.category.toLowerCase().includes("emosi"));
+  const socialAvg = socialAns.length > 0 ? socialAns.reduce((a, b) => a + b.score, 0) / socialAns.length : avgScore;
+  const socialEmotionalPattern = socialAvg >= 4.0
+    ? "Ramah, luwes berinteraksi dengan kawan/dewasa, serta mengenali emosi pribadi dengan matang."
+    : socialAvg >= 3.0
+    ? "Cukup kooperatif dalam pergaulan, memerlukan bimbingan saat berbagi atau mengelola rasa lelah."
+    : "Sangat membutuhkan pendampingan emosional yang sabar saat merasa kecewa atau bertransisi rutinitas.";
+
+  const motorAns = parsed.filter(a => a.category.toLowerCase().includes("motorik") || a.category.toLowerCase().includes("fisik"));
+  const motorAvg = motorAns.length > 0 ? motorAns.reduce((a, b) => a + b.score, 0) / motorAns.length : avgScore;
+  const motorPattern = motorAvg >= 4.0
+    ? "Keseimbangan fisik motorik kasar aktif dan ketelitian motorik halus jemari berkembang sangat baik."
+    : motorAvg >= 3.0
+    ? "Koordinasi fisik cukup baik, perlu variasi permainan melatih ketelitian jemari (menggunting/alat tulis)."
+    : "Memerlukan banyak latihan media permainan visual konkret untuk menguatkan kelincahan motorik.";
+
+  const cogAns = parsed.filter(a => a.category.toLowerCase().includes("kognitif") || a.category.toLowerCase().includes("pikir") || a.category.toLowerCase().includes("angka") || a.category.toLowerCase().includes("huruf"));
+  const cogAvg = cogAns.length > 0 ? cogAns.reduce((a, b) => a + b.score, 0) / cogAns.length : avgScore;
+  const cognitivePattern = cogAvg >= 4.0
+    ? "Fokus memori kuat, cepat mengenali pola/bentuk/warna, serta rasa ingin tahu tinggi."
+    : cogAvg >= 3.0
+    ? "Daya ingat dan pemahaman instruksi berkembang wajar, memerlukan media belajar permainan konkret."
+    : "Membutuhkan bimbingan bertahap 10-15 menit untuk memantapkan konsentrasi dan pemahaman konsep awal.";
+
+  return {
+    dominant_aspects: strongCats.length > 0 ? strongCats : ["Eksplorasi Bermain", "Kreativitas"],
+    attention_aspects: attentionCats.length > 0 ? attentionCats : (lowAns.length > 0 ? lowAns.map(a => a.category) : ["Belum ada area utama yang membutuhkan perhatian khusus"]),
+    strong_aspects: strongAspects.length > 0 ? strongAspects : [`Ananda ${childName} antusias dalam mencoba permainan baru`],
+    behavior_patterns: behaviorPatterns.length > 0 ? behaviorPatterns : ["Responsif terhadap bimbingan positif di rumah"],
+    communication_pattern: communicationPattern,
+    social_emotional_pattern: socialEmotionalPattern,
+    motor_pattern: motorPattern,
+    cognitive_pattern: cognitivePattern,
+    independence_pattern: avgScore >= 4.0 ? "Mandiri dalam pembiasaan rutinitas harian" : "Membutuhkan pendampingan rutinitas harian di rumah",
+    notable_observations: parsed.slice(0, 5).map(a => `${a.category}: Skor ${a.score}/5`),
+    narrative_focus: attentionAspects.length > 0 ? attentionAspects : ["Penguatan Kesiapan Pra-Sekolah"]
+  };
+}
+
+export function buildTkVariationDirective(
+  childName?: string,
+  parentName?: string,
+  avgScore?: number,
+  answers?: any[],
+  questions?: any[]
+): string {
   const seed = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   const chosenPersona = pick(TK_PERSONAS);
   const chosenFlow = pick(TK_ASPECT_FLOWS);
   const chosenOpener = pick(DYNAMIC_OPENERS);
+  const profile = buildTkChildProfile(answers, questions, childName, avgScore || 4.0);
 
   return `
 ==================================================
-ENGINE NARRATIVE UNIK KHUSUS ASESMEN TK / PAUD
+ENGINE NARRATIVE UNIK & DATA-DRIVEN PROFIL ANAK TK / PAUD
 ==================================================
 SEED KEUNIKAN TK: ${seed}
 NAMA ANAK: ${childName || "Ananda"}
 NAMA ORANG TUA: ${parentName || "Orang Tua"}
 RATA-RATA SKOR: ${avgScore ? avgScore.toFixed(2) : "4.00"}
 
-[ATURAN UTAMA NARASI TK]
-1. KONSISTENSI HOLISTIK 6 BAGIAN: Bacalah seluruh jawaban orang tua terlebih dahulu. Kesimpulan, Area Perhatian, Potensi, Rekomendasi, dan Catatan Orang Tua HARUS SALING TERHUBUNG dan BEBAS KONTRADIKSI!
-2. STATUS PERKEMBANGAN SANGAT OBJEKTIF: Status ditentukan secara sistemik dari skor rata-rata internal. Jangan merubah nilai status perkembangan.
-3. NARASI WAJIB 100% UNIK & PERSONAL DARI NOL: Walaupun skor, jawaban, atau kategori anak lain identik, narasi laporan untuk Ananda ${childName || "anak ini"} WAJIB disusun dari awal dari nol tanpa mengulang template baku!
-4. PERSONA EVALUATOR TK: Use perspective of "${chosenPersona}". Bahasa hangat, membesarkan hati, profesional, non-medis, mudah dipahami orang tua.
-5. ALUR & URUTAN PEMBAHASAN UNIK LAPORAN INI:
+PROFIL INTERNAL ANAK BASED ON 30 JAWABAN ORANG TUA:
+${JSON.stringify(profile, null, 2)}
+
+[ATURAN DATA-DRIVEN & ANTI-TEMPLATE TK]
+1. NARASI BERDASARKAN PROFIL ATAS: Susunlah narasi 4 Aspek Perkembangan (Bahasa, Sosial-Emosional, Motorik, Kognitif) secara murni berdasarkan profil internal anak di atas, BUKAN template baku!
+2. JIKA SKOR IDENTIK DENGAN ANAK LAIN: Karena pola profil internal, urutan ide, dan kalimat pembuka berbeda, narasi untuk Ananda ${childName || "anak ini"} WAJIB 100% personal dan berbeda secara struktural dari anak lain.
+3. PERSONA EVALUATOR: Gunakan perspektif "${chosenPersona}". Bahasa hangat, membesarkan hati, profesional, non-medis, mudah dipahami orang tua.
+4. ALUR PEMBAHASAN UNIK LAPORAN INI:
    >>> ${chosenFlow} <<<
-   Bahas aspek-aspek tumbuh kembang dengan urutan ide di atas!
-6. PARAGRAF PEMBUKA (kesimpulan_umum_perkembangan):
+5. PARAGRAF PEMBUKA (gambaran_perkembangan_anak / kesimpulan_umum_perkembangan):
    - Wajib 3–5 kalimat yang mengalir alami dari Konselor PAUD.
-   - Contoh variasi nada pembuka: "${chosenOpener}..."
+   - Variasi pembuka: "${chosenOpener}..."
    - Menyebut nama anak (${childName || "Ananda"}) MAKSIMAL 1 Kali di paragraf pembuka.
-7. HINDARI FRASA TEMPLATE BERULANG ("Berdasarkan hasil asesmen", "Melalui observasi orang tua", "Rata-rata skor"). DILARANG MENAMPILKAN ANGKA SKOR APAPUN!
-8. REKOMENDASI TERHUBUNG LANGSUNG: Rekomendasi WAJIB menjawab area perhatian secara solutif dan praktis di rumah.
+6. HINDARI FRASA TEMPLATE BERULANG ("Berdasarkan hasil asesmen", "Melalui observasi orang tua", "Rata-rata skor"). DILARANG MENAMPILKAN ANGKA SKOR APAPUN!
+7. SELF-VALIDATION ANTI-TEMPLATE: Sebelum mengirim JSON, pastikan narasi 4 aspek & rekomendasi benar-benar personal sesuai profil anak di atas. Target kemiripan narasi antar laporan <20%!
 `.trim();
 }

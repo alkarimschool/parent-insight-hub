@@ -3,7 +3,7 @@ import { callLovableAiJson } from "./ai.server";
 import { EducationLevel, LEVEL_QUESTIONS, getEducationLevel } from "./questions.data";
 import { getAssessmentContent } from "./assessment-content";
 import { DEFAULT_PROMPTS } from "./prompt.data";
-import { buildVariationDirective, buildTkVariationDirective, getTkStatusByScore, FIELD_VARIATION_TEMPLATES } from "./narrative-variation";
+import { buildVariationDirective, buildTkVariationDirective, buildTkChildProfile, getTkStatusByScore, FIELD_VARIATION_TEMPLATES } from "./narrative-variation";
 
 interface SubmitInput {
   parent: { name: string; whatsapp: string };
@@ -730,16 +730,26 @@ export function generateFallbackResult(childName: string, parentName: string, av
     `Kemitraan yang harmonis antara lingkungan rumah dan sekolah akan memupuk potensi Ananda ${displayName} secara optimal.`
   ];
 
+  const childProfile = buildTkChildProfile(answers, questions, childName, avgScore);
+
+  const bahasaNarrative = `Ananda ${displayName} memperlihatkan pola komunikasi verbal: ${childProfile.communication_pattern} Berdasarkan observasi jawaban orang tua, penyampaian kebutuhan harian dan pemahaman percakapan anak berkembang ${avgScore >= 3.5 ? "secara lancar dan ramah." : "dengan perlunya bimbingan dialog dua arah yang hangat."}`;
+
+  const sosialNarrative = `Dinamika sosial dan pengelolaan emosi Ananda ${displayName} mencerminkan: ${childProfile.social_emotional_pattern} Pembiasaan aturan rumah dan apresiasi emosional membantu anak berkembang ${avgScore >= 3.5 ? "secara kooperatif di lingkungannya." : "dengan bimbingan bertahap saat bertransisi rutinitas."}`;
+
+  const motorikNarrative = `Gambaran koordinasi fisik motorik kasar dan ketelitian motorik halus Ananda ${displayName} menguraikan: ${childProfile.motor_pattern} Permainan fisik aktif dan variasi olah jemari mendukung kelincahan fisiknya.`;
+
+  const kognitifNarrative = `Potret daya ingat, konsentrasi, dan cara berpikir Ananda ${displayName} menunjukkan: ${childProfile.cognitive_pattern} Rasa ingin tahu alami anak menjadi modal berharga dalam mengenal konsep pra-sekolah.`;
+
   return {
     judul: "LAPORAN PEMETAAN AWAL TUMBUH KEMBANG ANAK",
     status_perkembangan: status_tk,
     kesimpulan_umum_perkembangan: penjelasan_status,
-    area_yang_perlu_diperhatikan: attentionPool.slice(0, 3),
+    area_yang_perlu_diperhatikan: attentionPool.length > 0 ? attentionPool.slice(0, 3) : ["Belum terlihat area utama yang memerlukan perhatian khusus berdasarkan pengamatan orang tua."],
     gambaran_perkembangan_anak: {
-      bahasa_dan_komunikasi: `Ananda ${displayName} menunjukkan pemahaman komunikasi verbal yang berkembang dengan ${avgScore >= 3.5 ? "baik dan positif" : "perhatian khusus"}. Berdasarkan observasi, kemampuan menyampaikan keinginan dan merespons percakapan harian memperlihatkan keterbukaan yang hangat.`,
-      sosial_dan_emosional: `Keterampilan interaksi sosial dan pengelolaan emosi Ananda ${displayName} terlihat ${avgScore >= 3.5 ? "ramah dan mampu beradaptasi" : "memerlukan bimbingan sabar saat berbagi atau menunggu giliran"}. Pembiasaan aturan rumah dan dorongan positif membantu anak mengelola perasaannya.`,
-      motorik: `Koordinasi fisik motorik kasar dan ketelitian fisik motorik halus Ananda ${displayName} berkembang ${avgScore >= 3.5 ? "aktif dan serasi" : "dengan perlunya variasi stimulasi fisik & olah jemari"}. Aktivitas eksplorasi di rumah menunjang kelincahan fisiknya.`,
-      kognitif_dan_cara_berpikir: `Daya ingat, konsentrasi, dan rasa ingin tahu Ananda ${displayName} dalam mengenali pola, bentuk, serta pemecahan masalah sederhana berkembang ${avgScore >= 3.5 ? "dengan baik dan tekun" : "memerlukan media permainan visual yang konkret"}.`
+      bahasa_dan_komunikasi: bahasaNarrative,
+      sosial_dan_emosional: sosialNarrative,
+      motorik: motorikNarrative,
+      kognitif_dan_cara_berpikir: kognitifNarrative
     },
     potensi_dan_kelebihan: rotatedPotensi,
     potensi_dan_kelebihan_anak: rotatedPotensi,
@@ -1157,7 +1167,7 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
         };
 
     const variationDirective = dbEducationLevel === "TK"
-      ? buildTkVariationDirective(data.child.name, parentName, avgScoreCalc)
+      ? buildTkVariationDirective(data.child.name, parentName, avgScoreCalc, data.answers, dbQuestions)
       : buildVariationDirective();
 
     const filledPrompt = promptToUse.user_template
@@ -1192,7 +1202,7 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
       try {
         const aiRes = await callLovableAiJson({
           model: usedModel,
-          systemPrompt: attempt === 1 ? systemPromptWithRules : `${promptToUse.system_prompt}\n\n${dbEducationLevel === "TK" ? buildTkVariationDirective(data.child.name, parentName, avgScoreCalc) : buildVariationDirective()}`,
+          systemPrompt: attempt === 1 ? systemPromptWithRules : `${promptToUse.system_prompt}\n\n${dbEducationLevel === "TK" ? buildTkVariationDirective(data.child.name, parentName, avgScoreCalc, data.answers, dbQuestions) : buildVariationDirective()}`,
           userPrompt: filledPrompt,
           temperature: Number(settings?.temperature ?? 0.85),
           maxTokens: settings?.max_tokens ?? 4096,
