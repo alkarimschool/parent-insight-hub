@@ -480,195 +480,189 @@ export function generateFallbackResult(childName: string, parentName: string, av
     };
   }
 
-  // DEFAULT TK / PAUD
+  // ============================================================
+  // TK / PAUD — TRUE DATA-DRIVEN FALLBACK ENGINE
+  // Seluruh narasi diturunkan dari distribusi aktual jawaban Q1-Q30
+  // STATUS HANYA LABEL — tidak mengontrol isi narasi sama sekali
+  // ============================================================
+
   const status_tk = getTkStatusByScore(avgScore);
-  const status_akademik_tk = avgScore >= 4.50 ? "Sangat Baik" : (avgScore >= 3.50 ? "Baik & Berkembang" : (avgScore >= 2.50 ? "Perlu Penguatan" : "Perlu Pendampingan Intensif"));
 
   const displayName = childName.replace(/^ananda\s+/i, "");
+
+  // Hash unik per anak berdasarkan nama + jawaban (bukan hanya nama)
   const childHash = Math.abs(
     (displayName + parentName + JSON.stringify(answers))
       .split("")
       .reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0)
   );
 
-  const cleanText = (t: string) => t.toLowerCase().replace(/^apakah anak |bagaimana |menurut anda, |sejauh mana |anak /gi, "").trim();
+  const cleanText = (t: string) => t
+    .replace(/^apakah anak\s*/i, "")
+    .replace(/^bagaimana\s*/i, "")
+    .replace(/^menurut anda[,\s]*/i, "")
+    .replace(/^sejauh mana\s*/i, "")
+    .replace(/^anak\s+/i, "")
+    .replace(/\?$/, "")
+    .trim()
+    .toLowerCase();
 
-  // 15 Varied Openers
-  const tkOpeners = [
-    `Berdasarkan hasil observasi tumbuh kembang di rumah, Ananda ${displayName}`,
-    `Dari gambaran pola aktivitas dan interaksi harian, Ananda ${displayName}`,
-    `Potret perkembangan anak usia dini menunjukkan bahwa Ananda ${displayName}`,
-    `Informasi dari pengamatan keluarga mencerminkan bahwa Ananda ${displayName}`,
-    `Hasil pemetaan kesiapan tumbuh kembang memperlihatkan Ananda ${displayName}`,
-    `Secara umum, profil eksplorasi awal dari Ananda ${displayName}`,
-    `Pengamatan berkala dari orang tua mengindikasikan bahwa Ananda ${displayName}`,
-    `Dalam dinamika aktivitas bermain dan komunikasi harian, Ananda ${displayName}`,
-    `Gambaran fondasi pra-sekolah menunjukkan Ananda ${displayName}`,
-    `Catatan observasi kesiapan usia dini menandakan Ananda ${displayName}`,
-    `Dilihat dari pengisian asesmen tumbuh kembang, Ananda ${displayName}`,
-    `Melalui uraian pembiasaan rutin keluarga di rumah, Ananda ${displayName}`,
-    `Evaluasi awal kesiapan anak usia dini mencatat Ananda ${displayName}`,
-    `Dari respon observasi harian di lingkungan rumah, Ananda ${displayName}`,
-    `Pemetaan aspek tumbuh kembang menguraikan bahwa Ananda ${displayName}`
-  ];
-  const selectedOpener = tkOpeners[childHash % tkOpeners.length];
+  // ======================================================
+  // STEP 1: Analisis distribusi jawaban per aspek
+  // ======================================================
+  const catGroups: Record<string, { highs: typeof parsedAnswers; lows: typeof parsedAnswers; mids: typeof parsedAnswers }> = {};
 
-  let middleText = "";
-  if (avgScore >= 4.50) {
-    const midPool = [
-      "menunjukkan kemandirian harian yang sangat matang serta komunikasi verbal yang lancar dan percaya diri.",
-      "memperlihatkan keluwesan berinteraksi dan antusiasme tinggi dalam mengenal konsep pra-sekolah.",
-      "mampu mengikuti instruksi dengan cermat disertai rasa percaya diri yang ceria dalam bergaul.",
-      "memiliki koordinasi motorik yang memadai serta dorongan eksplorasi yang aktif di lingkungan rumah.",
-      "menampilkan ketahanan fokus yang baik saat menyelesaikan permainan edukatif hingga tuntas.",
-      "memiliki pergaulan sosial yang ramah dan inisiatif mandiri dalam mencoba beragam aktivitas bermain.",
-      "memperlihatkan dorongan ingin tahu intelektual pra-baca dan membilang benda yang sangat baik.",
-      "mampu mengendalikan perasaan dengan positif serta luwes beradaptasi di lingkungan baru.",
-      "menunjukkan kombinasi kesiapan akademik awal dan ketekunan yang sangat menginspirasi.",
-      "memiliki kebiasaan tertata di rumah yang mendukung daya cipta dan daya pikir anak."
-    ];
-    middleText = midPool[(childHash * 3 + 1) % midPool.length];
-  } else if (avgScore >= 3.50) {
-    const midPool = [
-      "berkembang positif dalam menyampaikan kebiasaan harian, dengan sedikit dorongan pada konsistensi fokus.",
-      "menunjukkan interaksi sosial yang ramah dan membutuhkan stimulasi berulang pada kerapian tugas pribadi.",
-      "mampu memahami instruksi sederhana meskipun masih memerlukan pendampingan pada regulasi emosi saat lelah.",
-      "menampilkan minat belajar yang baik serta perlu pembiasaan rutinitas mandiri di rumah secara teratur.",
-      "memperlihatkan respon aktif saat bermain dan perlu dilatih ketabahan menyelesaikan aktivitas hingga akhir.",
-      "telah mengenal konsep dasar huruf/angka dan perlu terus dipupuk keberanian komunikasinya.",
-      "menunjukkan kecerdasan emosi yang ramah dengan perlunya bimbingan dalam membagi perhatian.",
-      "berkembang baik pada koordinasi fisiknya dan perlu sedikit variasi permainan fokus di rumah.",
-      "memiliki potensi eksplorasi yang hangat serta membutuhkan dorongan konsistensi ketekunan.",
-      "mampu mengikuti rutinitas rumah dengan perlunya pengingat halus dalam merapikan peralatan."
-    ];
-    middleText = midPool[(childHash * 3 + 2) % midPool.length];
-  } else if (avgScore >= 2.50) {
-    const midPool = [
-      "membutuhkan pendampingan terstruktur dari orang tua untuk melatih kemandirian dan fokus harian.",
-      "menunjukkan potensi yang berkembang namun memerlukan stimulasi konsisten pada area komunikasi dan emosi.",
-      "memerlukan bimbingan sabar dalam membiasakan makan/merapikan mainan serta regulasi saat kecewa.",
-      "masih membutuhkan media permainan visual interaktif untuk merangsang konsentrasi dan kebiasaan mendengar.",
-      "memerlukan dorongan penguatan pada koordinasi motorik halus dan pengenalan konsep dasar secara terarah.",
-      "membutuhkan rutinitas pendampingan sabar untuk mengasah kelancaran bicara dan interaksi sosialnya.",
-      "memerlukan latihan langsung bernyanyi dan membilang benda konkrit agar dorongan belajarnya meningkat.",
-      "membutuhkan penguatan regulasi perasaan agar tidak mudah rewel saat keinginannya tertunda.",
-      "masih perlu dibantu dalam membangun ketahanan belajar 10-15 menit secara konsisten di rumah.",
-      "membutuhkan contoh konkret dan pujian positif saat merapikan perlengkapan pribadinya."
-    ];
-    middleText = midPool[(childHash * 3 + 3) % midPool.length];
-  } else {
-    const midPool = [
-      "sangat memerlukan stimulasi intensif dan perhatian penuh orang tua pada tahapan komunikasi dan kemandirian dasar.",
-      "membutuhkan rutinitas pendampingan harian yang sabar untuk membangun fokus dan dorongan berinteraksi.",
-      "memerlukan latihan langsung berbasis permainan konkret untuk memperkaya pemahaman bahasa dan motorik.",
-      "membutuhkan penguatan regulasi emosi dan pembiasaan instruksi sederhana dari lingkungan terdekat.",
-      "memerlukan stimulasi berulang secara konsisten agar ketahanan konsentrasi usia dininya makin berkembang.",
-      "sangat membutuhkan kehadiran orang tua sebagai teman bermain untuk memancing komunikasi bicaranya.",
-      "memerlukan latihan koordinasi jari tangan dan otot motorik kasar lewat permainan terbuka harian.",
-      "membutuhkan suasana rumah yang tenang dan teratur untuk melatih emosi serta kemandirian usianya.",
-      "memerlukan pendekatan hangat tanpa paksaan dalam memperkenalkan abjad dan angka secara gembira.",
-      "membutuhkan apresiasi atas setiap langkah kecil kemajuannya agar motivasi dirinya bertumbuh."
-    ];
-    middleText = midPool[(childHash * 3 + 4) % midPool.length];
-  }
-
-
-  const tkClosings = [
-    `Pendampingan yang hangat dan konsisten dari orang tua di rumah akan menjadi kunci utama dalam mengoptimalkan potensi usia Ananda ${displayName}.`,
-    `Laporan ini memberikan panduan praktis agar stimulasi yang diberikan dapat disesuaikan dengan karakter dan kebutuhan Ananda ${displayName}.`,
-    `Apresiasi positif serta atmosfer belajar yang gembira akan mendorong rasa percaya diri Ananda ${displayName} secara berkelanjutan.`,
-    `Sinergi yang erat antara bimbingan di rumah dan sekolah akan memantapkan kesiapan tumbuh kembang Ananda ${displayName}.`,
-    `Langkah-langkah stimulasi harian yang terukur akan membantu Ananda ${displayName} mencapai kesiapan pra-sekolah secara optimal.`,
-    `Pola asuh apresiatif di rumah akan menjadi pijakan kokoh bagi perkembangan karakter dan keberanian Ananda ${displayName}.`,
-    `Dukungan rutin berbasis permainan gembira akan memudahkan Ananda ${displayName} beradaptasi dengan ritme sekolah selanjutnya.`,
-    `Komunikasi terbuka antara orang tua dan anak akan memupuk kecerdasan emosional Ananda ${displayName} yang matang sejak dini.`,
-    `Pengalaman belajar yang berkesan di lingkungan keluarga akan menyalakan dorongan belajar Ananda ${displayName} sepanjang hayat.`,
-    `Bimbingan yang ramah serta lingkungan yang aman akan memastikan kebahagiaan dan tumbuh kembang fisik-mental Ananda ${displayName}.`
-  ];
-  const selectedClosing = tkClosings[(childHash * 7 + 5) % tkClosings.length];
-
-  const childProfile = buildTkChildProfile(answers, questions, childName, avgScore);
-
-  // 1. Group & Synthesize Area yang Perlu Diperhatikan (MAX 3-5 Synthesized Items)
-  const itemAreas: string[] = [];
-  const lowCatMap: Record<string, string[]> = {};
-
-  const sourceAnswersForAttention = lowAnswers.length > 0 ? lowAnswers : midAnswers;
-
-  sourceAnswersForAttention.forEach((a) => {
-    const cat = a.category || "Pengembangan Umum";
-    if (!lowCatMap[cat]) lowCatMap[cat] = [];
-    lowCatMap[cat].push(cleanText(a.text));
+  parsedAnswers.forEach(a => {
+    const cat = a.category || "Umum";
+    if (!catGroups[cat]) catGroups[cat] = { highs: [], lows: [], mids: [] };
+    if (a.score >= 4) catGroups[cat].highs.push(a);
+    else if (a.score <= 2) catGroups[cat].lows.push(a);
+    else catGroups[cat].mids.push(a);
   });
 
-  Object.entries(lowCatMap).slice(0, 5).forEach(([cat, items]) => {
-    const joinedItems = items.slice(0, 2).join(" serta ");
-    itemAreas.push(`⚠️ ${cat}: Anak masih memerlukan penguatan dan pendampingan rutin saat ${joinedItems}.`);
+  // ======================================================
+  // STEP 2: Identifikasi kekuatan dan area perhatian utama
+  // Grouped by category → max 3 items total
+  // ======================================================
+  const attentionCatMap: Record<string, string[]> = {};
+  const strengthCatMap: Record<string, string[]> = {};
+
+  // Gunakan low answers dulu, fallback ke mid answers
+  const attentionSource = lowAnswers.length > 0 ? lowAnswers : midAnswers;
+  attentionSource.forEach(a => {
+    const cat = a.category || "Pengembangan Umum";
+    if (!attentionCatMap[cat]) attentionCatMap[cat] = [];
+    attentionCatMap[cat].push(cleanText(a.text));
+  });
+
+  highAnswers.forEach(a => {
+    const cat = a.category || "Kekuatan Utama";
+    if (!strengthCatMap[cat]) strengthCatMap[cat] = [];
+    strengthCatMap[cat].push(cleanText(a.text));
+  });
+
+  // ======================================================
+  // STEP 3: Sintesis Area yang Perlu Diperhatikan (MAKS 3 POIN)
+  // ======================================================
+  const itemAreas: string[] = [];
+  const attentionCatEntries = Object.entries(attentionCatMap);
+
+  // Pilih max 3 kategori paling dominan (yang punya paling banyak indikator lemah)
+  const topAttentionCats = attentionCatEntries
+    .sort((a, b) => b[1].length - a[1].length)
+    .slice(0, 3);
+
+  topAttentionCats.forEach(([cat, items]) => {
+    // Sintesis: gabungkan 2 indikator teratas menjadi 1 kalimat bermakna
+    if (items.length === 1) {
+      itemAreas.push(`⚠️ ${cat}: Anak membutuhkan pendampingan lebih lanjut dalam ${items[0]}.`);
+    } else {
+      const joined = items.slice(0, 2).join(" serta ");
+      itemAreas.push(`⚠️ ${cat}: Kemampuan ${joined} masih dalam tahap berkembang dan memerlukan stimulasi yang lebih teratur di rumah.`);
+    }
   });
 
   if (itemAreas.length === 0) {
-    itemAreas.push("✓ Belum terlihat area utama yang memerlukan perhatian khusus berdasarkan pengamatan orang tua.");
+    itemAreas.push("✓ Berdasarkan pengamatan orang tua, belum ditemukan area yang memerlukan perhatian khusus. Pertahankan rutinitas stimulasi yang sudah berjalan dengan baik.");
   }
 
-  // 2. Group & Synthesize Potensi & Kelebihan (MAX 3-5 Synthesized Items)
+  // ======================================================
+  // STEP 4: Sintesis Potensi & Kelebihan (MAKS 3 POIN)
+  // ======================================================
   const itemStrengths: string[] = [];
-  const highCatMap: Record<string, string[]> = {};
+  const strengthCatEntries = Object.entries(strengthCatMap);
 
-  highAnswers.forEach((a) => {
-    const cat = a.category || "Kekuatan Utama";
-    if (!highCatMap[cat]) highCatMap[cat] = [];
-    highCatMap[cat].push(cleanText(a.text));
-  });
+  const topStrengthCats = strengthCatEntries
+    .sort((a, b) => b[1].length - a[1].length)
+    .slice(0, 3);
 
-  Object.entries(highCatMap).slice(0, 5).forEach(([cat, items]) => {
-    const joinedItems = items.slice(0, 2).join(" serta ");
-    itemStrengths.push(`✓ ${cat}: Menunjukkan potensi nyata dan percaya diri ketika ${joinedItems}.`);
+  topStrengthCats.forEach(([cat, items]) => {
+    if (items.length === 1) {
+      itemStrengths.push(`✓ ${cat}: Anak menunjukkan kemampuan yang konsisten dalam ${items[0]}.`);
+    } else {
+      const joined = items.slice(0, 2).join(" dan ");
+      itemStrengths.push(`✓ ${cat}: Sudah berkembang baik pada kemampuan ${joined}, yang menjadi fondasi positif perkembangannya.`);
+    }
   });
 
   if (itemStrengths.length === 0) {
-    itemStrengths.push(`✓ General: Ananda ${displayName} menunjukkan antusiasme positif dalam mencoba berbagai kegiatan pra-sekolah.`);
+    itemStrengths.push(`✓ Eksplorasi & Semangat Belajar: Anak menunjukkan keterbukaan dan antusiasme dalam mencoba berbagai kegiatan pra-sekolah bersama orang tua.`);
   }
 
-  // 3. Synthesize Integrated Practical Recommendations (MAX 3-5 Items)
+  // ======================================================
+  // STEP 5: Sintesis Rekomendasi Terintegrasi (MAKS 3 POIN)
+  // Diturunkan langsung dari area perhatian — bukan generik
+  // ======================================================
   const itemRecommendations: string[] = [];
-  const recCategories = Object.keys(lowCatMap);
+  const usedRecCats = new Set<string>();
 
-  if (recCategories.length > 0) {
-    recCategories.slice(0, 5).forEach((cat) => {
-      const catLower = cat.toLowerCase();
-      if (catLower.includes("bahasa") || catLower.includes("bicara") || catLower.includes("komunikasi")) {
-        itemRecommendations.push(`💡 Stimulasi Bahasa: Luangkan waktu 10-15 menit setiap malam untuk membaca buku cerita bergambar dan ajak Ananda ${displayName} menceritakan kembali kisahnya.`);
-      } else if (catLower.includes("sosial") || catLower.includes("emosi")) {
-        itemRecommendations.push(`💡 Regulasi Emosi & Sosial: Berikan bimbingan hangat saat anak merasa lelah atau kecewa, serta latih kebiasaan bergantian mainan secara berulang.`);
-      } else if (catLower.includes("motorik") || catLower.includes("fisik")) {
-        itemRecommendations.push(`💡 Olah Jemari & Fisik: Sediakan media permainan meronce, mewarnai, atau menyusun balok untuk melatih ketelitian tangan dan koordinasi gerak.`);
-      } else if (catLower.includes("kognitif") || catLower.includes("pikir") || catLower.includes("angka")) {
-        itemRecommendations.push(`💡 Pengenalan Logika: Ajak anak mengelompokkan benda-benda rumah berdasarkan warna, bentuk, atau ukuran lewat permainan berburu benda.`);
-      } else {
-        itemRecommendations.push(`💡 Pembiasaan Rutin: Buat jadwal kegiatan harian visual secara sederhana di rumah dan berikan apresiasi positif atas setiap usaha anak.`);
-      }
-    });
-  } else {
-    itemRecommendations.push(`💡 Pengayaan Eksplorasi: Pertahankan suasana belajar yang gembira di rumah dengan mengajak Ananda ${displayName} mencoba tantangan buku cerita dan permainan edukatif baru.`);
+  topAttentionCats.slice(0, 3).forEach(([cat]) => {
+    if (usedRecCats.has(cat)) return;
+    usedRecCats.add(cat);
+    const c = cat.toLowerCase();
+
+    if (c.includes("bahasa") || c.includes("bicara") || c.includes("komunikasi") || c.includes("bercerita")) {
+      const specificItems = attentionCatMap[cat]?.slice(0, 1)[0] || "kosakata dan ekspresi verbal";
+      itemRecommendations.push(`💡 Stimulasi Bahasa: Luangkan 10–15 menit setiap hari untuk sesi bercerita interaktif — minta anak menceritakan kembali cerita favoritnya. Ini langsung melatih ${specificItems}.`);
+    } else if (c.includes("sosial") || c.includes("emosi") || c.includes("bergaul") || c.includes("interaksi")) {
+      const specificItems = attentionCatMap[cat]?.slice(0, 1)[0] || "regulasi emosi dan interaksi sosial";
+      itemRecommendations.push(`💡 Penguatan Sosial-Emosi: Gunakan momen bermain bersama untuk melatih ${specificItems}. Terapkan aturan bergiliran dengan sabar dan konsisten, dan beri apresiasi saat anak berhasil.`);
+    } else if (c.includes("motorik") || c.includes("fisik") || c.includes("gerak") || c.includes("koordinasi")) {
+      const specificItems = attentionCatMap[cat]?.slice(0, 1)[0] || "koordinasi tangan dan ketelitian gerak";
+      itemRecommendations.push(`💡 Stimulasi Motorik: Sediakan aktivitas meronce, mewarnai dengan crayon besar, atau menyusun puzzle sederhana untuk melatih ${specificItems} secara menyenangkan.`);
+    } else if (c.includes("kognitif") || c.includes("pikir") || c.includes("angka") || c.includes("huruf") || c.includes("fokus")) {
+      const specificItems = attentionCatMap[cat]?.slice(0, 1)[0] || "kemampuan fokus dan pengenalan konsep dasar";
+      itemRecommendations.push(`💡 Stimulasi Kognitif: Ajak anak bermain mengelompokkan benda berdasarkan warna atau bentuk, dan kenalkan ${specificItems} melalui permainan visual yang menarik.`);
+    } else {
+      const specificItems = attentionCatMap[cat]?.slice(0, 1)[0] || "pembiasaan rutinitas harian";
+      itemRecommendations.push(`💡 Pembiasaan ${cat}: Buat jadwal harian visual yang sederhana dan konsisten, dengan fokus pada ${specificItems}. Berikan apresiasi atas setiap usaha anak.`);
+    }
+  });
+
+  if (itemRecommendations.length === 0) {
+    itemRecommendations.push(`💡 Pengayaan Eksplorasi: Pertahankan aktivitas bermain edukatif yang variatif dan menyenangkan. Tantang anak dengan permainan baru setiap minggu untuk terus merangsang rasa ingin tahunya.`);
   }
 
-  // 4. Item-Driven Kesimpulan Umum
-  const kesimpulanNarasi = `Berdasarkan pengamatan orang tua terhadap 30 indikator tumbuh kembang, Ananda ${displayName} memperlihatkan profil harian yang ${avgScore >= 4.0 ? "sangat positif dan mandiri" : avgScore >= 3.0 ? "berkembang baik dengan perlunya pembiasaan teratur" : "membutuhkan pendampingan sabar"}. ${highAnswers.length > 0 ? `Kekuatan paling menonjol tampak pada ${highAnswers.slice(0, 2).map(h => cleanText(h.text)).join(" serta ")}.` : ""} ${lowAnswers.length > 0 ? `Adapun area yang memerlukan perhatian utama meliputi ${lowAnswers.slice(0, 2).map(l => cleanText(l.text)).join(" dan ")}.` : ""}`;
+  // ======================================================
+  // STEP 6: Sintesis Kesimpulan Umum
+  // Berdasarkan pola distribusi aktual — bukan avgScore
+  // ======================================================
+  const dominantStrengthCat = topStrengthCats[0]?.[0] || null;
+  const dominantAttentionCat = topAttentionCats[0]?.[0] || null;
+  const topStrengthItem = topStrengthCats[0]?.[1]?.[0] || null;
+  const topAttentionItem = topAttentionCats[0]?.[1]?.[0] || null;
 
-  // 5. Item-Driven Aspect Narratives (Fluid Paragraphs Without Prefixes)
+  const kesimpulanPool = [
+    `Pengamatan orang tua selama ini memberikan gambaran yang sangat berharga tentang perkembangan ${displayName}. ${topStrengthItem ? `Kekuatan yang paling menonjol tampak pada kemampuan ${topStrengthItem}.` : ""} ${topAttentionItem ? `Area yang paling membutuhkan pendampingan adalah ${topAttentionItem}, yang perlu distimulasi secara teratur di rumah.` : "Secara keseluruhan, perkembangan berjalan dengan positif."} Laporan ini menjadi panduan praktis untuk mengarahkan stimulasi yang tepat sasaran.`,
+    `Dari 30 indikator yang diamati orang tua, ${displayName} memperlihatkan profil perkembangan yang unik. ${dominantStrengthCat ? `Aspek ${dominantStrengthCat} menjadi fondasi kekuatan yang menonjol.` : ""} ${dominantAttentionCat ? `Sementara aspek ${dominantAttentionCat} membutuhkan perhatian dan stimulasi lebih lanjut.` : "Secara umum, perkembangan berada pada jalur yang baik."} Pendampingan yang konsisten dari orang tua akan menjadi kunci utama kemajuannya.`,
+    `Hasil observasi orang tua di rumah memberikan potret perkembangan ${displayName} yang komprehensif. ${topStrengthItem ? `Kemampuan ${topStrengthItem} menjadi salah satu pencapaian yang patut diapresiasi.` : ""} ${topAttentionItem ? `Di sisi lain, ${topAttentionItem} menjadi fokus utama yang memerlukan bimbingan bertahap.` : ""} Setiap langkah stimulasi yang diberikan orang tua memiliki dampak besar bagi tumbuh kembang anak.`,
+  ];
+  const kesimpulanNarasi = kesimpulanPool[childHash % kesimpulanPool.length];
+
+  // ======================================================
+  // STEP 7: Narasi 4 Aspek — dari buildTkChildProfile (item-driven synthesis)
+  // ======================================================
+  const childProfile = buildTkChildProfile(parsedAnswers.map(a => ({
+    ...a,
+    score: a.score,
+    question_id: null
+  })), questions, childName, avgScore);
+
   const bahasaNarrative = childProfile.communication_pattern;
   const sosialNarrative = childProfile.social_emotional_pattern;
   const motorikNarrative = childProfile.motor_pattern;
   const kognitifNarrative = childProfile.cognitive_pattern;
 
-  // 6. Natural Parent Notes (2-4 Sentences, No Template Opener)
-  const parentNotesPool = [
-    `Setiap anak berkembang dengan ritme keunikannya sendiri. Dampingi Ananda ${displayName} dengan suasana penuh kasih sayang dan apresiasi kecil di rumah agar rasa percaya dirinya terus bertumbuh secara alami.`,
-    `Pendampingan teratur dari Ibu/Bapak ${parentName} menjadi pijakan paling bermakna bagi kesiapan tumbuh kembang Ananda ${displayName}. Fokuslah pada pemberian dorongan positif dalam rutinitas sehari-hari.`,
-    `Kemampuan dan minat Ananda ${displayName} akan makin mengembang saat mendapatkan ruang eksplorasi yang aman di rumah. Teruskan suasana interaksi yang gembira dan komunikatif bersama keluarga.`,
-    `Kehangatan dan kesabaran keluarga di rumah adalah kunci utama dalam membangun karakter serta kemandirian Ananda ${displayName}. Sambut setiap langkah kemajuannya dengan senyuman dan apresiasi.`
+  // ======================================================
+  // STEP 8: Catatan Orang Tua — Natural, 2-4 kalimat, tanpa template baku
+  // ======================================================
+  const catatanPool = [
+    `Setiap anak memiliki ritme perkembangannya sendiri, dan ${displayName} pun demikian. ${dominantStrengthCat ? `Fondasi di area ${dominantStrengthCat} yang sudah baik perlu terus dipupuk.` : "Terus berikan ruang eksplorasi yang aman dan menyenangkan."} Dukungan penuh keluarga adalah bahan bakar terbaik bagi tumbuh kembang anak.`,
+    `Tumbuh kembang ${displayName} adalah perjalanan yang unik dan berharga. ${dominantAttentionCat ? `Dengan perhatian khusus pada area ${dominantAttentionCat}, perkembangan akan semakin optimal.` : "Pertahankan suasana belajar yang gembira di rumah."} Setiap apresiasi kecil dari orang tua memberikan dampak besar bagi kepercayaan diri anak.`,
+    `Kehadiran dan pendampingan orang tua adalah hadiah terbesar bagi ${displayName}. ${topAttentionItem ? `Fokuskan stimulasi pada ${topAttentionItem} melalui aktivitas yang sesuai minat anak.` : "Teruskan rutinitas stimulasi yang sudah berjalan dengan baik."} Nikmati setiap momen tumbuh kembangnya — setiap hari adalah kesempatan baru untuk belajar bersama.`,
+    `Laporan ini adalah refleksi dari kasih sayang dan perhatian keluarga terhadap ${displayName}. ${dominantStrengthCat ? `Kekuatan di aspek ${dominantStrengthCat} adalah modal berharga yang terus bisa dikembangkan.` : "Modal perkembangan yang sudah ada sangat layak untuk terus dipupuk."} Teruslah melangkah bersama anak dengan penuh keyakinan bahwa setiap usaha pasti membuahkan hasil.`,
   ];
-  const catatanOrangTua = parentNotesPool[childHash % parentNotesPool.length];
+  const catatanOrangTua = catatanPool[childHash % catatanPool.length];
 
   return {
     judul: "LAPORAN PEMETAAN AWAL TUMBUH KEMBANG ANAK",
