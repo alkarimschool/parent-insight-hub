@@ -476,15 +476,56 @@ function ResultPage() {
                   <TkBulletList items={c.area_yang_perlu_diperhatikan || c.area_perlu_ditingkatkan} variant="warning" />
                 </div>
 
-                {/* 3. Kesimpulan Umum Perkembangan */}
+                {/* 3. Gambaran Perkembangan Anak (4 Aspek Utama) */}
                 <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-soft print:border-gray-300 print:shadow-none print:p-4 print-break-inside-avoid">
-                  <h3 className="flex items-center gap-2 text-lg font-bold text-foreground print:text-black mb-3">
-                    <Sparkles className="h-5 w-5 text-emerald-600 dark:text-emerald-400 print:hidden" />
-                    3. Kesimpulan Umum Perkembangan
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-foreground print:text-black mb-4">
+                    <Brain className="h-5 w-5 text-emerald-600 dark:text-emerald-400 print:hidden" />
+                    3. Gambaran Perkembangan Anak
                   </h3>
-                  <p className="text-sm leading-relaxed text-foreground print:text-black print:text-xs">
-                    {c.kesimpulan_umum_perkembangan || c.penjelasan_status || c.ringkasan}
-                  </p>
+
+                  {c.gambaran_perkembangan_anak || c.bahasa_dan_komunikasi || c.sosial_dan_emosional || c.motorik || c.kognitif_dan_cara_berpikir ? (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="rounded-xl border border-border/50 bg-background/50 p-4 print:border-gray-200 print:bg-white print:p-3">
+                        <div className="flex items-center gap-2 font-bold text-sm text-foreground print:text-black mb-1.5">
+                          <span>🗣️</span> Bahasa & Komunikasi
+                        </div>
+                        <p className="text-xs leading-relaxed text-muted-foreground print:text-black">
+                          {c.gambaran_perkembangan_anak?.bahasa_dan_komunikasi || c.bahasa_dan_komunikasi || c.perkembangan_bahasa || "Anak berkembang baik dalam menyampaikan kebutuhan dan memahami percakapan sehari-hari."}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-border/50 bg-background/50 p-4 print:border-gray-200 print:bg-white print:p-3">
+                        <div className="flex items-center gap-2 font-bold text-sm text-foreground print:text-black mb-1.5">
+                          <span>❤️</span> Sosial & Emosional
+                        </div>
+                        <p className="text-xs leading-relaxed text-muted-foreground print:text-black">
+                          {c.gambaran_perkembangan_anak?.sosial_dan_emosional || c.sosial_dan_emosional || c.perkembangan_sosial_emosional || "Anak mampu berinteraksi secara positif dan mulai belajar mengelola emosinya."}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-border/50 bg-background/50 p-4 print:border-gray-200 print:bg-white print:p-3">
+                        <div className="flex items-center gap-2 font-bold text-sm text-foreground print:text-black mb-1.5">
+                          <span>🏃</span> Motorik (Kasar & Halus)
+                        </div>
+                        <p className="text-xs leading-relaxed text-muted-foreground print:text-black">
+                          {c.gambaran_perkembangan_anak?.motorik || c.motorik || c.perkembangan_motorik || "Koordinasi gerakan tubuh fisik dan kelincahan ketelitian jemari berkembang aktif."}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-border/50 bg-background/50 p-4 print:border-gray-200 print:bg-white print:p-3">
+                        <div className="flex items-center gap-2 font-bold text-sm text-foreground print:text-black mb-1.5">
+                          <span>🧠</span> Kognitif & Cara Berpikir
+                        </div>
+                        <p className="text-xs leading-relaxed text-muted-foreground print:text-black">
+                          {c.gambaran_perkembangan_anak?.kognitif_dan_cara_berpikir || c.kognitif_dan_cara_berpikir || c.perkembangan_kognitif || "Konsentrasi, memori, dan rasa ingin tahu anak berkembang dengan rasa penasaran positif."}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm leading-relaxed text-foreground print:text-black print:text-xs">
+                      {c.kesimpulan_umum_perkembangan || c.penjelasan_status || c.ringkasan}
+                    </p>
+                  )}
                 </div>
 
                 {/* Page Break setelah Bagian 3 untuk Cetak A4 */}

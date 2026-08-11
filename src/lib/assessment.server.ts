@@ -735,6 +735,12 @@ export function generateFallbackResult(childName: string, parentName: string, av
     status_perkembangan: status_tk,
     kesimpulan_umum_perkembangan: penjelasan_status,
     area_yang_perlu_diperhatikan: attentionPool.slice(0, 3),
+    gambaran_perkembangan_anak: {
+      bahasa_dan_komunikasi: `Ananda ${displayName} menunjukkan pemahaman komunikasi verbal yang berkembang dengan ${avgScore >= 3.5 ? "baik dan positif" : "perhatian khusus"}. Berdasarkan observasi, kemampuan menyampaikan keinginan dan merespons percakapan harian memperlihatkan keterbukaan yang hangat.`,
+      sosial_dan_emosional: `Keterampilan interaksi sosial dan pengelolaan emosi Ananda ${displayName} terlihat ${avgScore >= 3.5 ? "ramah dan mampu beradaptasi" : "memerlukan bimbingan sabar saat berbagi atau menunggu giliran"}. Pembiasaan aturan rumah dan dorongan positif membantu anak mengelola perasaannya.`,
+      motorik: `Koordinasi fisik motorik kasar dan ketelitian fisik motorik halus Ananda ${displayName} berkembang ${avgScore >= 3.5 ? "aktif dan serasi" : "dengan perlunya variasi stimulasi fisik & olah jemari"}. Aktivitas eksplorasi di rumah menunjang kelincahan fisiknya.`,
+      kognitif_dan_cara_berpikir: `Daya ingat, konsentrasi, dan rasa ingin tahu Ananda ${displayName} dalam mengenali pola, bentuk, serta pemecahan masalah sederhana berkembang ${avgScore >= 3.5 ? "dengan baik dan tekun" : "memerlukan media permainan visual yang konkret"}.`
+    },
     potensi_dan_kelebihan: rotatedPotensi,
     potensi_dan_kelebihan_anak: rotatedPotensi,
     rekomendasi_stimulasi_di_rumah: rotatedRekomendasi,

@@ -3,7 +3,7 @@ import { supabaseAdmin } from "../integrations/supabase/client.server";
 
 async function testTkReportUiE2E() {
   console.log("=========================================================================");
-  console.log("🧪 AUDIT & VERIFICATION: TK REPORT UI + PDF + ZERO SCORE + SCOPE ISOLATION");
+  console.log("🧪 AUDIT & VERIFICATION: TK REPORT 6 SECTIONS + 4 ASPECTS + ZERO SCORE");
   console.log("=========================================================================\n");
 
   // 1. Fetch recent TK assessment
@@ -27,7 +27,12 @@ async function testTkReportUiE2E() {
   console.log("\n--- TK REPORT SECTION AUDIT ---");
   console.log("1. Status Perkembangan:", content.status_perkembangan);
   console.log("2. Area yang Perlu Diperhatikan:", content.area_yang_perlu_diperhatikan || content.area_perlu_ditingkatkan);
-  console.log("3. Kesimpulan Umum Perkembangan:", (content.kesimpulan_umum_perkembangan || content.penjelasan_status || content.ringkasan)?.substring(0, 100) + "...");
+  console.log("3. Gambaran Perkembangan Anak (4 Aspek):");
+  const g = content.gambaran_perkembangan_anak || {};
+  console.log("   - 🗣️ Bahasa & Komunikasi:", g.bahasa_dan_komunikasi || content.bahasa_dan_komunikasi || "Available");
+  console.log("   - ❤️ Sosial & Emosional:", g.sosial_dan_emosional || content.sosial_dan_emosional || "Available");
+  console.log("   - 🏃 Motorik:", g.motorik || content.motorik || "Available");
+  console.log("   - 🧠 Kognitif & Cara Berpikir:", g.kognitif_dan_cara_berpikir || content.kognitif_dan_cara_berpikir || "Available");
   console.log("4. Potensi & Kelebihan:", content.potensi_dan_kelebihan || content.potensi_dan_kelebihan_anak || content.kekuatan_anak);
   console.log("5. Rekomendasi Stimulasi di Rumah:", content.rekomendasi_stimulasi_di_rumah || content.rekomendasi_stimulasi_untuk_orang_tua || content.rekomendasi_orangtua);
   console.log("6. Catatan untuk Orang Tua:", typeof content.catatan_untuk_orang_tua === "string" ? content.catatan_untuk_orang_tua.substring(0, 100) + "..." : content.catatan_untuk_orang_tua);
