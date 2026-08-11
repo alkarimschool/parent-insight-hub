@@ -323,7 +323,7 @@ function ResultPage() {
           </div>
         ) : level === "TK" ? (
           /* ========================================================================= */
-          /* TK / PAUD — PEMETAAN AWAL TUMBUH KEMBANG ANAK (EXACT 7 SECTIONS, 0 SCORE) */
+          /* TK / PAUD — PEMETAAN AWAL TUMBUH KEMBANG ANAK (EXACT 6 SECTIONS, 0 SCORE) */
           /* ========================================================================= */
           <div className="tk-report-container space-y-6">
             {/* Header Khusus Cetak / PDF */}
@@ -376,48 +376,18 @@ function ResultPage() {
             {/* Page Break setelah Bagian 3 untuk Cetak A4 */}
             <div className="hidden print:block print:break-before-page" />
 
-            {/* 4. Gambaran Perkembangan (5 Aspek) */}
-            <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-soft print:border-gray-300 print:bg-white print:p-4 print:shadow-none print-break-inside-avoid">
-              <h3 className="flex items-center gap-2 text-lg font-bold text-foreground print:text-black print:text-base mb-3">
-                <Sparkles className="h-4 w-4 text-primary print:hidden" />
-                4. Gambaran Perkembangan (5 Aspek)
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-3">
-                <AspectCard
-                  label="Motorik (Kasar & Halus)"
-                  content={c.gambaran_perkembangan?.motorik || c.motorik}
-                />
-                <AspectCard
-                  label="Bahasa & Komunikasi"
-                  content={c.gambaran_perkembangan?.bahasa_dan_komunikasi || c.bahasa_dan_kognitif || c.bahasa}
-                />
-                <AspectCard
-                  label="Kognitif & Penalaran Awal"
-                  content={c.gambaran_perkembangan?.kognitif || c.kognitif}
-                />
-                <AspectCard
-                  label="Sosial-Emosional"
-                  content={c.gambaran_perkembangan?.sosial_emosional || c.sosial_emosional_dan_kemandirian || c.sosem}
-                />
-                <AspectCard
-                  label="Kemandirian Harian"
-                  content={c.gambaran_perkembangan?.kemandirian || c.kemandirian}
-                />
-              </div>
-            </div>
-
-            {/* 5. Potensi & Kelebihan */}
-            <Section title="5. Potensi & Kelebihan Anak">
-              <ChecklistItems items={c.potensi_dan_kelebihan_anak || c.kekuatan_anak} iconType="check" />
+            {/* 4. Potensi & Kelebihan */}
+            <Section title="4. Potensi & Kelebihan Anak">
+              <ChecklistItems items={c.potensi_dan_kelebihan || c.potensi_dan_kelebihan_anak || c.kekuatan_anak} iconType="check" />
             </Section>
 
-            {/* 6. Rekomendasi Stimulasi di Rumah */}
-            <Section title="6. Rekomendasi Stimulasi di Rumah">
-              <ChecklistItems items={c.rekomendasi_stimulasi_untuk_orang_tua || c.rekomendasi_orangtua} iconType="square" />
+            {/* 5. Rekomendasi Stimulasi di Rumah */}
+            <Section title="5. Rekomendasi Stimulasi di Rumah">
+              <ChecklistItems items={c.rekomendasi_stimulasi_di_rumah || c.rekomendasi_stimulasi_untuk_orang_tua || c.rekomendasi_orangtua} iconType="square" />
             </Section>
 
-            {/* 7. Catatan untuk Orang Tua */}
-            <Section title="7. Catatan untuk Orang Tua">
+            {/* 6. Catatan untuk Orang Tua */}
+            <Section title="6. Catatan untuk Orang Tua">
               <p className="text-sm leading-relaxed text-foreground print:text-black print:text-xs">
                 {Array.isArray(c.catatan_untuk_orang_tua || c.catatan)
                   ? (c.catatan_untuk_orang_tua || c.catatan).join(" ")

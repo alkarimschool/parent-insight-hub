@@ -652,17 +652,18 @@ NAMA ORANG TUA: ${parentName || "Orang Tua"}
 RATA-RATA SKOR: ${avgScore ? avgScore.toFixed(2) : "4.00"}
 
 [ATURAN UTAMA NARASI TK]
-1. STATUS PERKEMBANGAN SANGAT OBJEKTIF: Status ditentukan secara sistemik dari skor rata-rata. Jangan merubah nilai status perkembangan.
-2. NARASI WAJIB 100% UNIK & PERSONAL DARI NOL: Walaupun skor, jawaban, atau kategori anak lain identik, narasi laporan untuk Ananda ${childName || "anak ini"} WAJIB disusun dari awal dari nol tanpa mengulang template baku!
-3. PERSONA EVALUATOR TK: Use perspective of "${chosenPersona}". Bahasa hangat, membesarkan hati, profesional, non-medis, mudah dipahami orang tua.
-4. ALUR & URUTAN PEMBAHASAN UNIK LAPORAN INI:
+1. KONSISTENSI HOLISTIK 6 BAGIAN: Bacalah seluruh jawaban orang tua terlebih dahulu. Kesimpulan, Area Perhatian, Potensi, Rekomendasi, dan Catatan Orang Tua HARUS SALING TERHUBUNG dan BEBAS KONTRADIKSI!
+2. STATUS PERKEMBANGAN SANGAT OBJEKTIF: Status ditentukan secara sistemik dari skor rata-rata internal. Jangan merubah nilai status perkembangan.
+3. NARASI WAJIB 100% UNIK & PERSONAL DARI NOL: Walaupun skor, jawaban, atau kategori anak lain identik, narasi laporan untuk Ananda ${childName || "anak ini"} WAJIB disusun dari awal dari nol tanpa mengulang template baku!
+4. PERSONA EVALUATOR TK: Use perspective of "${chosenPersona}". Bahasa hangat, membesarkan hati, profesional, non-medis, mudah dipahami orang tua.
+5. ALUR & URUTAN PEMBAHASAN UNIK LAPORAN INI:
    >>> ${chosenFlow} <<<
    Bahas aspek-aspek tumbuh kembang dengan urutan ide di atas!
-5. PARAGRAF PEMBUKA (kesimpulan_umum_perkembangan):
+6. PARAGRAF PEMBUKA (kesimpulan_umum_perkembangan):
    - Wajib 3–5 kalimat yang mengalir alami dari Konselor PAUD.
    - Contoh variasi nada pembuka: "${chosenOpener}..."
    - Menyebut nama anak (${childName || "Ananda"}) MAKSIMAL 1 Kali di paragraf pembuka.
-6. HINDARI FRASA TEMPLATE BERULANG ("Berdasarkan hasil asesmen", "Melalui observasi orang tua", "Rata-rata skor", "Secara umum Ananda memiliki..."). DILARANG MENAMPILKAN ANGKA SKOR APAPUN!
-7. AREA PERHATIAN & REKOMENDASI PERSONAL: Harus ditargetkan pada indikator yang memerlukan stimulasi paling nyata dari jawaban orang tua.
+7. HINDARI FRASA TEMPLATE BERULANG ("Berdasarkan hasil asesmen", "Melalui observasi orang tua", "Rata-rata skor"). DILARANG MENAMPILKAN ANGKA SKOR APAPUN!
+8. REKOMENDASI TERHUBUNG LANGSUNG: Rekomendasi WAJIB menjawab area perhatian secara solutif dan praktis di rumah.
 `.trim();
 }

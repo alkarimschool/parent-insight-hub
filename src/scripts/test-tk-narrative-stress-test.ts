@@ -81,11 +81,8 @@ function getFullNarrativeText(report: any): string {
   const parts: string[] = [
     report.kesimpulan_umum_perkembangan || report.penjelasan_status || "",
     ...(report.area_yang_perlu_diperhatikan || report.area_perlu_ditingkatkan || []),
-    typeof report.gambaran_perkembangan === "object" && report.gambaran_perkembangan
-      ? Object.values(report.gambaran_perkembangan).join(" ")
-      : "",
-    ...(report.potensi_dan_kelebihan_anak || report.potensi_dikembangkan || report.kekuatan_anak || []),
-    ...(report.rekomendasi_stimulasi_untuk_orang_tua || report.rekomendasi_orangtua || []),
+    ...(report.potensi_dan_kelebihan || report.potensi_dan_kelebihan_anak || report.kekuatan_anak || []),
+    ...(report.rekomendasi_stimulasi_di_rumah || report.rekomendasi_stimulasi_untuk_orang_tua || report.rekomendasi_orangtua || []),
     typeof report.catatan_untuk_orang_tua === "string"
       ? report.catatan_untuk_orang_tua
       : (report.catatan || []).join(" ")
@@ -286,12 +283,12 @@ function runTkStressTest() {
 
   [0, 1, 2].forEach(idx => {
     const r = reportsCaseA[idx];
-    console.log(`\n--- LAPORAN ${idx + 1}: ${r.status_perkembangan} | ${names[idx]} ---`);
-    console.log(`[Kesimpulan Umum]: ${r.kesimpulan_umum_perkembangan || r.penjelasan_status}`);
-    console.log(`[Area Perhatian]: ${(r.area_yang_perlu_diperhatikan || r.area_perlu_ditingkatkan || []).slice(0, 2).join(" | ")}`);
-    console.log(`[Gambaran Motorik]: ${r.gambaran_perkembangan?.motorik || r.motorik || "-"}`);
-    console.log(`[Potensi & Kelebihan]: ${(r.potensi_dan_kelebihan_anak || r.potensi_dikembangkan || []).slice(0, 2).join(" | ")}`);
-    console.log(`[Rekomendasi Utama]: ${(r.rekomendasi_stimulasi_untuk_orang_tua || r.rekomendasi_orangtua || []).slice(0, 2).join(" | ")}`);
+    console.log(`[1. Status]: ${r.status_perkembangan}`);
+    console.log(`[2. Kesimpulan]: ${r.kesimpulan_umum_perkembangan}`);
+    console.log(`[3. Area Perhatian]: ${(r.area_yang_perlu_diperhatikan || []).join(" | ")}`);
+    console.log(`[4. Potensi]: ${(r.potensi_dan_kelebihan || r.potensi_dan_kelebihan_anak || []).join(" | ")}`);
+    console.log(`[5. Rekomendasi]: ${(r.rekomendasi_stimulasi_di_rumah || r.rekomendasi_stimulasi_untuk_orang_tua || []).join(" | ")}`);
+    console.log(`[6. Catatan]: ${r.catatan_untuk_orang_tua}`);
   });
 
   console.log("\n==========================================================================");

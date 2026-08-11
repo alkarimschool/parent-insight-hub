@@ -735,14 +735,9 @@ export function generateFallbackResult(childName: string, parentName: string, av
     status_perkembangan: status_tk,
     kesimpulan_umum_perkembangan: penjelasan_status,
     area_yang_perlu_diperhatikan: attentionPool.slice(0, 3),
-    gambaran_perkembangan: {
-      motorik: strengthsPool[0] ? strengthsPool[0].replace(/^\[.*?\]\s*/, "") : `Ananda ${displayName} menunjukkan koordinasi gerak fisik yang berkembang sesuai usianya.`,
-      bahasa_dan_komunikasi: strengthsPool[1] ? strengthsPool[1].replace(/^\[.*?\]\s*/, "") : `Ananda ${displayName} mampu menyampaikan dorongan komunikasi harian dengan hangat.`,
-      kognitif: `Ananda ${displayName} menunjukkan minat mengenali warna, bentuk visual, dan membilang benda sederhana.`,
-      sosial_emosional: `Ananda ${displayName} berkembang positif dalam berinteraksi sosial dan mengikuti instruksi rumah.`,
-      kemandirian: `Ananda ${displayName} pembiasaan merapikan peralatan harian dan rutinitas usianya bertumbuh baik.`
-    },
+    potensi_dan_kelebihan: rotatedPotensi,
     potensi_dan_kelebihan_anak: rotatedPotensi,
+    rekomendasi_stimulasi_di_rumah: rotatedRekomendasi,
     rekomendasi_stimulasi_untuk_orang_tua: rotatedRekomendasi,
     catatan_untuk_orang_tua: [
       allCatatan[(childHash * 2) % allCatatan.length],
