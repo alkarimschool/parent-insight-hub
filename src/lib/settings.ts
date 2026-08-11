@@ -187,24 +187,45 @@ export const DEFAULT_CARD_SETTINGS_DATA: AssessmentCardSettingsData = {
 
 export async function fetchAssessmentCardSettings(): Promise<AssessmentCardSettingsData> {
   try {
+    // 1. If running on server or Node context, use getAssessmentCardSettingsServer directly
+    if (typeof window === "undefined") {
+      try {
+        const { getAssessmentCardSettingsServer } = await import("./admin.server");
+        const res = await getAssessmentCardSettingsServer();
+        if (res && res.TK) return res;
+      } catch {
+        // Fallback
+      }
+    }
+
+    // 2. Try server function if in browser
+    try {
+      const { getCardSettingsFn } = await import("./admin.functions");
+      const serverResult = await getCardSettingsFn();
+      if (serverResult && typeof serverResult === "object" && serverResult.TK && serverResult.TK.title) {
+        return serverResult;
+      }
+    } catch {
+      // Fallback to direct query
+    }
+
+    // 3. Direct client query fallback
     const [{ data: wsData }, { data: lockData }] = await Promise.all([
       supabase.from("website_settings").select("data").eq("id", 1).maybeSingle(),
       supabase.from("assessment_locks").select("education_level, is_locked"),
     ]);
 
     const raw = (wsData?.data as any) ?? null;
-    const cards = raw?.assessment_cards || raw?.data?.assessment_cards || null;
+    let cards = raw?.assessment_cards || raw?.data?.assessment_cards || {};
 
-    if (!cards) {
+    // If client query returned empty cards (due to RLS), attempt server fetch
+    if (Object.keys(cards).length === 0) {
       try {
         const { getAssessmentCardSettingsServer } = await import("./admin.server");
-        return await getAssessmentCardSettingsServer();
-      } catch {
-        // Fallback to default if serverFn import is restricted
-      }
+        const sRes = await getAssessmentCardSettingsServer();
+        if (sRes && sRes.TK) return sRes;
+      } catch {}
     }
-
-    const validCards = cards || {};
 
     const lockMap: Record<string, boolean> = {};
     if (lockData && Array.isArray(lockData)) {
@@ -215,10 +236,10 @@ export async function fetchAssessmentCardSettings(): Promise<AssessmentCardSetti
     }
 
     return {
-      TK: { ...DEFAULT_CARD_SETTINGS_DATA.TK, ...(validCards.TK || {}), is_locked: lockMap["TK"] ?? validCards.TK?.is_locked ?? false },
-      SD: { ...DEFAULT_CARD_SETTINGS_DATA.SD, ...(validCards.SD || {}), is_locked: lockMap["SD"] ?? validCards.SD?.is_locked ?? false },
-      SMP: { ...DEFAULT_CARD_SETTINGS_DATA.SMP, ...(validCards.SMP || {}), is_locked: lockMap["SMP"] ?? validCards.SMP?.is_locked ?? false },
-      SMA: { ...DEFAULT_CARD_SETTINGS_DATA.SMA, ...(validCards.SMA || {}), is_locked: lockMap["SMA"] ?? validCards.SMA?.is_locked ?? false },
+      TK: { ...DEFAULT_CARD_SETTINGS_DATA.TK, ...(cards.TK || {}), is_locked: lockMap["TK"] ?? cards.TK?.is_locked ?? false },
+      SD: { ...DEFAULT_CARD_SETTINGS_DATA.SD, ...(cards.SD || {}), is_locked: lockMap["SD"] ?? cards.SD?.is_locked ?? false },
+      SMP: { ...DEFAULT_CARD_SETTINGS_DATA.SMP, ...(cards.SMP || {}), is_locked: lockMap["SMP"] ?? cards.SMP?.is_locked ?? false },
+      SMA: { ...DEFAULT_CARD_SETTINGS_DATA.SMA, ...(cards.SMA || {}), is_locked: lockMap["SMA"] ?? cards.SMA?.is_locked ?? false },
     };
   } catch (err) {
     console.warn("[fetchAssessmentCardSettings] Error:", err);
