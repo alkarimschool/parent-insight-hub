@@ -708,37 +708,40 @@ export function buildTkChildProfile(
     behaviorPatterns.push("Menunjukkan kecenderungan berkembang yang membutuhkan dorongan konsistensi fokus");
   }
 
+  const formatAspectItemPattern = (aspectAns: typeof parsed, aspectLabel: string) => {
+    if (aspectAns.length === 0) return `Berkembang wajar pada aspek ${aspectLabel}.`;
+    
+    const highs = aspectAns.filter(a => a.score >= 4);
+    const lows = aspectAns.filter(a => a.score <= 2);
+    const mids = aspectAns.filter(a => a.score === 3);
+
+    const parts: string[] = [];
+    if (highs.length > 0) {
+      const topItems = highs.map(h => clean(h.text)).slice(0, 2).join(" serta ");
+      parts.push(`Menunjukkan keunggulan nyata pada: ${topItems}.`);
+    }
+    if (lows.length > 0) {
+      const lowItems = lows.map(l => clean(l.text)).slice(0, 2).join(" dan ");
+      parts.push(`Memerlukan pendampingan khusus pada: ${lowItems}.`);
+    } else if (mids.length > 0 && highs.length === 0) {
+      const midItems = mids.map(m => clean(m.text)).slice(0, 2).join(" dan ");
+      parts.push(`Berada pada tahap perkembangan yang perlu pembiasaan rutin pada: ${midItems}.`);
+    }
+
+    return parts.join(" ") || `Menunjukkan respon perkembangan positif pada aspek ${aspectLabel}.`;
+  };
+
   const commAns = parsed.filter(a => a.category.toLowerCase().includes("bahasa") || a.category.toLowerCase().includes("komunikasi") || a.category.toLowerCase().includes("bicara"));
-  const commAvg = commAns.length > 0 ? commAns.reduce((a, b) => a + b.score, 0) / commAns.length : avgScore;
-  const communicationPattern = commAvg >= 4.0
-    ? "Verbal lancar, percaya diri menyampaikan kebutuhan dan menceritakan pengalaman harian."
-    : commAvg >= 3.0
-    ? "Mampu berkomunikasi dasar dengan baik, memerlukan pengayaan kosakata dan dorongan ekspresi bercerita."
-    : "Memerlukan perhatian khusus pada kelancaran ekspresi verbal dan pembiasaan dialog dua arah.";
+  const communicationPattern = formatAspectItemPattern(commAns, "Bahasa & Komunikasi");
 
   const socialAns = parsed.filter(a => a.category.toLowerCase().includes("sosial") || a.category.toLowerCase().includes("emosi"));
-  const socialAvg = socialAns.length > 0 ? socialAns.reduce((a, b) => a + b.score, 0) / socialAns.length : avgScore;
-  const socialEmotionalPattern = socialAvg >= 4.0
-    ? "Ramah, luwes berinteraksi dengan kawan/dewasa, serta mengenali emosi pribadi dengan matang."
-    : socialAvg >= 3.0
-    ? "Cukup kooperatif dalam pergaulan, memerlukan bimbingan saat berbagi atau mengelola rasa lelah."
-    : "Sangat membutuhkan pendampingan emosional yang sabar saat merasa kecewa atau bertransisi rutinitas.";
+  const socialEmotionalPattern = formatAspectItemPattern(socialAns, "Sosial & Emosional");
 
   const motorAns = parsed.filter(a => a.category.toLowerCase().includes("motorik") || a.category.toLowerCase().includes("fisik"));
-  const motorAvg = motorAns.length > 0 ? motorAns.reduce((a, b) => a + b.score, 0) / motorAns.length : avgScore;
-  const motorPattern = motorAvg >= 4.0
-    ? "Keseimbangan fisik motorik kasar aktif dan ketelitian motorik halus jemari berkembang sangat baik."
-    : motorAvg >= 3.0
-    ? "Koordinasi fisik cukup baik, perlu variasi permainan melatih ketelitian jemari (menggunting/alat tulis)."
-    : "Memerlukan banyak latihan media permainan visual konkret untuk menguatkan kelincahan motorik.";
+  const motorPattern = formatAspectItemPattern(motorAns, "Motorik");
 
   const cogAns = parsed.filter(a => a.category.toLowerCase().includes("kognitif") || a.category.toLowerCase().includes("pikir") || a.category.toLowerCase().includes("angka") || a.category.toLowerCase().includes("huruf"));
-  const cogAvg = cogAns.length > 0 ? cogAns.reduce((a, b) => a + b.score, 0) / cogAns.length : avgScore;
-  const cognitivePattern = cogAvg >= 4.0
-    ? "Fokus memori kuat, cepat mengenali pola/bentuk/warna, serta rasa ingin tahu tinggi."
-    : cogAvg >= 3.0
-    ? "Daya ingat dan pemahaman instruksi berkembang wajar, memerlukan media belajar permainan konkret."
-    : "Membutuhkan bimbingan bertahap 10-15 menit untuk memantapkan konsentrasi dan pemahaman konsep awal.";
+  const cognitivePattern = formatAspectItemPattern(cogAns, "Kognitif & Cara Berpikir");
 
   return {
     dominant_aspects: strongCats.length > 0 ? strongCats : ["Eksplorasi Bermain", "Kreativitas"],
