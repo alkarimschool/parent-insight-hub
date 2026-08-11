@@ -708,40 +708,62 @@ export function buildTkChildProfile(
     behaviorPatterns.push("Menunjukkan kecenderungan berkembang yang membutuhkan dorongan konsistensi fokus");
   }
 
-  const formatAspectItemPattern = (aspectAns: typeof parsed, aspectLabel: string) => {
-    if (aspectAns.length === 0) return `Berkembang wajar pada aspek ${aspectLabel}.`;
-    
+  const formatAspectItemPattern = (aspectAns: typeof parsed, aspectLabel: string, childHash: number = 0) => {
+    if (aspectAns.length === 0) return `Dalam aspek ${aspectLabel.toLowerCase()}, anak mulai memperlihatkan kesiapan eksplorasi awal yang wajar sesuai usianya.`;
+
     const highs = aspectAns.filter(a => a.score >= 4);
     const lows = aspectAns.filter(a => a.score <= 2);
     const mids = aspectAns.filter(a => a.score === 3);
 
+    const openersHigh = [
+      `Anak sudah menunjukkan perkembangan yang positif pada aspek ini.`,
+      `Pada aspek ini, anak terlihat cukup percaya diri dan antusias.`,
+      `Hasil pengamatan memperlihatkan fondasi yang baik pada area ini.`,
+      `Anak mulai menampilkan kematangan perkembangan yang membanggakan.`,
+      `Kekuatan anak cukup terlihat saat melakukan aktivitas harian.`
+    ];
+
+    const openersLow = [
+      `Area ini menjadi salah satu fokus utama yang membutuhkan bimbingan bertahap.`,
+      `Anak masih memerlukan stimulasi teratur dan sabar dari lingkungan rumah.`,
+      `Pendampingan terstruktur di rumah sangat disarankan untuk menguatkan area ini.`,
+      `Perhatian khusus perlu diberikan secara konsisten pada aspek perkembangan ini.`
+    ];
+
     const parts: string[] = [];
+    const selOpener = highs.length >= lows.length 
+      ? openersHigh[childHash % openersHigh.length]
+      : openersLow[childHash % openersLow.length];
+
+    parts.push(selOpener);
+
     if (highs.length > 0) {
       const topItems = highs.map(h => clean(h.text)).slice(0, 2).join(" serta ");
-      parts.push(`Menunjukkan keunggulan nyata pada: ${topItems}.`);
-    }
-    if (lows.length > 0) {
-      const lowItems = lows.map(l => clean(l.text)).slice(0, 2).join(" dan ");
-      parts.push(`Memerlukan pendampingan khusus pada: ${lowItems}.`);
-    } else if (mids.length > 0 && highs.length === 0) {
-      const midItems = mids.map(m => clean(m.text)).slice(0, 2).join(" dan ");
-      parts.push(`Berada pada tahap perkembangan yang perlu pembiasaan rutin pada: ${midItems}.`);
+      parts.push(`Kekuatan nyata tampak saat anak ${topItems}.`);
     }
 
-    return parts.join(" ") || `Menunjukkan respon perkembangan positif pada aspek ${aspectLabel}.`;
+    if (lows.length > 0) {
+      const lowItems = lows.map(l => clean(l.text)).slice(0, 2).join(" dan ");
+      parts.push(`Adapun penguatan masih diperlukan ketika anak ${lowItems}.`);
+    } else if (mids.length > 0 && highs.length === 0) {
+      const midItems = mids.map(m => clean(m.text)).slice(0, 2).join(" dan ");
+      parts.push(`Pembiasaan rutin di rumah disarankan untuk mengasah ketahanan anak pada ${midItems}.`);
+    }
+
+    return parts.join(" ");
   };
 
   const commAns = parsed.filter(a => a.category.toLowerCase().includes("bahasa") || a.category.toLowerCase().includes("komunikasi") || a.category.toLowerCase().includes("bicara"));
-  const communicationPattern = formatAspectItemPattern(commAns, "Bahasa & Komunikasi");
+  const communicationPattern = formatAspectItemPattern(commAns, "Bahasa & Komunikasi", Math.abs((childName.length * 3 + 1)));
 
   const socialAns = parsed.filter(a => a.category.toLowerCase().includes("sosial") || a.category.toLowerCase().includes("emosi"));
-  const socialEmotionalPattern = formatAspectItemPattern(socialAns, "Sosial & Emosional");
+  const socialEmotionalPattern = formatAspectItemPattern(socialAns, "Sosial & Emosional", Math.abs((childName.length * 5 + 2)));
 
   const motorAns = parsed.filter(a => a.category.toLowerCase().includes("motorik") || a.category.toLowerCase().includes("fisik"));
-  const motorPattern = formatAspectItemPattern(motorAns, "Motorik");
+  const motorPattern = formatAspectItemPattern(motorAns, "Motorik", Math.abs((childName.length * 7 + 3)));
 
   const cogAns = parsed.filter(a => a.category.toLowerCase().includes("kognitif") || a.category.toLowerCase().includes("pikir") || a.category.toLowerCase().includes("angka") || a.category.toLowerCase().includes("huruf"));
-  const cognitivePattern = formatAspectItemPattern(cogAns, "Kognitif & Cara Berpikir");
+  const cognitivePattern = formatAspectItemPattern(cogAns, "Kognitif & Cara Berpikir", Math.abs((childName.length * 11 + 4)));
 
   return {
     dominant_aspects: strongCats.length > 0 ? strongCats : ["Eksplorasi Bermain", "Kreativitas"],
