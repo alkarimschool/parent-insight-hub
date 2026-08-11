@@ -14,6 +14,7 @@ import {
   Lock,
   ClipboardList,
   AlertTriangle,
+  AlertCircle,
   BookOpen,
   Brain,
   MessageSquare,
@@ -107,6 +108,49 @@ function ChecklistItems({ items, iconType = "square" }: { items?: string[]; icon
           <span className="mt-0.5 shrink-0 text-base font-bold text-primary print:text-emerald-700">
             {iconType === "check" ? "✓" : "☐"}
           </span>
+          <span>{it}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function TkBulletList({
+  items,
+  variant = "warning",
+}: {
+  items?: string | string[];
+  variant?: "warning" | "check" | "bullet";
+}) {
+  let list: string[] = [];
+  if (Array.isArray(items)) {
+    list = items.filter((x) => typeof x === "string" && x.trim().length > 0);
+  } else if (typeof items === "string" && items.trim().length > 0) {
+    list = items
+      .split(/\n|•|;-/)
+      .map((s) => s.replace(/^[-•*]\s*/, "").trim())
+      .filter((s) => s.length > 0);
+  }
+
+  if (list.length === 0) {
+    return (
+      <p className="text-sm italic text-muted-foreground print:text-gray-600">
+        Perkembangan anak berjalan sangat baik, tidak ada catatan khusus yang memerlukan perhatian mendesak saat ini.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="space-y-2.5">
+      {list.map((it, i) => (
+        <li key={i} className="flex items-start gap-2.5 text-sm leading-relaxed text-foreground print:text-black print:text-xs">
+          {variant === "warning" ? (
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 print:text-amber-700" />
+          ) : variant === "check" ? (
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400 print:text-emerald-700" />
+          ) : (
+            <span className="mt-0.5 shrink-0 font-bold text-primary print:text-emerald-700">•</span>
+          )}
           <span>{it}</span>
         </li>
       ))}
@@ -360,99 +404,145 @@ function ResultPage() {
           /* ========================================================================= */
           /* TK / PAUD — PEMETAAN AWAL TUMBUH KEMBANG ANAK (EXACT 6 SECTIONS, 0 SCORE) */
           /* ========================================================================= */
-          <div className="tk-report-container space-y-6">
-            {/* Header Khusus Cetak / PDF */}
-            <div className="hidden print:block print:mb-6 print:border-b-2 print:border-emerald-700 print:pb-4">
-              <div className="text-center">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-800">
-                  SEKOLAH ALAM AL-KARIM
+          (() => {
+            const rawStatus = String(c.status_perkembangan || "Berkembang Sesuai Harapan");
+            const isPositiveStatus = /sesuai harapan|berkembang baik|sangat baik|optimal/i.test(rawStatus);
+
+            const statusTheme = isPositiveStatus
+              ? {
+                  cardClass: "border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/30 print:border-emerald-600 print:bg-emerald-50/60",
+                  badgeClass: "text-emerald-800 dark:text-emerald-300 print:text-emerald-900",
+                  titleClass: "text-emerald-900 dark:text-emerald-200 print:text-black",
+                  icon: <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400 print:text-emerald-800" />,
+                  label: "🌱 1. Status Perkembangan",
+                }
+              : {
+                  cardClass: "border-amber-500/30 bg-amber-500/10 dark:bg-amber-950/30 print:border-amber-600 print:bg-amber-50/60",
+                  badgeClass: "text-amber-800 dark:text-amber-300 print:text-amber-900",
+                  titleClass: "text-amber-900 dark:text-amber-200 print:text-black",
+                  icon: <AlertCircle className="h-6 w-6 text-amber-600 dark:text-amber-400 print:text-amber-800" />,
+                  label: "💡 1. Status Perkembangan",
+                };
+
+            return (
+              <div className="tk-report-container space-y-6">
+                {/* Header Khusus Cetak / PDF */}
+                <div className="hidden print:block print:mb-6 print:border-b-2 print:border-emerald-700 print:pb-4">
+                  <div className="text-center">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-800">
+                      SEKOLAH ALAM AL-KARIM
+                    </div>
+                    <h1 className="mt-1 text-lg font-black uppercase tracking-wider text-black">
+                      LAPORAN PEMETAAN AWAL TUMBUH KEMBANG ANAK
+                    </h1>
+                    <h2 className="mt-0.5 text-base font-bold text-black">
+                      Ananda {cleanChildName}
+                    </h2>
+                    <p className="mt-1 text-[11px] font-medium text-gray-700">
+                      Hasil pemetaan perkembangan anak berdasarkan observasi orang tua
+                    </p>
+                  </div>
+
+                  <div className="mt-3.5 flex flex-wrap justify-between items-center text-xs text-black border-t border-gray-300 pt-2.5">
+                    <div>Nama Anak: <strong>{cleanChildName}</strong></div>
+                    <div>Kelas: <strong>{childClass}</strong></div>
+                    <div>Jenjang: <strong>Pendidikan Anak Usia Dini (TK / PAUD)</strong></div>
+                    <div>Tanggal Asesmen: <strong>{formattedDate}</strong></div>
+                  </div>
                 </div>
-                <h1 className="mt-1 text-lg font-black uppercase tracking-wider text-black">
-                  LAPORAN PEMETAAN AWAL TUMBUH KEMBANG ANAK
-                </h1>
-                <h2 className="mt-0.5 text-base font-bold text-black">
-                  Ananda {cleanChildName}
-                </h2>
-                <p className="mt-1 text-[11px] font-medium text-gray-700">
-                  Hasil pemetaan perkembangan anak berdasarkan observasi orang tua
-                </p>
+
+                {/* 1. Status Perkembangan */}
+                <div className={`rounded-2xl border p-6 shadow-soft text-center print:p-4 print-break-inside-avoid ${statusTheme.cardClass}`}>
+                  <div className="mx-auto inline-flex items-center gap-2 mb-1">
+                    {statusTheme.icon}
+                    <span className={`text-xs font-bold uppercase tracking-wider ${statusTheme.badgeClass}`}>
+                      {statusTheme.label}
+                    </span>
+                  </div>
+                  <h2 className={`text-2xl font-black ${statusTheme.titleClass} print:text-xl`}>
+                    {rawStatus}
+                  </h2>
+                  <p className="mt-2 text-xs leading-relaxed opacity-90 print:text-gray-800">
+                    * Catatan: Hasil ini merupakan pemetaan awal berdasarkan observasi orang tua di rumah, BUKAN diagnosis medis maupun psikologis.
+                  </p>
+                </div>
+
+                {/* 2. Area yang Perlu Diperhatikan */}
+                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/20 dark:border-amber-800/40 p-6 shadow-soft print:border-amber-400 print:bg-amber-50/40 print:p-4 print-break-inside-avoid">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-amber-900 dark:text-amber-300 print:text-black mb-3">
+                    <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 print:text-amber-700" />
+                    2. Area yang Perlu Diperhatikan
+                  </h3>
+                  <TkBulletList items={c.area_yang_perlu_diperhatikan || c.area_perlu_ditingkatkan} variant="warning" />
+                </div>
+
+                {/* 3. Kesimpulan Umum Perkembangan */}
+                <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-soft print:border-gray-300 print:shadow-none print:p-4 print-break-inside-avoid">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-foreground print:text-black mb-3">
+                    <Sparkles className="h-5 w-5 text-emerald-600 dark:text-emerald-400 print:hidden" />
+                    3. Kesimpulan Umum Perkembangan
+                  </h3>
+                  <p className="text-sm leading-relaxed text-foreground print:text-black print:text-xs">
+                    {c.kesimpulan_umum_perkembangan || c.penjelasan_status || c.ringkasan}
+                  </p>
+                </div>
+
+                {/* Page Break setelah Bagian 3 untuk Cetak A4 */}
+                <div className="hidden print:block print:break-before-page" />
+
+                {/* 4. Potensi & Kelebihan */}
+                <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 p-6 shadow-soft print:border-emerald-500/40 print:bg-emerald-50/30 print:p-4 print-break-inside-avoid">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-emerald-900 dark:text-emerald-300 print:text-black mb-3">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 print:text-emerald-700" />
+                    4. Potensi & Kelebihan
+                  </h3>
+                  <TkBulletList items={c.potensi_dan_kelebihan || c.potensi_dan_kelebihan_anak || c.kekuatan_anak} variant="check" />
+                </div>
+
+                {/* 5. Rekomendasi Stimulasi di Rumah */}
+                <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-soft print:border-gray-300 print:shadow-none print:p-4 print-break-inside-avoid">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-foreground print:text-black mb-3">
+                    <Home className="h-5 w-5 text-primary print:hidden" />
+                    5. Rekomendasi Stimulasi di Rumah
+                  </h3>
+                  <TkBulletList items={c.rekomendasi_stimulasi_di_rumah || c.rekomendasi_stimulasi_untuk_orang_tua || c.rekomendasi_orangtua} variant="bullet" />
+                </div>
+
+                {/* 6. Catatan untuk Orang Tua */}
+                <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-soft print:border-gray-300 print:shadow-none print:p-4 print-break-inside-avoid">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-foreground print:text-black mb-3">
+                    <Users className="h-5 w-5 text-emerald-600 print:hidden" />
+                    6. Catatan untuk Orang Tua
+                  </h3>
+                  <p className="text-sm leading-relaxed text-foreground print:text-black print:text-xs">
+                    {Array.isArray(c.catatan_untuk_orang_tua || c.catatan)
+                      ? (c.catatan_untuk_orang_tua || c.catatan).join(" ")
+                      : (c.catatan_untuk_orang_tua || c.catatan || `Apresiation setinggi-tingginya kepada Ibu/Bapak ${parentName} yang senantiasa mendampingi tumbuh kembang Ananda ${childName} dengan hangat. Setiap anak berkembang dengan kecepatannya sendiri.`)}
+                  </p>
+                </div>
+
+                {/* Footer Resmi Cetak / PDF */}
+                <div className="hidden print:block print:mt-8 print:border-t print:border-gray-300 print:pt-3 print:text-center text-[10px] text-gray-600">
+                  <p className="font-semibold">Pemetaan Awal Tumbuh Kembang Anak • Sekolah Alam Al-Karim</p>
+                  <p className="text-[9px] text-gray-500 mt-0.5">Laporan Asesmen Observasi Keluarga di Rumah</p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">
+                  <Link to="/" className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-accent">
+                    <Home className="h-4 w-4" /> Kembali ke Beranda
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="inline-flex items-center gap-2 rounded-full bg-gradient-hero px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-95"
+                  >
+                    <Printer className="h-4 w-4" /> Cetak / Export PDF (TK)
+                  </button>
+                </div>
               </div>
-
-              <div className="mt-3.5 flex flex-wrap justify-between items-center text-xs text-black border-t border-gray-300 pt-2.5">
-                <div>Nama Anak: <strong>{cleanChildName}</strong></div>
-                <div>Kelas: <strong>{childClass}</strong></div>
-                <div>Jenjang: <strong>Pendidikan Anak Usia Dini (TK / PAUD)</strong></div>
-                <div>Tanggal Asesmen: <strong>{formattedDate}</strong></div>
-              </div>
-            </div>
-
-            {/* 1. Status Perkembangan */}
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 shadow-soft text-center print:border-emerald-600 print:bg-emerald-50/50 print:p-4 print-break-inside-avoid">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 print:text-emerald-900">
-                🌱 1. Status Perkembangan
-              </span>
-              <h2 className="mt-1 text-2xl font-black text-emerald-900 dark:text-emerald-200 print:text-black print:text-xl">
-                {c.status_perkembangan || "Berkembang Sesuai Harapan"}
-              </h2>
-              <p className="mt-2 text-xs leading-relaxed text-emerald-900/80 dark:text-emerald-200/90 print:text-gray-800">
-                * Catatan: Hasil ini merupakan pemetaan awal berdasarkan observasi orang tua di rumah, BUKAN diagnosis medis maupun psikologis.
-              </p>
-            </div>
-
-            {/* 2. Kesimpulan Umum Perkembangan */}
-            <Section title="2. Kesimpulan Umum Perkembangan">
-              <p className="text-sm leading-relaxed text-foreground print:text-black print:text-xs">
-                {c.kesimpulan_umum_perkembangan || c.penjelasan_status || c.ringkasan}
-              </p>
-            </Section>
-
-            {/* 3. Area yang Perlu Diperhatikan */}
-            <Section title="3. Area yang Perlu Diperhatikan">
-              <ChecklistItems items={c.area_yang_perlu_diperhatikan || c.area_perlu_ditingkatkan} iconType="square" />
-            </Section>
-
-            {/* Page Break setelah Bagian 3 untuk Cetak A4 */}
-            <div className="hidden print:block print:break-before-page" />
-
-            {/* 4. Potensi & Kelebihan */}
-            <Section title="4. Potensi & Kelebihan Anak">
-              <ChecklistItems items={c.potensi_dan_kelebihan || c.potensi_dan_kelebihan_anak || c.kekuatan_anak} iconType="check" />
-            </Section>
-
-            {/* 5. Rekomendasi Stimulasi di Rumah */}
-            <Section title="5. Rekomendasi Stimulasi di Rumah">
-              <ChecklistItems items={c.rekomendasi_stimulasi_di_rumah || c.rekomendasi_stimulasi_untuk_orang_tua || c.rekomendasi_orangtua} iconType="square" />
-            </Section>
-
-            {/* 6. Catatan untuk Orang Tua */}
-            <Section title="6. Catatan untuk Orang Tua">
-              <p className="text-sm leading-relaxed text-foreground print:text-black print:text-xs">
-                {Array.isArray(c.catatan_untuk_orang_tua || c.catatan)
-                  ? (c.catatan_untuk_orang_tua || c.catatan).join(" ")
-                  : (c.catatan_untuk_orang_tua || c.catatan || `Apresiasi setinggi-tingginya kepada Ibu/Bapak ${parentName} yang senantiasa mendampingi tumbuh kembang Ananda ${childName} dengan hangat. Setiap anak berkembang dengan kecepatannya sendiri.`)}
-              </p>
-            </Section>
-
-            {/* Footer Resmi Cetak / PDF */}
-            <div className="hidden print:block print:mt-8 print:border-t print:border-gray-300 print:pt-3 print:text-center text-[10px] text-gray-600">
-              <p className="font-semibold">Pemetaan Awal Tumbuh Kembang Anak • Sekolah Alam Al-Karim</p>
-              <p className="text-[9px] text-gray-500 mt-0.5">Laporan Asesmen Observasi Keluarga di Rumah</p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">
-              <Link to="/" className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-accent">
-                <Home className="h-4 w-4" /> Kembali ke Beranda
-              </Link>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-hero px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-95"
-              >
-                <Printer className="h-4 w-4" /> Cetak / Export PDF (Laporan TK)
-              </button>
-            </div>
-          </div>
+            );
+          })()
         ) : level === "SD" ? (
           /* ========================================================================= */
           /* EXPLICIT SD LEVEL REPORT                                                  */
