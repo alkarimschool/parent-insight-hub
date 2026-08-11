@@ -163,7 +163,12 @@ function ResultPage() {
   const content = getAssessmentContent(level);
 
   const cleanChildName = (childName || "").replace(/^ananda\s+/i, "").trim() || "Anak";
-  const childClass = (data as any)?.child_class || (data as any)?.class_name || (data as any)?.children?.[0]?.class_name || "TK B";
+  const childClass =
+    (data as any)?.child_class ||
+    (data as any)?.class_name ||
+    (data as any)?.child?.class_name ||
+    (data as any)?.children?.[0]?.class_name ||
+    "TK B Pangeran Anatsari";
   const formattedDate = data?.created_at
     ? new Date(data.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
     : new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
@@ -316,9 +321,9 @@ function ResultPage() {
               <span>•</span>
               <span>Kelas: <strong className="text-foreground">{childClass}</strong></span>
               <span>•</span>
-              <span>Jenjang: <strong className="text-foreground">TK/PAUD</strong></span>
+              <span>Jenjang: <strong className="text-foreground">Pendidikan Anak Usia Dini (TK / PAUD)</strong></span>
               <span>•</span>
-              <span>Tanggal: <strong className="text-foreground">{formattedDate}</strong></span>
+              <span>Tanggal Asesmen: <strong className="text-foreground">{formattedDate}</strong></span>
             </div>
           </div>
         ) : (
@@ -376,8 +381,8 @@ function ResultPage() {
               <div className="mt-3.5 flex flex-wrap justify-between items-center text-xs text-black border-t border-gray-300 pt-2.5">
                 <div>Nama Anak: <strong>{cleanChildName}</strong></div>
                 <div>Kelas: <strong>{childClass}</strong></div>
-                <div>Jenjang: <strong>TK/PAUD</strong></div>
-                <div>Tanggal: <strong>{formattedDate}</strong></div>
+                <div>Jenjang: <strong>Pendidikan Anak Usia Dini (TK / PAUD)</strong></div>
+                <div>Tanggal Asesmen: <strong>{formattedDate}</strong></div>
               </div>
             </div>
 

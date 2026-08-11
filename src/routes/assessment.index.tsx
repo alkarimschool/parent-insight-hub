@@ -61,10 +61,12 @@ function AssessmentFormPage() {
   const [form, setForm] = useState<{
     whatsapp: string;
     child_name: string;
+    child_class: string;
     education_level: EducationLevel;
   }>({
     whatsapp: "",
     child_name: "",
+    child_class: "",
     education_level: (search?.level as EducationLevel) || "TK",
   });
 
@@ -76,7 +78,12 @@ function AssessmentFormPage() {
       } else if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.education_level) {
-          setForm((prev) => ({ ...prev, ...parsed, education_level: parsed.education_level }));
+          setForm((prev) => ({
+            ...prev,
+            ...parsed,
+            child_class: parsed.child_class || parsed.class_name || "",
+            education_level: parsed.education_level,
+          }));
         }
       }
     } catch {}
@@ -104,9 +111,14 @@ function AssessmentFormPage() {
       toast.error("Mohon isi Nomor WhatsApp dan Nama Anak.");
       return;
     }
+    if (form.education_level === "TK" && !form.child_class.trim()) {
+      toast.error("Mohon isi Kelas anak (contoh: TK B Pangeran Anatsari).");
+      return;
+    }
     try {
       const payload = {
         ...form,
+        class_name: form.child_class.trim(),
         parent_name: `Orang Tua Ananda ${form.child_name.trim()}`,
         school: "",
       };
@@ -183,6 +195,23 @@ function AssessmentFormPage() {
                 placeholder="Rafathar Malik Ahmad"
               />
             </div>
+            {form.education_level === "TK" && (
+              <>
+                <hr className="border-border/60" />
+                <div>
+                  <Label htmlFor="child_class">Kelas *</Label>
+                  <Input
+                    id="child_class"
+                    value={form.child_class}
+                    onChange={(e) => setForm({ ...form, child_class: e.target.value })}
+                    className="mt-1.5"
+                    maxLength={100}
+                    required
+                    placeholder="Contoh: TK B Pangeran Anatsari"
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <div className="mt-8 flex items-center justify-between gap-3 pt-4 border-t border-border/40">

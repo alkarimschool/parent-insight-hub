@@ -210,7 +210,7 @@ function QuestionsPage() {
             gender: formData.gender || "L",
             birth_date: formData.birth_date || "2020-01-01",
             school: formData.school || "",
-            class_name: formData.class_name || "",
+            class_name: formData.child_class || formData.class_name || "",
             education_level: level,
           },
           answers: payloadAnswers,
