@@ -1,6 +1,6 @@
 import { submitAndAnalyze, getAssessmentResultServer } from "../lib/assessment.server";
 import { LEVEL_QUESTIONS } from "../lib/questions.data";
-import { calculateSimilarity } from "../lib/similarity";
+import { textSimilarity } from "../lib/similarity";
 
 const REQUIRED = [
   "kesimpulan_umum_perkembangan",
@@ -19,7 +19,7 @@ const patterns: Array<{ name: string; scores: number[] }> = [
   { name: "Anak TK D", scores: Array.from({ length: 30 }, (_, i) => (i < 10 ? 2 : 5)) },
   { name: "Anak TK E", scores: Array.from({ length: 30 }, (_, i) => (i >= 10 && i < 20 ? 2 : 4)) },
   { name: "Anak TK F", scores: Array.from({ length: 30 }, (_, i) => (i >= 20 ? 2 : 4)) },
-  { name: "Anak TK G", scores: Array.from({ length: 30 }, (_, i) => (i % 3) + 2 },
+  { name: "Anak TK G", scores: Array.from({ length: 30 }, (_, i) => (i % 3) + 2) },
   { name: "Anak TK H", scores: Array(30).fill(3) },
   { name: "Anak TK I", scores: Array.from({ length: 30 }, (_, i) => (i % 5) + 1) },
   { name: "Anak TK J", scores: Array(30).fill(4) },
@@ -49,7 +49,7 @@ async function main() {
     console.log(`   ringkasan: ${String(content?.kesimpulan_umum_perkembangan || "").slice(0, 140)}…`);
     summaries.push(String(content?.kesimpulan_umum_perkembangan || ""));
   }
-  const sim = calculateSimilarity(summaries[0], summaries[1]);
+  const sim = textSimilarity(summaries[0], summaries[1]);
   console.log(`\nKemiripan narasi 2 anak dengan skor identik (A vs B): ${sim.toFixed(1)}%`);
 }
 main().catch((e) => { console.error(e); process.exit(1); });
