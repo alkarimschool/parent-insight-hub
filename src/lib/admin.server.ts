@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { supabase } from "@/integrations/supabase/client";
 import { getEducationLevel } from "./questions.data";
+import { DEFAULT_CARD_SETTINGS_DATA, AssessmentCardSettingsData } from "./settings";
 
 export function extractTrueLevel(a: any): string {
   return getEducationLevel(a);
@@ -165,6 +166,36 @@ export async function updateHomepageSettingsServer(inputData: any) {
   } catch (err: any) {
     console.error("[updateHomepageSettingsServer] Exception:", err?.message || err);
     return { ok: false, error: err?.message || "Gagal menyimpan data ke database" };
+  }
+}
+
+export async function getAssessmentCardSettingsServer(): Promise<AssessmentCardSettingsData> {
+  try {
+    const [{ data: wsData }, { data: lockData }] = await Promise.all([
+      supabaseAdmin.from("website_settings").select("data").eq("id", 1).maybeSingle(),
+      supabaseAdmin.from("assessment_locks").select("education_level, is_locked"),
+    ]);
+
+    const raw = (wsData?.data as any) ?? null;
+    const cards = raw?.assessment_cards || raw?.data?.assessment_cards || {};
+
+    const lockMap: Record<string, boolean> = {};
+    if (lockData && Array.isArray(lockData)) {
+      for (const row of lockData as any[]) {
+        const lvl = String(row.education_level || row.level || "").toUpperCase();
+        if (lvl) lockMap[lvl] = Boolean(row.is_locked);
+      }
+    }
+
+    return {
+      TK: { ...DEFAULT_CARD_SETTINGS_DATA.TK, ...(cards.TK || {}), is_locked: lockMap["TK"] === true },
+      SD: { ...DEFAULT_CARD_SETTINGS_DATA.SD, ...(cards.SD || {}), is_locked: lockMap["SD"] === true },
+      SMP: { ...DEFAULT_CARD_SETTINGS_DATA.SMP, ...(cards.SMP || {}), is_locked: lockMap["SMP"] === true },
+      SMA: { ...DEFAULT_CARD_SETTINGS_DATA.SMA, ...(cards.SMA || {}), is_locked: lockMap["SMA"] === true },
+    };
+  } catch (err) {
+    console.error("[getAssessmentCardSettingsServer] Error:", err);
+    return DEFAULT_CARD_SETTINGS_DATA;
   }
 }
 

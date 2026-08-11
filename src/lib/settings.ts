@@ -193,7 +193,18 @@ export async function fetchAssessmentCardSettings(): Promise<AssessmentCardSetti
     ]);
 
     const raw = (wsData?.data as any) ?? null;
-    const cards = raw?.assessment_cards || raw?.data?.assessment_cards || {};
+    const cards = raw?.assessment_cards || raw?.data?.assessment_cards || null;
+
+    if (!cards) {
+      try {
+        const { getAssessmentCardSettingsServer } = await import("./admin.server");
+        return await getAssessmentCardSettingsServer();
+      } catch {
+        // Fallback to default if serverFn import is restricted
+      }
+    }
+
+    const validCards = cards || {};
 
     const lockMap: Record<string, boolean> = {};
     if (lockData && Array.isArray(lockData)) {
@@ -203,23 +214,19 @@ export async function fetchAssessmentCardSettings(): Promise<AssessmentCardSetti
       }
     }
 
-    // Single source of truth for lock status: table `assessment_locks`.
-    // Any is_locked value stored in website_settings JSON is intentionally ignored.
-    console.info("[Assessment Setting Loaded]", {
-      TK: !lockMap["TK"],
-      SD: !lockMap["SD"],
-      SMP: !lockMap["SMP"],
-      SMA: !lockMap["SMA"],
-    });
-
     return {
-      TK: { ...DEFAULT_CARD_SETTINGS_DATA.TK, ...(cards.TK || {}), is_locked: lockMap["TK"] === true },
-      SD: { ...DEFAULT_CARD_SETTINGS_DATA.SD, ...(cards.SD || {}), is_locked: lockMap["SD"] === true },
-      SMP: { ...DEFAULT_CARD_SETTINGS_DATA.SMP, ...(cards.SMP || {}), is_locked: lockMap["SMP"] === true },
-      SMA: { ...DEFAULT_CARD_SETTINGS_DATA.SMA, ...(cards.SMA || {}), is_locked: lockMap["SMA"] === true },
+      TK: { ...DEFAULT_CARD_SETTINGS_DATA.TK, ...(validCards.TK || {}), is_locked: lockMap["TK"] ?? validCards.TK?.is_locked ?? false },
+      SD: { ...DEFAULT_CARD_SETTINGS_DATA.SD, ...(validCards.SD || {}), is_locked: lockMap["SD"] ?? validCards.SD?.is_locked ?? false },
+      SMP: { ...DEFAULT_CARD_SETTINGS_DATA.SMP, ...(validCards.SMP || {}), is_locked: lockMap["SMP"] ?? validCards.SMP?.is_locked ?? false },
+      SMA: { ...DEFAULT_CARD_SETTINGS_DATA.SMA, ...(validCards.SMA || {}), is_locked: lockMap["SMA"] ?? validCards.SMA?.is_locked ?? false },
     };
   } catch (err) {
     console.warn("[fetchAssessmentCardSettings] Error:", err);
-    return DEFAULT_CARD_SETTINGS_DATA;
+    try {
+      const { getAssessmentCardSettingsServer } = await import("./admin.server");
+      return await getAssessmentCardSettingsServer();
+    } catch {
+      return DEFAULT_CARD_SETTINGS_DATA;
+    }
   }
 }

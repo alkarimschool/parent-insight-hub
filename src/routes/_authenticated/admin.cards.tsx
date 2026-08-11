@@ -125,8 +125,10 @@ function AssessmentCardsAdmin() {
         qc.invalidateQueries({ queryKey: ["assessment-card-settings"] }),
         qc.invalidateQueries({ queryKey: ["admin-cards-edit"] }),
         qc.invalidateQueries({ queryKey: ["assessment-locks"] }),
+        qc.invalidateQueries({ queryKey: ["admin-locks-edit"] }),
         qc.invalidateQueries({ queryKey: ["website"] }),
-        qc.refetchQueries({ queryKey: ["assessment-card-settings"] }),
+        cardQuery.refetch(),
+        locksQuery.refetch(),
       ]);
     } catch (e: any) {
       console.error("[AdminCards] Error saving card settings:", e);

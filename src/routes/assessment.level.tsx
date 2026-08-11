@@ -57,7 +57,8 @@ function SelectLevelPage() {
   const navigate = useNavigate();
 
   const handleSelectLevel = (lvl: EducationLevel) => {
-    if (locks.data?.[lvl]) {
+    const isLocked = locks.data?.[lvl] === true || cardsData[lvl]?.is_locked === true;
+    if (isLocked) {
       toast.error(LOCK_MESSAGE);
       return;
     }
@@ -96,7 +97,7 @@ function SelectLevelPage() {
           {LEVEL_KEYS.map((key) => {
             const card = cardsData[key] || DEFAULT_CARD_SETTINGS_DATA[key];
             const Icon = ICON_MAP[card.icon] || GraduationCap;
-            const isLocked = locks.data?.[key] === true;
+            const isLocked = locks.data?.[key] === true || card.is_locked === true;
             const colorClass = COLOR_MAP[card.badge_color || "blue"] || COLOR_MAP.blue;
             const showBadge = card.badge_show !== false;
 
