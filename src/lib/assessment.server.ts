@@ -3,8 +3,12 @@ import { callLovableAiJson } from "./ai.server";
 import { EducationLevel, LEVEL_QUESTIONS, getEducationLevel } from "./questions.data";
 import { getAssessmentContent } from "./assessment-content";
 import { DEFAULT_PROMPTS } from "./prompt.data";
+<<<<<<< HEAD
 import { buildVariationDirective, buildTkVariationDirective, getTkStatusByScore, FIELD_VARIATION_TEMPLATES } from "./narrative-variation";
 
+=======
+import { buildVariationDirective, buildTkVariationDirective, FIELD_VARIATION_TEMPLATES } from "./narrative-variation";
+>>>>>>> 626f1cd79a6d1036ebfdc6f0081efc50323667c6
 
 interface SubmitInput {
   parent: { name: string; whatsapp: string };
@@ -481,6 +485,7 @@ export function generateFallbackResult(childName: string, parentName: string, av
     };
   }
 
+<<<<<<< HEAD
   // DEFAULT TK / PAUD
   const status_tk = getTkStatusByScore(avgScore);
   const status_akademik_tk = avgScore >= 4.50 ? "Sangat Baik" : (avgScore >= 3.50 ? "Baik & Berkembang" : (avgScore >= 2.50 ? "Perlu Penguatan" : "Perlu Pendampingan Intensif"));
@@ -572,6 +577,86 @@ export function generateFallbackResult(childName: string, parentName: string, av
     ];
     middleText = midPool[(childHash * 3 + 4) % midPool.length];
   }
+=======
+  // ============================================================
+  // DEFAULT TK / PAUD — PEMETAAN AWAL TUMBUH KEMBANG ANAK (7 BAGIAN)
+  // ============================================================
+  const TK_GROUPS: Array<{ key: string; label: string; from: number; to: number }> = [
+    { key: "motorik_kasar", label: "Motorik Kasar", from: 1, to: 5 },
+    { key: "motorik_halus", label: "Motorik Halus", from: 6, to: 10 },
+    { key: "bahasa", label: "Bahasa & Komunikasi", from: 11, to: 15 },
+    { key: "kognitif", label: "Kognitif", from: 16, to: 20 },
+    { key: "sosem", label: "Sosial-Emosional", from: 21, to: 25 },
+    { key: "mandiri", label: "Kemandirian & Kesiapan Belajar", from: 26, to: 30 },
+  ];
+
+  const groupStats = TK_GROUPS.map((g) => {
+    const items = parsedAnswers.slice(g.from - 1, g.to);
+    const scores = items.map((a) => a.score);
+    const avg = scores.length ? scores.reduce((x, y) => x + y, 0) / scores.length : 3;
+    const weakest = [...items].sort((a, b) => a.score - b.score)[0];
+    const strongest = [...items].sort((a, b) => b.score - a.score)[0];
+    return { ...g, avg, items, weakest, strongest };
+  });
+
+  const shuffle = <T,>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
+  const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+
+  const statusTk = avgScore >= 4.0
+    ? "Berkembang Sesuai Harapan"
+    : avgScore >= 3.0
+      ? "Perlu Stimulasi"
+      : "Perlu Perhatian Lebih Lanjut";
+
+  const strongGroups = groupStats.filter((g) => g.avg >= 3.8).sort((a, b) => b.avg - a.avg);
+  const attentionGroups = groupStats.filter((g) => g.avg < 3.8).sort((a, b) => a.avg - b.avg).slice(0, 3);
+
+  const opener = pick([
+    `Secara umum, gambaran tumbuh kembang ananda ${childName} pada pemetaan awal ini terlihat cukup utuh.`,
+    `Hasil pemetaan awal memperlihatkan pola perkembangan yang khas pada ananda ${childName}.`,
+    `Dari pengamatan yang Ibu/Bapak sampaikan, ananda ${childName} menunjukkan profil tumbuh kembang tersendiri.`,
+    `Potret awal perkembangan ananda ${childName} tergambar dari kebiasaan hariannya di rumah.`,
+  ]);
+  const strongSentence = strongGroups.length
+    ? pick([
+        `Aspek ${strongGroups.slice(0, 2).map((g) => g.label.toLowerCase()).join(" dan ")} tampak menjadi bagian yang paling mendukung kesehariannya.`,
+        `Dukungan terkuat datang dari ${strongGroups.slice(0, 2).map((g) => g.label.toLowerCase()).join(" serta ")}.`,
+      ])
+    : `Beberapa kemampuan dasar sudah mulai muncul dan dapat dikuatkan secara bertahap.`;
+  const attentionSentence = attentionGroups.length
+    ? pick([
+        `Sementara itu, ${attentionGroups.map((g) => g.label.toLowerCase()).join(", ")} masih membutuhkan pendampingan yang lebih rutin.`,
+        `Di sisi lain, kegiatan pada ranah ${attentionGroups.map((g) => g.label.toLowerCase()).join(", ")} sebaiknya lebih sering dilatih bersama.`,
+      ])
+    : `Tidak ditemukan aspek yang benar-benar tertinggal, sehingga penguatan cukup diarahkan pada pengayaan kegiatan.`;
+  const closing = pick([
+    "Uraian berikut menjelaskan setiap ranah secara lebih rinci beserta ide stimulasi yang bisa dicoba di rumah.",
+    "Bagian selanjutnya memaparkan temuan per ranah dan langkah sederhana yang dapat dilakukan orang tua.",
+    "Penjelasan di bawah ini membantu Ibu/Bapak melihat arah stimulasi yang paling relevan saat ini.",
+  ]);
+
+  const kesimpulanUmum = [opener, strongSentence, attentionSentence, closing].join(" ");
+
+  const areaPerhatian = attentionGroups.length
+    ? attentionGroups.map((g) =>
+        `${g.label}: ${g.weakest ? g.weakest.text.replace(/^Anak /, "Ananda masih perlu latihan agar ") : "perlu latihan rutin"} (rata-rata ${g.avg.toFixed(1)}/5).`
+      )
+    : shuffle([
+        "Penguatan lanjutan: variasikan kegiatan agar kemampuan yang sudah baik tetap terasah.",
+        "Pengayaan: tambahkan tantangan bermain yang sedikit lebih kompleks sesuai minat anak.",
+      ]).slice(0, 2);
+
+  const groupBullets = (keys: string[], positive: string, negative: string) =>
+    shuffle(
+      groupStats
+        .filter((g) => keys.includes(g.key))
+        .map((g) =>
+          g.avg >= 3.8
+            ? `${g.label}: ${positive} (rata-rata ${g.avg.toFixed(1)}/5).`
+            : `${g.label}: ${negative} (rata-rata ${g.avg.toFixed(1)}/5).`
+        )
+    );
+>>>>>>> 626f1cd79a6d1036ebfdc6f0081efc50323667c6
 
   const tkClosings = [
     `Pendampingan yang hangat dan konsisten dari orang tua di rumah akan menjadi kunci utama dalam mengoptimalkan potensi usia Ananda ${displayName}.`,
@@ -731,6 +816,7 @@ export function generateFallbackResult(childName: string, parentName: string, av
   ];
 
   return {
+<<<<<<< HEAD
     judul: "Laporan Assessment Perkembangan Anak TK",
     status_perkembangan: status_tk,
     penjelasan_status,
@@ -748,6 +834,51 @@ export function generateFallbackResult(childName: string, parentName: string, av
       allCatatan[(childHash * 2) % allCatatan.length],
       allCatatan[(childHash * 2 + 3) % allCatatan.length]
     ]
+=======
+    judul: "Pemetaan Awal Tumbuh Kembang Anak TK",
+    status_perkembangan: statusTk,
+    kesimpulan_umum_perkembangan: kesimpulanUmum,
+    area_yang_perlu_diperhatikan: areaPerhatian.slice(0, 3),
+    motorik: groupBullets(
+      ["motorik_kasar", "motorik_halus"],
+      "gerakan anak terlihat terkoordinasi dan sesuai kegiatan hariannya",
+      "koordinasi gerak masih perlu dilatih lewat permainan yang menyenangkan"
+    ),
+    bahasa_dan_kognitif: groupBullets(
+      ["bahasa", "kognitif"],
+      "anak nyaman berkomunikasi dan menunjukkan rasa ingin tahu yang baik",
+      "kemampuan bercerita dan memecahkan masalah sederhana masih perlu didampingi"
+    ),
+    sosial_emosional_dan_kemandirian: groupBullets(
+      ["sosem", "mandiri"],
+      "anak mulai luwes bermain bersama dan mengikuti rutinitas harian",
+      "pengelolaan emosi dan kemandirian harian masih memerlukan pendampingan"
+    ),
+    potensi_dan_kelebihan_anak: (strongGroups.length
+      ? strongGroups.slice(0, 3).map((g) => `${g.label}: ${g.strongest ? g.strongest.text.replace(/^Anak /, "Ananda ") : "berkembang baik"}`)
+      : shuffle([
+          "Rasa ingin tahu yang alami dan mudah diarahkan lewat permainan.",
+          "Respons positif ketika didampingi orang tua dengan sabar.",
+        ])
+    ).slice(0, 3),
+    rekomendasi_stimulasi_untuk_orang_tua: shuffle([
+      ...(attentionGroups.length
+        ? attentionGroups.map((g) => {
+            const ide: Record<string, string> = {
+              motorik_kasar: "Ajak bermain aktif 15-20 menit setiap hari: lompat tali sederhana, lempar-tangkap bola, atau jalan di garis lurus.",
+              motorik_halus: "Sediakan kegiatan tangan seperti meronce, melipat kertas, atau mewarnai bentuk besar selama 10-15 menit.",
+              bahasa: "Biasakan bercerita bergantian sebelum tidur dan ajukan pertanyaan terbuka tentang kegiatan hari itu.",
+              kognitif: "Main tebak warna/bentuk dan mengelompokkan benda di rumah sambil menanyakan alasannya.",
+              sosem: "Bantu anak menamai perasaannya ('kamu kecewa, ya?') dan latih bergantian mainan bersama saudara atau teman.",
+              mandiri: "Beri satu tugas rutin harian yang bisa diselesaikan sendiri, seperti merapikan mainan atau menaruh sepatu.",
+            };
+            return ide[g.key] ?? "Berikan pendampingan rutin singkat setiap hari sesuai minat anak.";
+          })
+        : []),
+      "Berikan apresiasi pada usaha anak, bukan hanya hasilnya, agar ia semakin berani mencoba.",
+      "Jaga rutinitas harian yang konsisten supaya anak merasa aman dan siap belajar.",
+    ]).slice(0, 4),
+>>>>>>> 626f1cd79a6d1036ebfdc6f0081efc50323667c6
   };
 }
 
@@ -762,6 +893,12 @@ async function getOrSeedQuestionsForLevel(level: EducationLevel) {
 
     if (existingQs && existingQs.length >= 15) {
       const firstText = existingQs[0]?.text || "";
+      if (safeLevel === "TK" && existingQs.length !== 30) {
+        return LEVEL_QUESTIONS.TK.map((q) => ({
+          ...q,
+          question_categories: { name: q.category_name },
+        }));
+      }
       if (safeLevel === "SMA" && !firstText.includes("Anak saya mampu memahami materi")) {
         return LEVEL_QUESTIONS.SMA.map((q) => ({
           ...q,
@@ -1149,9 +1286,13 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
           user_template: defaultPromptForLevel.user_template,
         };
 
+<<<<<<< HEAD
     const variationDirective = dbEducationLevel === "TK"
       ? buildTkVariationDirective(data.child.name, parentName, avgScoreCalc)
       : buildVariationDirective();
+=======
+    const variationDirective = dbEducationLevel === "TK" ? buildTkVariationDirective() : buildVariationDirective();
+>>>>>>> 626f1cd79a6d1036ebfdc6f0081efc50323667c6
 
     const filledPrompt = promptToUse.user_template
       .replace(/\$\{assessment\.education_level\}/g, dbEducationLevel)
@@ -1185,7 +1326,11 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
       try {
         const aiRes = await callLovableAiJson({
           model: usedModel,
+<<<<<<< HEAD
           systemPrompt: attempt === 1 ? systemPromptWithRules : `${promptToUse.system_prompt}\n\n${dbEducationLevel === "TK" ? buildTkVariationDirective(data.child.name, parentName, avgScoreCalc) : buildVariationDirective()}`,
+=======
+          systemPrompt: attempt === 1 ? systemPromptWithRules : `${promptToUse.system_prompt}\n\n${dbEducationLevel === "TK" ? buildTkVariationDirective() : buildVariationDirective()}`,
+>>>>>>> 626f1cd79a6d1036ebfdc6f0081efc50323667c6
           userPrompt: filledPrompt,
           temperature: Number(settings?.temperature ?? 0.85),
           maxTokens: settings?.max_tokens ?? 4096,
@@ -1516,14 +1661,14 @@ export async function getAssessmentResultServer(assessmentId: string, clientAdmi
     const childName = child?.name || cached?.child_name || "Anak";
     const parentName = parent?.name || cached?.parent_name || "Orang Tua";
 
-    if (!content || typeof content !== "object" || (!content.ringkasan && !content.status_perkembangan && !content.kekuatan_anak && !content.status_perkembangan_sd && !content.status_perkembangan_smp && !content.status_kesiapan_sma && !content.ringkasan_kemampuan_awal)) {
+    if (!content || typeof content !== "object" || (!content.ringkasan && !content.status_perkembangan && !content.kesimpulan_umum_perkembangan && !content.kekuatan_anak && !content.status_perkembangan_sd && !content.status_perkembangan_smp && !content.status_kesiapan_sma && !content.ringkasan_kemampuan_awal)) {
       const { data: dbAns } = await supabaseAdmin.from("assessment_answers").select("score, question_id").eq("assessment_id", assessmentId);
       const scores = (dbAns || []).map((a: any) => Number(a.score ?? 3));
       const calcAvg = scores.length > 0 ? scores.reduce((sum: number, s: number) => sum + s, 0) / scores.length : 3.0;
       content = generateFallbackResult(childName, parentName, calcAvg, level, dbAns || [], []);
     }
     if (!content.ringkasan) {
-      content.ringkasan = content.penjelasan_status || "Perkembangan dan kesiapan anak berkembang positif.";
+      content.ringkasan = content.kesimpulan_umum_perkembangan || content.penjelasan_status || "Perkembangan dan kesiapan anak berkembang positif.";
     }
 
     content = {

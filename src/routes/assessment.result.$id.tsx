@@ -297,82 +297,55 @@ function ResultPage() {
           </div>
         ) : level === "TK" ? (
           /* ========================================================================= */
-          /* EXPLICIT TK LEVEL REPORT (10 STRICT SECTIONS)                             */
+          /* TK — PEMETAAN AWAL TUMBUH KEMBANG ANAK (7 BAGIAN)                         */
           /* ========================================================================= */
           <div className="grid gap-5">
-            {/* 1. 📋 Status Perkembangan */}
+            {/* Status Perkembangan */}
             <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 shadow-soft text-center print:border-emerald-600 print:bg-transparent">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">📋 Status Perkembangan</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">🌱 Status Perkembangan</span>
               <h2 className="mt-1 text-xl font-extrabold text-emerald-800 dark:text-emerald-300 print:text-black">
-                {c.status_perkembangan || "Berkembang Sesuai Usia (Normal)"}
+                {c.status_perkembangan || "Berkembang Sesuai Harapan"}
               </h2>
-              {c.penjelasan_status && (
-                <p className="mt-3 text-sm leading-relaxed text-emerald-900/80 dark:text-emerald-200 print:text-black">
-                  {c.penjelasan_status}
-                </p>
-              )}
+              <p className="mt-2 text-xs text-emerald-900/70 dark:text-emerald-200/80 print:text-black">
+                Hasil ini merupakan pemetaan awal berdasarkan observasi orang tua, bukan diagnosis.
+              </p>
             </div>
 
-            {/* 2. ⭐ Kekuatan Anak */}
-            <Section title="⭐ Kekuatan Anak">
-              <List items={c.kekuatan_anak || c.kekuatan || c.kelebihan} />
+            {/* 1. Kesimpulan Umum Perkembangan */}
+            <Section title="1. Kesimpulan Umum Perkembangan">
+              <p className="text-sm leading-relaxed text-foreground print:text-black">
+                {c.kesimpulan_umum_perkembangan || c.penjelasan_status || c.ringkasan}
+              </p>
             </Section>
 
-            {/* 3. 📈 Area yang Perlu Ditingkatkan */}
-            <Section title="📈 Area yang Perlu Ditingkatkan">
-              <List items={c.area_perlu_ditingkatkan || c.area_pengembangan} />
+            {/* 2. Area yang Perlu Diperhatikan */}
+            <Section title="2. Area yang Perlu Diperhatikan">
+              <List items={c.area_yang_perlu_diperhatikan || c.area_perlu_ditingkatkan} />
             </Section>
 
-            {/* 4. 🌱 Potensi yang Dapat Dikembangkan */}
-            <Section title="🌱 Potensi yang Dapat Dikembangkan">
-              <List items={Array.isArray(c.potensi_dikembangkan) ? c.potensi_dikembangkan : (Array.isArray(c.potensi) ? c.potensi : [c.potensi || c.potensi_dikembangkan])} />
+            {/* 3. Motorik */}
+            <Section title="3. Motorik (Kasar & Halus)">
+              <List items={c.motorik} />
             </Section>
 
-            {/* 5. 📚 Kemampuan Akademik */}
-            <Section title="📚 Kemampuan Akademik">
-              <div className="space-y-4">
-                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 print:border-gray-300">
-                  <span className="text-xs font-bold text-primary uppercase print:text-black">Status Akademik</span>
-                  <p className="mt-1 text-base font-bold text-foreground print:text-black">
-                    {c.kemampuan_akademik?.status_akademik ?? (typeof c.kemampuan_akademik === "string" ? c.kemampuan_akademik : "Sesuai Usia (Baik)")}
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold text-foreground print:text-black">Kekuatan Akademik</h4>
-                  <div className="mt-2">
-                    <List items={c.kemampuan_akademik?.kekuatan_akademik || (Array.isArray(c.kekuatan_akademik) ? c.kekuatan_akademik : [typeof c.kemampuan_akademik === "string" ? c.kemampuan_akademik : "Mengenal huruf dasar, angka 1-10, warna, dan bentuk geometri."])} />
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold text-foreground print:text-black">Area Akademik yang Perlu Dikembangkan</h4>
-                  <div className="mt-2">
-                    <List items={c.kemampuan_akademik?.area_akademik_dikembangkan || (Array.isArray(c.area_akademik_dikembangkan) ? c.area_akademik_dikembangkan : ["Pengenalan bunyi fonik awal dan membilang benda harian."])} />
-                  </div>
-                </div>
-              </div>
+            {/* 4. Bahasa & Kognitif */}
+            <Section title="4. Bahasa & Kognitif">
+              <List items={c.bahasa_dan_kognitif} />
             </Section>
 
-            {/* 6. 🎯 Prioritas Stimulasi */}
-            <Section title="🎯 Prioritas Stimulasi">
-              <List items={c.prioritas_stimulasi || (Array.isArray(c.treatment) ? c.treatment.map((t: any) => `${t.kategori}: ${t.aktivitas}`) : [c.treatment])} />
+            {/* 5. Sosial-Emosional & Kemandirian */}
+            <Section title="5. Sosial-Emosional & Kemandirian">
+              <List items={c.sosial_emosional_dan_kemandirian} />
             </Section>
 
-            {/* 7. 👨‍👩‍👧 Rekomendasi untuk Orang Tua */}
-            <Section title="👨‍👩‍👧 Rekomendasi untuk Orang Tua">
-              <List items={c.rekomendasi_orangtua || c.perhatian_orangtua} />
+            {/* 6. Potensi & Kelebihan Anak */}
+            <Section title="6. Potensi & Kelebihan Anak">
+              <List items={c.potensi_dan_kelebihan_anak || c.kekuatan_anak} />
             </Section>
 
-            {/* 8. 📝 Catatan */}
-            <Section title="📝 Catatan">
-              {Array.isArray(c.catatan) ? (
-                <List items={c.catatan} />
-              ) : (
-                <p className="italic font-medium text-foreground print:text-black">
-                  {c.catatan || c.kesimpulan || "Perkembangan dan kesiapan sekolah TK anak berjalan sangat baik."}
-                </p>
-              )}
+            {/* 7. Rekomendasi Stimulasi untuk Orang Tua */}
+            <Section title="7. Rekomendasi Stimulasi untuk Orang Tua">
+              <List items={c.rekomendasi_stimulasi_untuk_orang_tua || c.rekomendasi_orangtua} />
             </Section>
 
             <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">

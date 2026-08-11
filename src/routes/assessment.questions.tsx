@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { submitAssessment } from "@/lib/assessment.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { LEVEL_QUESTIONS, EducationLevel } from "@/lib/questions.data";
-import { fetchAssessmentLocks, LOCK_MESSAGE } from "@/lib/locks";
+import { fetchAssessmentLocks, LOCK_MESSAGE, firstUnlockedLevel } from "@/lib/locks";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/assessment/questions")({
@@ -41,27 +41,24 @@ function QuestionsPage() {
     try {
       const raw = sessionStorage.getItem("paa_form");
       if (!raw) {
-        setFormData({ education_level: "SMA", parent_name: "Orang Tua", child_name: "Siswa SMA", whatsapp: "08123456789" });
+        navigate({ to: "/assessment/level", search: { level: undefined } as any });
         return;
       }
       const parsed = JSON.parse(raw);
-      if (locks.data && locks.data[parsed.education_level] && !locks.data["SMA"]) {
-        parsed.education_level = "SMA";
-        sessionStorage.setItem("paa_form", JSON.stringify(parsed));
-      }
       setFormData(parsed);
     } catch {
-      setFormData({ education_level: "SMA", parent_name: "Orang Tua", child_name: "Siswa SMA", whatsapp: "08123456789" });
+      navigate({ to: "/assessment/level", search: { level: undefined } as any });
     }
   }, [navigate, locks.data]);
 
-  const level: EducationLevel = (formData?.education_level || "SMA") as EducationLevel;
+  const level: EducationLevel = (formData?.education_level || "TK") as EducationLevel;
   const isLocked = !!locks.data?.[level];
 
   useEffect(() => {
-    if (locks.data && isLocked && level !== "SMA") {
+    if (locks.data && isLocked) {
       toast.error(LOCK_MESSAGE);
-      navigate({ to: "/assessment", search: { level: "SMA" } as any });
+      const next = firstUnlockedLevel(locks.data);
+      navigate({ to: "/assessment/level", search: { level: next } as any });
     }
   }, [locks.data, isLocked, level, navigate]);
 
