@@ -605,3 +605,65 @@ Struktur JSON, nama key, dan urutan field WAJIB 100% SAMA SEPERTI SKEMA LAPORAN 
 ${buildSummaryFieldDirective()}
 `.trim();
 }
+
+/**
+ * Logika Status Perkembangan TK Objektif Berdasarkan Skor Rata-Rata:
+ * 4.50 – 5.00 → "Berkembang Sesuai Harapan"
+ * 3.50 – 4.49 → "Berkembang dengan Baik, Perlu Penguatan"
+ * 2.50 – 3.49 → "Memerlukan Pendampingan pada Beberapa Area"
+ * 1.00 – 2.49 → "Memerlukan Perhatian dan Stimulasi Lebih Lanjut"
+ */
+export function getTkStatusByScore(avgScore: number): string {
+  if (avgScore >= 4.50) return "Berkembang Sesuai Harapan";
+  if (avgScore >= 3.50) return "Berkembang dengan Baik, Perlu Penguatan";
+  if (avgScore >= 2.50) return "Memerlukan Pendampingan pada Beberapa Area";
+  return "Memerlukan Perhatian dan Stimulasi Lebih Lanjut";
+}
+
+export const TK_PERSONAS = [
+  "Konselor Perkembangan Anak Usia Dini (Hangat, Empatik, dan Aperseptif)",
+  "Psikolog Tumbuh Kembang PAUD (Edukatif, Terstruktur, dan Mengayomi)",
+  "Pakar Stimulasi Usia Dini (Kreatif, Praktis, dan Penuh Apresiasi)",
+  "Evaluator Tumbuh Kembang Anak (Observatif, Positif, dan Komprehensif)",
+];
+
+export const TK_ASPECT_FLOWS = [
+  "Motorik Kasar & Halus → Bahasa & Komunikasi → Kognitif → Sosial-Emosional → Kemandirian Harian",
+  "Bahasa & Komunikasi → Kemandirian Harian → Sosial-Emosional → Motorik → Kognitif & Daya Ingin Tahu",
+  "Kemandirian & Karakter Dini → Sosial-Emosional → Bahasa → Kognitif → Motorik Kasar & Halus",
+  "Kognitif & Daya Ingin Tahu → Bahasa → Motorik → Sosial-Emosional → Kemandirian Harian",
+  "Sosial-Emosional & Interaksi → Kemandirian Harian → Bahasa → Kognitif → Motorik Kasar & Halus",
+  "Motorik & Koordinasi Fizikal → Kognitif → Sosial-Emosional → Kemandirian → Bahasa & Komunikasi",
+];
+
+export function buildTkVariationDirective(childName?: string, parentName?: string, avgScore?: number): string {
+  const seed = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  const chosenPersona = pick(TK_PERSONAS);
+  const chosenFlow = pick(TK_ASPECT_FLOWS);
+  const chosenOpener = pick(DYNAMIC_OPENERS);
+
+  return `
+==================================================
+ENGINE NARRATIVE UNIK KHUSUS ASESMEN TK / PAUD
+==================================================
+SEED KEUNIKAN TK: ${seed}
+NAMA ANAK: ${childName || "Ananda"}
+NAMA ORANG TUA: ${parentName || "Orang Tua"}
+RATA-RATA SKOR: ${avgScore ? avgScore.toFixed(2) : "4.00"}
+
+[ATURAN UTAMA NARASI TK]
+1. STATUS PERKEMBANGAN SANGAT OBJEKTIF: Status ditentukan secara sistemik dari skor rata-rata. Jangan merubah nilai status perkembangan.
+2. NARASI WAJIB 100% UNIK & PERSONAL DARI NOL: Walaupun skor, jawaban, atau kategori anak lain identik, narasi laporan untuk Ananda ${childName || "anak ini"} WAJIB disusun dari awal dari nol tanpa mengulang template baku!
+3. PERSONA EVALUATOR TK: Use perspective of "${chosenPersona}". Bahasa hangat, membesarkan hati, profesional, non-medis, mudah dipahami orang tua.
+4. ALUR & URUTAN PEMBAHASAN UNIK LAPORAN INI:
+   >>> ${chosenFlow} <<<
+   Bahas aspek-aspek tumbuh kembang dengan urutan ide di atas!
+5. PARAGRAF PEMBUKA (penjelasan_status):
+   - Wajib 3–5 kalimat yang mengalir alami dari Konselor PAUD.
+   - Contoh variasi nada pembuka: "${chosenOpener}..."
+   - Menyebut nama anak (${childName || "Ananda"}) MAKSIMAL 1 Kali di paragraf pembuka.
+6. HINDARI FRASA TEMPLATE BERULANG ("Berdasarkan hasil asesmen", "Melalui observasi orang tua", "Rata-rata skor", "Secara umum Ananda memiliki...").
+7. AREA PERHATIAN & REKOMENDASI PERSONAL: Harus ditargetkan pada indikator yang memerlukan stimulasi paling nyata dari jawaban orang tua.
+`.trim();
+}
+
