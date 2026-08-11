@@ -616,6 +616,12 @@ async function getOrSeedQuestionsForLevel(level: EducationLevel) {
 
     if (existingQs && existingQs.length >= 15) {
       const firstText = existingQs[0]?.text || "";
+      if (safeLevel === "TK" && existingQs.length !== 30) {
+        return LEVEL_QUESTIONS.TK.map((q) => ({
+          ...q,
+          question_categories: { name: q.category_name },
+        }));
+      }
       if (safeLevel === "SMA" && !firstText.includes("Anak saya mampu memahami materi")) {
         return LEVEL_QUESTIONS.SMA.map((q) => ({
           ...q,
@@ -1364,14 +1370,14 @@ export async function getAssessmentResultServer(assessmentId: string, clientAdmi
     const childName = child?.name || cached?.child_name || "Anak";
     const parentName = parent?.name || cached?.parent_name || "Orang Tua";
 
-    if (!content || typeof content !== "object" || (!content.ringkasan && !content.status_perkembangan && !content.kekuatan_anak && !content.status_perkembangan_sd && !content.status_perkembangan_smp && !content.status_kesiapan_sma && !content.ringkasan_kemampuan_awal)) {
+    if (!content || typeof content !== "object" || (!content.ringkasan && !content.status_perkembangan && !content.kesimpulan_umum_perkembangan && !content.kekuatan_anak && !content.status_perkembangan_sd && !content.status_perkembangan_smp && !content.status_kesiapan_sma && !content.ringkasan_kemampuan_awal)) {
       const { data: dbAns } = await supabaseAdmin.from("assessment_answers").select("score, question_id").eq("assessment_id", assessmentId);
       const scores = (dbAns || []).map((a: any) => Number(a.score ?? 3));
       const calcAvg = scores.length > 0 ? scores.reduce((sum: number, s: number) => sum + s, 0) / scores.length : 3.0;
       content = generateFallbackResult(childName, parentName, calcAvg, level, dbAns || [], []);
     }
     if (!content.ringkasan) {
-      content.ringkasan = content.penjelasan_status || "Perkembangan dan kesiapan anak berkembang positif.";
+      content.ringkasan = content.kesimpulan_umum_perkembangan || content.penjelasan_status || "Perkembangan dan kesiapan anak berkembang positif.";
     }
 
     content = {
