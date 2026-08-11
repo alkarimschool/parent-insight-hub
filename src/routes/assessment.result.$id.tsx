@@ -162,6 +162,12 @@ function ResultPage() {
   console.log("[STAGE: VIEW_RENDER]", "Education Level View:", level);
   const content = getAssessmentContent(level);
 
+  const cleanChildName = (childName || "").replace(/^ananda\s+/i, "").trim() || "Anak";
+  const childClass = (data as any)?.child_class || (data as any)?.class_name || (data as any)?.children?.[0]?.class_name || "TK B";
+  const formattedDate = data?.created_at
+    ? new Date(data.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+    : new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+
   // Synchronize dynamic metadata (title, description, Open Graph, Twitter metadata)
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -291,6 +297,30 @@ function ResultPage() {
               </div>
             </div>
           </div>
+        ) : level === "TK" ? (
+          <div className="mb-8 text-center print:hidden">
+            <div className="mx-auto inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+              🌱 PAUD / TK
+            </div>
+            <h1 className="mt-3 text-2xl font-black uppercase tracking-wider text-foreground sm:text-3xl">
+              LAPORAN PEMETAAN AWAL TUMBUH KEMBANG ANAK
+            </h1>
+            <h2 className="mt-1 text-xl font-bold text-emerald-700 dark:text-emerald-400 sm:text-2xl">
+              Ananda {cleanChildName}
+            </h2>
+            <p className="mt-2 text-xs font-medium text-muted-foreground sm:text-sm">
+              Hasil pemetaan perkembangan anak berdasarkan observasi orang tua
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center items-center gap-x-3 gap-y-1 text-xs font-semibold text-muted-foreground">
+              <span>Nama Anak: <strong className="text-foreground">{cleanChildName}</strong></span>
+              <span>•</span>
+              <span>Kelas: <strong className="text-foreground">{childClass}</strong></span>
+              <span>•</span>
+              <span>Jenjang: <strong className="text-foreground">TK/PAUD</strong></span>
+              <span>•</span>
+              <span>Tanggal: <strong className="text-foreground">{formattedDate}</strong></span>
+            </div>
+          </div>
         ) : (
           <div className="mb-8 text-center print:mb-6">
             <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-bold text-primary print:bg-transparent print:p-0 print:text-black">
@@ -329,22 +359,25 @@ function ResultPage() {
             {/* Header Khusus Cetak / PDF */}
             <div className="hidden print:block print:mb-6 print:border-b-2 print:border-emerald-700 print:pb-4">
               <div className="text-center">
-                <h1 className="text-xl font-extrabold uppercase tracking-wide text-black">
-                  PEMETAAN AWAL TUMBUH KEMBANG ANAK
+                <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-800">
+                  SEKOLAH ALAM AL-KARIM
+                </div>
+                <h1 className="mt-1 text-lg font-black uppercase tracking-wider text-black">
+                  LAPORAN PEMETAAN AWAL TUMBUH KEMBANG ANAK
                 </h1>
-                <p className="text-xs font-semibold text-gray-700">Sekolah Alam Al-Karim (PAUD / TK)</p>
+                <h2 className="mt-0.5 text-base font-bold text-black">
+                  Ananda {cleanChildName}
+                </h2>
+                <p className="mt-1 text-[11px] font-medium text-gray-700">
+                  Hasil pemetaan perkembangan anak berdasarkan observasi orang tua
+                </p>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs text-black border-t border-gray-300 pt-3">
-                <div><span>Nama Anak:</span> <strong>{childName}</strong></div>
-                <div><span>Jenjang:</span> <strong>TK / PAUD</strong></div>
-                <div><span>Kelas:</span> <strong>{(data as any)?.child_class || "TK"}</strong></div>
-                <div>
-                  <span>Tanggal:</span>{" "}
-                  <strong>
-                    {data?.created_at ? new Date(data.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"}
-                  </strong>
-                </div>
+              <div className="mt-3.5 flex flex-wrap justify-between items-center text-xs text-black border-t border-gray-300 pt-2.5">
+                <div>Nama Anak: <strong>{cleanChildName}</strong></div>
+                <div>Kelas: <strong>{childClass}</strong></div>
+                <div>Jenjang: <strong>TK/PAUD</strong></div>
+                <div>Tanggal: <strong>{formattedDate}</strong></div>
               </div>
             </div>
 

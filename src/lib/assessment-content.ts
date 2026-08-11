@@ -38,17 +38,17 @@ export interface AssessmentContent extends AssessmentLevelConfig {
 
 export const ASSESSMENT_CONTENT_MAP: Record<EducationLevel, AssessmentLevelConfig> = {
   TK: {
-    badge: "Pemetaan Awal Tumbuh Kembang Anak TK",
-    title: "Pemetaan Awal Tumbuh Kembang Anak TK",
-    description: "Gambaran awal tumbuh kembang anak usia dini berdasarkan observasi orang tua sebagai panduan stimulasi di rumah.",
+    badge: "🌱 PAUD / TK",
+    title: "LAPORAN PEMETAAN AWAL TUMBUH KEMBANG ANAK",
+    description: "Hasil pemetaan perkembangan anak berdasarkan observasi orang tua",
     summaryTitle: "1. Kesimpulan Umum Perkembangan",
-    introText: "Gambaran awal tumbuh kembang anak usia dini berdasarkan observasi orang tua sebagai panduan stimulasi di rumah.",
-    reportTitle: "Pemetaan Awal Tumbuh Kembang Anak TK",
-    metadataTitle: "Pemetaan Awal Tumbuh Kembang Anak TK",
-    metadataDescription: "Gambaran awal tumbuh kembang anak usia dini berdasarkan observasi orang tua sebagai panduan stimulasi di rumah.",
+    introText: "Hasil pemetaan perkembangan anak berdasarkan observasi orang tua",
+    reportTitle: "LAPORAN PEMETAAN AWAL TUMBUH KEMBANG ANAK",
+    metadataTitle: "LAPORAN PEMETAAN AWAL TUMBUH KEMBANG ANAK",
+    metadataDescription: "Hasil pemetaan perkembangan anak berdasarkan observasi orang tua",
     fullName: "Pendidikan Anak Usia Dini (TK / PAUD)",
     shortName: "TK",
-    icon: "\u{1F476}",
+    icon: "🌱",
     sections: {
       s1: "1. Kesimpulan Umum Perkembangan",
       s2: "2. Area yang Perlu Diperhatikan",

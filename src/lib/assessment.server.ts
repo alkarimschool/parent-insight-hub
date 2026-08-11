@@ -731,7 +731,7 @@ export function generateFallbackResult(childName: string, parentName: string, av
   ];
 
   return {
-    judul: "Pemetaan Awal Tumbuh Kembang Anak TK",
+    judul: "LAPORAN PEMETAAN AWAL TUMBUH KEMBANG ANAK",
     status_perkembangan: status_tk,
     kesimpulan_umum_perkembangan: penjelasan_status,
     area_yang_perlu_diperhatikan: attentionPool.slice(0, 3),
