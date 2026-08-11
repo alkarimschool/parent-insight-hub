@@ -26,6 +26,16 @@ const patterns: Array<{ name: string; scores: number[] }> = [
 ];
 
 async function main() {
+  const { supabaseAdmin } = await import("../integrations/supabase/client.server");
+  const { data: prevLock } = await supabaseAdmin.from("assessment_locks").select("is_locked").eq("education_level", "TK").maybeSingle();
+  await supabaseAdmin.from("assessment_locks").update({ is_locked: false }).eq("education_level", "TK");
+  console.log("[TEST] TK sementara dibuka untuk pengujian (status awal locked =", prevLock?.is_locked, ")");
+  process.on("exit", () => {});
+  const restore = async () => {
+    await supabaseAdmin.from("assessment_locks").update({ is_locked: prevLock?.is_locked ?? true }).eq("education_level", "TK");
+    console.log("[TEST] Status kunci TK dikembalikan ke:", prevLock?.is_locked ?? true);
+  };
+  try {
   const qs = LEVEL_QUESTIONS.TK;
   const summaries: string[] = [];
   for (const p of patterns) {
@@ -51,5 +61,8 @@ async function main() {
   }
   const sim = textSimilarity(summaries[0], summaries[1]);
   console.log(`\nKemiripan narasi 2 anak dengan skor identik (A vs B): ${sim.toFixed(1)}%`);
+  } finally {
+    await restore();
+  }
 }
 main().catch((e) => { console.error(e); process.exit(1); });
