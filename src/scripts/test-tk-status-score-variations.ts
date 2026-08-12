@@ -51,7 +51,7 @@ async function runSpecificVariationTests() {
   const statusResults = await Promise.all(statusSubmissions.map(s => getAssessmentResultServer(s.assessment_id, true)));
   const statusReports = statusResults.map((fullRes, idx) => ({
     name: statusPayloads[idx].studentName,
-    fullText: JSON.stringify(fullRes.content)
+    fullText: JSON.stringify(fullRes!.content)
   }));
 
   let maxJaccardStatus = 0;
@@ -103,7 +103,7 @@ async function runSpecificVariationTests() {
   const scoreResults = await Promise.all(scoreSubmissions.map(s => getAssessmentResultServer(s.assessment_id, true)));
   const scoreReports = scoreResults.map((fullRes, idx) => ({
     name: scorePayloads[idx].studentName,
-    fullText: JSON.stringify(fullRes.content)
+    fullText: JSON.stringify(fullRes!.content)
   }));
 
   let maxJaccardScore = 0;

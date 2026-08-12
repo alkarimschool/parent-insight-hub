@@ -53,9 +53,9 @@ async function testTkFormKelasE2E() {
 
   console.log("\n📌 [STEP 3] Fetching report result via getAssessmentResultServer...");
   const reportRes = await getAssessmentResultServer(assessmentId, true);
-  console.log("Report Child Name:", reportRes.child_name);
+  console.log("Report Child Name:", reportRes!.child_name);
   console.log("Report Child Class:", (reportRes as any).child_class || (reportRes as any).class_name);
-  console.log("Report Created At:", reportRes.created_at);
+  console.log("Report Created At:", reportRes!.created_at);
 
   const reportClass = (reportRes as any).child_class || (reportRes as any).class_name;
   if (reportClass !== "TK B Pangeran Anatsari") {

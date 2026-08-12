@@ -39,7 +39,7 @@ async function generateComparisonData() {
     });
 
     const fullRes = await getAssessmentResultServer(res.assessment_id, true);
-    results.push({ name: arch.name, class: arch.class, content: fullRes.content });
+    results.push({ name: arch.name, class: arch.class, content: fullRes!.content });
   }
 
   console.log(JSON.stringify(results, null, 2));
