@@ -29,7 +29,7 @@ async function generate75Table() {
 
   children.forEach((c, idx) => {
     const ass = c.assessments?.[0];
-    const content = (ass?.ai_results?.[0]?.content as any) || {};
+    const content = ((ass?.ai_results as any)?.[0]?.content ?? (ass?.ai_results as any)?.content as any) || {};
     
     const status = content.status_perkembangan || "Berkembang Sesuai Harapan";
     const areas = content.area_yang_perlu_diperhatikan || [];

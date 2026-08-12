@@ -25,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
 import { getAssessmentResultFn } from "@/lib/assessment.functions";
-import { getAssessmentContent } from "@/lib/assessment-content";
+import { getAssessmentContent, TK_PARENT_NOTE } from "@/lib/assessment-content";
 import { getEducationLevel } from "@/lib/questions.data";
 
 export const Route = createFileRoute("/assessment/result/$id")({
@@ -556,9 +556,7 @@ function ResultPage() {
                     6. Catatan untuk Orang Tua
                   </h3>
                   <p className="text-sm leading-relaxed text-foreground print:text-black print:text-xs">
-                    {Array.isArray(c.catatan_untuk_orang_tua || c.catatan)
-                      ? (c.catatan_untuk_orang_tua || c.catatan).join(" ")
-                      : (c.catatan_untuk_orang_tua || c.catatan || `Apresiation setinggi-tingginya kepada Ibu/Bapak ${parentName} yang senantiasa mendampingi tumbuh kembang Ananda ${childName} dengan hangat. Setiap anak berkembang dengan kecepatannya sendiri.`)}
+                    {TK_PARENT_NOTE}
                   </p>
                 </div>
 
