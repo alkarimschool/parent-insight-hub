@@ -1,5 +1,5 @@
-import { getAssessmentResultServer } from "../dev-server/src/lib/assessment.server";
-import { supabaseAdmin } from "../dev-server/src/integrations/supabase/client.server";
+import { getAssessmentResultServer } from "../lib/assessment.server";
+import { supabaseAdmin } from "../integrations/supabase/client.server";
 async function main(){
   const { data: tk } = await supabaseAdmin.from("assessments").select("id").eq("education_level","TK").order("created_at",{ascending:false}).limit(2);
   for (const a of tk||[]) {
