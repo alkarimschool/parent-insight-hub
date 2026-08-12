@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { callLovableAiJson } from "./ai.server";
 import { EducationLevel, LEVEL_QUESTIONS, getEducationLevel } from "./questions.data";
-import { getAssessmentContent } from "./assessment-content";
+import { getAssessmentContent, TK_PARENT_NOTE } from "./assessment-content";
 import { DEFAULT_PROMPTS } from "./prompt.data";
 import { buildVariationDirective, buildTkVariationDirective, buildTkChildProfile, getTkStatusByScore, FIELD_VARIATION_TEMPLATES } from "./narrative-variation";
 
