@@ -463,7 +463,7 @@ function ResultPage() {
                     {rawStatus}
                   </h2>
                   <p className="mt-2 text-xs leading-relaxed opacity-90 print:text-gray-800">
-                    * Catatan: Hasil ini merupakan pemetaan awal berdasarkan observasi orang tua di rumah, BUKAN diagnosis medis maupun psikologis.
+                    * Catatan: {TK_PARENT_NOTE}
                   </p>
                 </div>
 
