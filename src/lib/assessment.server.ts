@@ -1161,6 +1161,10 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
         console.warn(`[BACKGROUND_AI_WARN] Percobaan ${attempt}: respons AI kosong / bukan JSON, mencoba ulang...`);
       } catch (aiErr: any) {
         console.warn(`[BACKGROUND_AI_WARN] Percobaan ${attempt} gagal:`, aiErr?.message);
+        if (aiErr?.message?.includes("Invalid API key") || aiErr?.message?.includes("unauthorized") || aiErr?.message?.includes("401")) {
+          console.log("[BACKGROUND_AI_FAST_FALLBACK] API key tidak valid / 401, beralih langsung ke fallback engine...");
+          break;
+        }
       }
       if (attempt < 3) await new Promise((r) => setTimeout(r, 800 * attempt));
     }
@@ -1545,10 +1549,12 @@ export async function getAssessmentResultServer(assessmentId: string, clientAdmi
         .replace(/anak usia dini/gi, `peserta didik ${assessmentContent.shortName}`);
     }
 
-    // Catatan tetap khusus TK / PAUD — identik untuk seluruh pengisi (web & PDF)
-    if (level === "TK") {
-      content.catatan_untuk_orang_tua = TK_PARENT_NOTE;
-      content.catatan = TK_PARENT_NOTE;
+    // Catatan tetap khusus TK / PAUD — diselipkan sebagai disclaimer_catatan
+    if (level === "TK" && content) {
+      if (!content.catatan_untuk_orang_tua) {
+        content.catatan_untuk_orang_tua = TK_PARENT_NOTE;
+      }
+      content.disclaimer_catatan = TK_PARENT_NOTE;
     }
 
     console.log("[STAGE 10: RESULT_PAGE_RENDERED]", "Successfully fetched result payload for assessment ID:", assessmentId);
