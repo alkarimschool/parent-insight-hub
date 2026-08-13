@@ -140,20 +140,39 @@ function TkBulletList({
     );
   }
 
+  const cleanItemText = (text: string) => {
+    if (!text || typeof text !== "string") return text;
+    let s = text.trim();
+    if (s.startsWith("✓")) return s;
+    s = s.replace(/^[⚠️✓]\s*/, "");
+    s = s.replace(/^(?:\[[^\]]+\]|aspek\s+[^:]+|(?:motorik\s+halus|motorik\s+kasar|motorik|bahasa\s*(?:&|dan)\s*komunikasi|bahasa|kognitif\s*(?:&|dan)?\s*(?:cara\s+berpikir)?|sosial\s*-\s*emosional|sosial|kemandirian\s*(?:&|dan)?\s*(?:kesiapan\s+belajar)?|[A-Za-z\s&-]+))\s*:\s*/i, "");
+    s = s.replace(/^(?:pada|dalam)\s+aspek\s+[a-z\s&-]+,\s*/i, "");
+    if (/^area\s+/i.test(s)) {
+      s = s.replace(/^area\s+/i, "Kemampuan ");
+    }
+    if (!/^(anak|kemampuan|perlu|pada|bimbingan|pendampingan)/i.test(s)) {
+      s = "Anak masih membutuhkan pendampingan dalam " + s.charAt(0).toLowerCase() + s.slice(1);
+    }
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  };
+
   return (
     <ul className="space-y-2.5">
-      {list.map((it, i) => (
-        <li key={i} className="flex items-start gap-2.5 text-sm leading-relaxed text-foreground print:text-black print:text-xs">
-          {variant === "warning" ? (
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 print:text-amber-700" />
-          ) : variant === "check" ? (
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400 print:text-emerald-700" />
-          ) : (
-            <span className="mt-0.5 shrink-0 font-bold text-primary print:text-emerald-700">•</span>
-          )}
-          <span>{it}</span>
-        </li>
-      ))}
+      {list.map((it, i) => {
+        const textToDisplay = variant === "warning" ? cleanItemText(it) : it.replace(/^[⚠️✓]\s*/, "");
+        return (
+          <li key={i} className="flex items-start gap-2.5 text-sm leading-relaxed text-foreground print:text-black print:text-xs">
+            {variant === "warning" ? (
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 print:text-amber-700" />
+            ) : variant === "check" ? (
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400 print:text-emerald-700" />
+            ) : (
+              <span className="mt-0.5 shrink-0 font-bold text-primary print:text-emerald-700">•</span>
+            )}
+            <span>{textToDisplay}</span>
+          </li>
+        );
+      })}
     </ul>
   );
 }

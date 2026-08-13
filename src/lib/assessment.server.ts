@@ -243,14 +243,59 @@ export function sanitizeNarrativeText(text: string): string {
   return cleanedParts.filter(Boolean).join(" ");
 }
 
-export function sanitizeReportPayload(obj: any): any {
+export function cleanTkAttentionItem(text: string): string {
+  if (!text || typeof text !== "string") return text;
+  let s = text.trim();
+
+  if (s.startsWith("✓")) {
+    return sanitizeNarrativeText(s);
+  }
+
+  const hasWarningEmoji = s.startsWith("⚠️");
+  if (hasWarningEmoji) {
+    s = s.replace(/^⚠️\s*/, "");
+  }
+
+  // Hapus prefix kategori seperti "Motorik Halus: ", "[Motorik Halus] ", "Aspek Motorik Halus: ", dsb.
+  s = s.replace(/^(?:\[[^\]]+\]|aspek\s+[^:]+|(?:motorik\s+halus|motorik\s+kasar|motorik|bahasa\s*(?:&|dan)\s*komunikasi|bahasa|kognitif\s*(?:&|dan)?\s*(?:cara\s+berpikir)?|sosial\s*-\s*emosional|sosial|kemandirian\s*(?:&|dan)?\s*(?:kesiapan\s+belajar)?|[A-Za-z\s&-]+))\s*:\s*/i, "");
+
+  // Hapus "Pada aspek...", "Dalam aspek..." di awal kalimat jika ada
+  s = s.replace(/^(?:pada|dalam)\s+aspek\s+[a-z\s&-]+,\s*/i, "");
+
+  // Hapus "Area ..." di awal jika ada ("Area menggunakan pensil..." -> "Kemampuan menggunakan pensil...")
+  if (/^area\s+/i.test(s)) {
+    s = s.replace(/^area\s+/i, "Kemampuan ");
+  }
+
+  // Jika belum diawali dengan frasa kondisi anak ("Anak...", "Kemampuan...", "Perlu...", "Pada..."), tambahkan frasa kondisi anak
+  if (!/^(anak|kemampuan|perlu|pada|bimbingan|pendampingan)/i.test(s)) {
+    s = "Anak masih membutuhkan pendampingan dalam " + s.charAt(0).toLowerCase() + s.slice(1);
+  }
+
+  s = sanitizeNarrativeText(s);
+
+  if (!s.startsWith("⚠️") && !s.startsWith("✓")) {
+    s = "⚠️ " + s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  return s;
+}
+
+export function sanitizeReportPayload(obj: any, parentKey?: string): any {
   if (obj === null || obj === undefined) return obj;
-  if (typeof obj === "string") return sanitizeNarrativeText(obj);
-  if (Array.isArray(obj)) return obj.map((item) => sanitizeReportPayload(item));
+  if (typeof obj === "string") {
+    if (parentKey === "area_yang_perlu_diperhatikan") {
+      return cleanTkAttentionItem(obj);
+    }
+    return sanitizeNarrativeText(obj);
+  }
+  if (Array.isArray(obj)) {
+    return obj.map((item) => sanitizeReportPayload(item, parentKey));
+  }
   if (typeof obj === "object") {
     const cleanedObj: any = {};
     for (const key of Object.keys(obj)) {
-      cleanedObj[key] = sanitizeReportPayload(obj[key]);
+      cleanedObj[key] = sanitizeReportPayload(obj[key], key);
     }
     return cleanedObj;
   }
@@ -626,34 +671,34 @@ export function generateFallbackResult(childName: string, parentName: string, av
     const itemSeed = Math.abs(Math.imul(childHash, 2654435761) + idx * 7919) >>> 0;
     if (items.length === 1) {
       const singleTemplates = [
-        `⚠️ ${cat}: Anak membutuhkan pendampingan lebih lanjut dalam ${items[0]}.`,
-        `⚠️ ${cat}: Kemampuan ${items[0]} masih perlu dikuatkan melalui latihan rutin di rumah.`,
-        `⚠️ ${cat}: Fokus stimulasi dapat diarahkan pada kemampuan ${items[0]} secara bertahap.`,
-        `⚠️ ${cat}: Perlu perhatian dan bimbingan sabar dari orang tua untuk aspek ${items[0]}.`,
-        `⚠️ ${cat}: Aspek ini memerlukan latihan teratur terutama saat ${items[0]}.`,
-        `⚠️ ${cat}: Stimulasi harian disarankan untuk membangun kematangan dalam ${items[0]}.`,
-        `⚠️ ${cat}: Pendampingan terarah di rumah akan sangat menunjang kemampuan ${items[0]}.`,
-        `⚠️ ${cat}: Area ${items[0]} disarankan menjadi fokus perhatian keluarga secara konsisten.`
+        `⚠️ Anak masih membutuhkan pendampingan dalam ${items[0]}.`,
+        `⚠️ Kemampuan ${items[0]} masih perlu dikuatkan melalui pendampingan bertahap.`,
+        `⚠️ Anak masih perlu dibantu dalam ${items[0]}.`,
+        `⚠️ Perlu perhatian dan bimbingan sabar dari keluarga saat anak ${items[0]}.`,
+        `⚠️ Pada beberapa situasi, anak masih memerlukan bimbingan saat ${items[0]}.`,
+        `⚠️ Kemampuan ${items[0]} sedang berkembang dan perlu didampingi secara bertahap.`,
+        `⚠️ Pendampingan terarah akan sangat menunjang kematangan anak dalam ${items[0]}.`,
+        `⚠️ Kemampuan ${items[0]} masih memerlukan perhatian dan pembiasaan yang konsisten.`
       ];
       itemAreas.push(singleTemplates[itemSeed % singleTemplates.length]);
     } else {
       const joined = items.slice(0, 2).join(" serta ");
       const multiTemplates = [
-        `⚠️ ${cat}: Kemampuan ${joined} masih dalam tahap berkembang dan memerlukan stimulasi yang lebih teratur di rumah.`,
-        `⚠️ ${cat}: Anak membutuhkan bimbingan bertahap saat ${joined} agar perkembangannya lebih optimal.`,
-        `⚠️ ${cat}: Area ${joined} menjadi fokus pendampingan yang dapat ditingkatkan melalui aktivitas bermain edukatif.`,
-        `⚠️ ${cat}: Orang tua disarankan memberikan lebih banyak ruang latihan untuk ${joined} secara konsisten.`,
-        `⚠️ ${cat}: Kemampuan ${joined} masih memerlukan penguatan dengan pendekatan yang sabar dan menyenangkan.`,
-        `⚠️ ${cat}: Diperlukan stimulasi terarah di rumah agar aspek ${joined} dapat berkembang dengan matang.`,
-        `⚠️ ${cat}: Pembiasaan positif di lingkungan keluarga disarankan untuk mengasah kemampuan ${joined}.`,
-        `⚠️ ${cat}: Perhatian berkelanjutan pada ${joined} akan membantu kematangan aspek ini secara bertahap.`
+        `⚠️ Kemampuan ${joined} masih dalam tahap berkembang dan membutuhkan pendampingan yang sabar.`,
+        `⚠️ Anak masih membutuhkan bimbingan bertahap saat ${joined} agar kemampuannya lebih matang.`,
+        `⚠️ Anak masih perlu dibantu dalam ${joined} melalui pengalaman bermain sehari-hari.`,
+        `⚠️ Perlu perhatian dan bimbingan konsisten dari keluarga saat anak ${joined}.`,
+        `⚠️ Kemampuan ${joined} masih memerlukan penguatan dengan pendekatan yang ramah dan menyenangkan.`,
+        `⚠️ Kemampuan ${joined} sedang berkembang dan perlu didampingi secara bertahap.`,
+        `⚠️ Pada beberapa kesempatan, anak masih membutuhkan bimbingan untuk ${joined}.`,
+        `⚠️ Perhatian berkelanjutan pada ${joined} akan membantu kematangan anak secara bertahap.`
       ];
       itemAreas.push(multiTemplates[itemSeed % multiTemplates.length]);
     }
   });
 
   if (itemAreas.length === 0) {
-    itemAreas.push("✓ Berdasarkan pengamatan orang tua, belum ditemukan area yang memerlukan perhatian khusus. Pertahankan rutinitas stimulasi yang sudah berjalan dengan baik.");
+    itemAreas.push("✓ Berdasarkan pengamatan orang tua, belum ditemukan kemampuan yang memerlukan perhatian khusus. Perkembangan anak secara umum terlihat baik dan konsisten.");
   }
 
   // ======================================================
