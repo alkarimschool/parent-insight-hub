@@ -589,39 +589,7 @@ export function generateFallbackResult(childName: string, parentName: string, av
     itemStrengths.push(`✓ Eksplorasi & Semangat Belajar: Anak menunjukkan keterbukaan dan antusiasme dalam mencoba berbagai kegiatan pra-sekolah bersama orang tua.`);
   }
 
-  // ======================================================
-  // STEP 5: Sintesis Rekomendasi Terintegrasi (MAKS 3 POIN)
-  // Diturunkan langsung dari area perhatian — bukan generik
-  // ======================================================
-  const itemRecommendations: string[] = [];
-  const usedRecCats = new Set<string>();
 
-  topAttentionCats.slice(0, 3).forEach(([cat]) => {
-    if (usedRecCats.has(cat)) return;
-    usedRecCats.add(cat);
-    const c = cat.toLowerCase();
-
-    if (c.includes("bahasa") || c.includes("bicara") || c.includes("komunikasi") || c.includes("bercerita")) {
-      const specificItems = attentionCatMap[cat]?.slice(0, 1)[0] || "kosakata dan ekspresi verbal";
-      itemRecommendations.push(`💡 Stimulasi Bahasa: Luangkan 10–15 menit setiap hari untuk sesi bercerita interaktif — minta anak menceritakan kembali cerita favoritnya. Ini langsung melatih ${specificItems}.`);
-    } else if (c.includes("sosial") || c.includes("emosi") || c.includes("bergaul") || c.includes("interaksi")) {
-      const specificItems = attentionCatMap[cat]?.slice(0, 1)[0] || "regulasi emosi dan interaksi sosial";
-      itemRecommendations.push(`💡 Penguatan Sosial-Emosi: Gunakan momen bermain bersama untuk melatih ${specificItems}. Terapkan aturan bergiliran dengan sabar dan konsisten, dan beri apresiasi saat anak berhasil.`);
-    } else if (c.includes("motorik") || c.includes("fisik") || c.includes("gerak") || c.includes("koordinasi")) {
-      const specificItems = attentionCatMap[cat]?.slice(0, 1)[0] || "koordinasi tangan dan ketelitian gerak";
-      itemRecommendations.push(`💡 Stimulasi Motorik: Sediakan aktivitas meronce, mewarnai dengan crayon besar, atau menyusun puzzle sederhana untuk melatih ${specificItems} secara menyenangkan.`);
-    } else if (c.includes("kognitif") || c.includes("pikir") || c.includes("angka") || c.includes("huruf") || c.includes("fokus")) {
-      const specificItems = attentionCatMap[cat]?.slice(0, 1)[0] || "kemampuan fokus dan pengenalan konsep dasar";
-      itemRecommendations.push(`💡 Stimulasi Kognitif: Ajak anak bermain mengelompokkan benda berdasarkan warna atau bentuk, dan kenalkan ${specificItems} melalui permainan visual yang menarik.`);
-    } else {
-      const specificItems = attentionCatMap[cat]?.slice(0, 1)[0] || "pembiasaan rutinitas harian";
-      itemRecommendations.push(`💡 Pembiasaan ${cat}: Buat jadwal harian visual yang sederhana dan konsisten, dengan fokus pada ${specificItems}. Berikan apresiasi atas setiap usaha anak.`);
-    }
-  });
-
-  if (itemRecommendations.length === 0) {
-    itemRecommendations.push(`💡 Pengayaan Eksplorasi: Pertahankan aktivitas bermain edukatif yang variatif dan menyenangkan. Tantang anak dengan permainan baru setiap minggu untuk terus merangsang rasa ingin tahunya.`);
-  }
 
   // ======================================================
   // STEP 6: Sintesis Kesimpulan Umum
@@ -1161,6 +1129,20 @@ export async function runBackgroundAiAnalysis(assessmentId: string, data: Submit
 
     if (dbEducationLevel === "TK" && parsedResult) {
       parsedResult.status_perkembangan = getTkStatusByScore(avgScoreCalc);
+      delete parsedResult.rekomendasi_stimulasi_di_rumah;
+      delete parsedResult.rekomendasi_stimulasi_untuk_orang_tua;
+      delete parsedResult.rekomendasi_orangtua;
+      delete parsedResult.rekomendasi;
+      delete parsedResult.rekomendasi_treatment_rumah;
+      delete parsedResult.rekomendasi_pendampingan_remaja;
+      delete parsedResult.rekomendasi_untuk_orang_tua;
+      delete parsedResult.rekomendasi_treatment;
+      delete parsedResult.rekomendasi_stimulasi;
+      delete parsedResult.stimulasi_di_rumah;
+      delete parsedResult.saran_kegiatan;
+      delete parsedResult.anjuran_latihan;
+      delete parsedResult.home_stimulation;
+      delete parsedResult.recommendations;
     }
 
     parsedResult = {
@@ -1477,6 +1459,23 @@ export async function getAssessmentResultServer(assessmentId: string, clientAdmi
       fullName: assessmentContent.fullName,
       sections: assessmentContent.sections,
     };
+
+    if (level === "TK" && content) {
+      delete content.rekomendasi_stimulasi_di_rumah;
+      delete content.rekomendasi_stimulasi_untuk_orang_tua;
+      delete content.rekomendasi_orangtua;
+      delete content.rekomendasi;
+      delete content.rekomendasi_treatment_rumah;
+      delete content.rekomendasi_pendampingan_remaja;
+      delete content.rekomendasi_untuk_orang_tua;
+      delete content.rekomendasi_treatment;
+      delete content.rekomendasi_stimulasi;
+      delete content.stimulasi_di_rumah;
+      delete content.saran_kegiatan;
+      delete content.anjuran_latihan;
+      delete content.home_stimulation;
+      delete content.recommendations;
+    }
 
     if (level !== "TK" && content.ringkasan) {
       content.ringkasan = content.ringkasan

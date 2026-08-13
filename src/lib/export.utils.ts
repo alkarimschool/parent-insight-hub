@@ -317,10 +317,12 @@ export function exportToPdf(data: ExportAssessmentRow[], filename = "export_lapo
               <div class="field-content">${formatListHtml(ai.potensi_dan_kelebihan)}</div>
             </div>
 
+            ${row.education_level !== "TK" ? `
             <div class="field-box">
               <div class="field-label">10. Rekomendasi untuk Orang Tua</div>
               <div class="field-content">${formatListHtml(ai.rekomendasi_untuk_orang_tua)}</div>
             </div>
+            ` : ""}
 
             <div class="footer">Parent Awareness Assessment — QA Audit Report (${index + 1} / ${data.length})</div>
           </div>

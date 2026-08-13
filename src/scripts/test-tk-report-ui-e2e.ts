@@ -34,8 +34,7 @@ async function testTkReportUiE2E() {
   console.log("   - 🏃 Motorik:", g.motorik || content.motorik || "Available");
   console.log("   - 🧠 Kognitif & Cara Berpikir:", g.kognitif_dan_cara_berpikir || content.kognitif_dan_cara_berpikir || "Available");
   console.log("4. Potensi & Kelebihan:", content.potensi_dan_kelebihan || content.potensi_dan_kelebihan_anak || content.kekuatan_anak);
-  console.log("5. Rekomendasi Stimulasi di Rumah:", content.rekomendasi_stimulasi_di_rumah || content.rekomendasi_stimulasi_untuk_orang_tua || content.rekomendasi_orangtua);
-  console.log("6. Catatan untuk Orang Tua:", typeof content.catatan_untuk_orang_tua === "string" ? content.catatan_untuk_orang_tua.substring(0, 100) + "..." : content.catatan_untuk_orang_tua);
+  console.log("5. Catatan untuk Orang Tua:", typeof content.catatan_untuk_orang_tua === "string" ? content.catatan_untuk_orang_tua.substring(0, 100) + "..." : content.catatan_untuk_orang_tua);
 
   console.log("\n📌 [STEP 2] Verifying Zero Score Rule on TK Content Payload...");
   const rawContentStr = JSON.stringify(content);
