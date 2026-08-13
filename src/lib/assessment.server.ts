@@ -677,8 +677,6 @@ export function generateFallbackResult(childName: string, parentName: string, av
     },
     potensi_dan_kelebihan: itemStrengths,
     potensi_dan_kelebihan_anak: itemStrengths,
-    rekomendasi_stimulasi_di_rumah: itemRecommendations,
-    rekomendasi_stimulasi_untuk_orang_tua: itemRecommendations,
     catatan_untuk_orang_tua: catatanOrangTua
   };
 }

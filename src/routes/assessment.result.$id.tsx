@@ -540,20 +540,11 @@ function ResultPage() {
                   <TkBulletList items={c.potensi_dan_kelebihan || c.potensi_dan_kelebihan_anak || c.kekuatan_anak} variant="check" />
                 </div>
 
-                {/* 5. Rekomendasi Stimulasi di Rumah */}
-                <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-soft print:border-gray-300 print:shadow-none print:p-4 print-break-inside-avoid">
-                  <h3 className="flex items-center gap-2 text-lg font-bold text-foreground print:text-black mb-3">
-                    <Home className="h-5 w-5 text-primary print:hidden" />
-                    5. Rekomendasi Stimulasi di Rumah
-                  </h3>
-                  <TkBulletList items={c.rekomendasi_stimulasi_di_rumah || c.rekomendasi_stimulasi_untuk_orang_tua || c.rekomendasi_orangtua} variant="bullet" />
-                </div>
-
-                {/* 6. Catatan untuk Orang Tua */}
+                {/* 5. Catatan untuk Orang Tua */}
                 <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-soft print:border-gray-300 print:shadow-none print:p-4 print-break-inside-avoid">
                   <h3 className="flex items-center gap-2 text-lg font-bold text-foreground print:text-black mb-3">
                     <Users className="h-5 w-5 text-emerald-600 print:hidden" />
-                    6. Catatan untuk Orang Tua
+                    5. Catatan untuk Orang Tua
                   </h3>
                   <p className="text-sm leading-relaxed text-foreground print:text-black print:text-xs">
                     {Array.isArray(c.catatan_untuk_orang_tua || c.catatan)

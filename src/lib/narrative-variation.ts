@@ -897,6 +897,6 @@ ${JSON.stringify(profile, null, 2)}
    - Variasi pembuka: "${chosenOpener}..."
    - Menyebut nama anak (${childName || "Ananda"}) MAKSIMAL 1 Kali di paragraf pembuka.
 6. HINDARI FRASA TEMPLATE BERULANG ("Berdasarkan hasil asesmen", "Melalui observasi orang tua", "Rata-rata skor"). DILARANG MENAMPILKAN ANGKA SKOR APAPUN!
-7. SELF-VALIDATION ANTI-TEMPLATE: Sebelum mengirim JSON, pastikan narasi 4 aspek & rekomendasi benar-benar personal sesuai profil anak di atas. Target kemiripan narasi antar laporan <20%!
+7. SELF-VALIDATION ANTI-TEMPLATE: Sebelum mengirim JSON, pastikan narasi 4 aspek & catatan untuk orang tua benar-benar personal sesuai profil anak di atas. Target kemiripan narasi antar laporan <20%!
 `.trim();
 }
