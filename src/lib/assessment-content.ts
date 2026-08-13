@@ -1,5 +1,12 @@
 export type EducationLevel = "TK" | "SD" | "SMP" | "SMA";
 
+/**
+ * Teks Catatan tetap khusus jenjang TK / PAUD.
+ * Tidak dihasilkan AI dan sama untuk seluruh pengisi TK/PAUD (web & PDF).
+ */
+export const TK_PARENT_NOTE =
+  "Hasil pemetaan ini merupakan gambaran awal untuk membantu orang tua memahami tumbuh kembang anak. Orang tua dapat berdiskusi bersama tim Sekolah Alam Al-Karim untuk mendapatkan arahan dan pendampingan yang sesuai bagi anak. Hasil ini bukan merupakan diagnosis medis maupun psikologis.";
+
 export interface SectionTitles {
   s1: string;
   s2: string;

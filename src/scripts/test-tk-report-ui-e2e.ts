@@ -22,7 +22,7 @@ async function testTkReportUiE2E() {
 
   console.log("📌 [STEP 1] Auditing TK Assessment ID:", tkAss.id);
   const reportRes = await getAssessmentResultServer(tkAss.id, true);
-  const content = reportRes.content as any;
+  const content = reportRes!.content as any;
 
   console.log("\n--- TK REPORT SECTION AUDIT ---");
   console.log("1. Status Perkembangan:", content.status_perkembangan);
@@ -54,8 +54,8 @@ async function testTkReportUiE2E() {
   if (smaAss) {
     const smaReport = await getAssessmentResultServer(smaAss.id, true);
     console.log("SMA Assessment ID:", smaAss.id);
-    console.log("SMA Education Level:", smaReport.education_level);
-    if (smaReport.education_level !== "SMA") {
+    console.log("SMA Education Level:", smaReport!.education_level);
+    if (smaReport!.education_level !== "SMA") {
       throw new Error("❌ SCOPE ISOLATION FAILED: SMA report modified!");
     }
     console.log("✅ SCOPE ISOLATION PASSED: SMA report untouched!");

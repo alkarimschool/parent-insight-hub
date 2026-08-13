@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { callLovableAiJson } from "./ai.server";
 import { EducationLevel, LEVEL_QUESTIONS, getEducationLevel } from "./questions.data";
-import { getAssessmentContent } from "./assessment-content";
+import { getAssessmentContent, TK_PARENT_NOTE } from "./assessment-content";
 import { DEFAULT_PROMPTS } from "./prompt.data";
 import { buildVariationDirective, buildTkVariationDirective, buildTkChildProfile, getTkStatusByScore, FIELD_VARIATION_TEMPLATES } from "./narrative-variation";
 
@@ -1482,6 +1482,12 @@ export async function getAssessmentResultServer(assessmentId: string, clientAdmi
         .replace(/perkembangan anak usia dini \(TK \/ PAUD\)/gi, `karakter dan potensi akademik ${assessmentContent.fullName}`)
         .replace(/perkembangan anak usia dini/gi, `potensi dan kebiasaan belajar ${assessmentContent.fullName}`)
         .replace(/anak usia dini/gi, `peserta didik ${assessmentContent.shortName}`);
+    }
+
+    // Catatan tetap khusus TK / PAUD — identik untuk seluruh pengisi (web & PDF)
+    if (level === "TK") {
+      content.catatan_untuk_orang_tua = TK_PARENT_NOTE;
+      content.catatan = TK_PARENT_NOTE;
     }
 
     console.log("[STAGE 10: RESULT_PAGE_RENDERED]", "Successfully fetched result payload for assessment ID:", assessmentId);
