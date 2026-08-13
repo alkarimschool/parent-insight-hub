@@ -494,7 +494,7 @@ export function generateFallbackResult(childName: string, parentName: string, av
   const childHash = Math.abs(
     (displayName + parentName + JSON.stringify(answers))
       .split("")
-      .reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0)
+      .reduce((acc, char) => Math.imul(acc, 31) + char.charCodeAt(0), 0)
   );
 
   const cleanText = (t: string) => t
@@ -527,18 +527,15 @@ export function generateFallbackResult(childName: string, parentName: string, av
   const attentionCatMap: Record<string, string[]> = {};
   const strengthCatMap: Record<string, string[]> = {};
 
-  // Gunakan low answers dulu, fallback ke mid answers
-  const attentionSource = lowAnswers.length > 0 ? lowAnswers : midAnswers;
-  attentionSource.forEach(a => {
-    const cat = a.category || "Pengembangan Umum";
-    if (!attentionCatMap[cat]) attentionCatMap[cat] = [];
-    attentionCatMap[cat].push(cleanText(a.text));
-  });
-
-  highAnswers.forEach(a => {
-    const cat = a.category || "Kekuatan Utama";
-    if (!strengthCatMap[cat]) strengthCatMap[cat] = [];
-    strengthCatMap[cat].push(cleanText(a.text));
+  parsedAnswers.forEach(a => {
+    const cat = a.category || "Umum";
+    if (a.score <= 2) {
+      if (!attentionCatMap[cat]) attentionCatMap[cat] = [];
+      attentionCatMap[cat].push(cleanText(a.text));
+    } else if (a.score >= 4) {
+      if (!strengthCatMap[cat]) strengthCatMap[cat] = [];
+      strengthCatMap[cat].push(cleanText(a.text));
+    }
   });
 
   // ======================================================
@@ -547,18 +544,37 @@ export function generateFallbackResult(childName: string, parentName: string, av
   const itemAreas: string[] = [];
   const attentionCatEntries = Object.entries(attentionCatMap);
 
-  // Pilih max 3 kategori paling dominan (yang punya paling banyak indikator lemah)
   const topAttentionCats = attentionCatEntries
     .sort((a, b) => b[1].length - a[1].length)
     .slice(0, 3);
 
-  topAttentionCats.forEach(([cat, items]) => {
-    // Sintesis: gabungkan 2 indikator teratas menjadi 1 kalimat bermakna
+  topAttentionCats.forEach(([cat, items], idx) => {
+    const itemSeed = Math.abs(Math.imul(childHash, 2654435761) + idx * 7919) >>> 0;
     if (items.length === 1) {
-      itemAreas.push(`⚠️ ${cat}: Anak membutuhkan pendampingan lebih lanjut dalam ${items[0]}.`);
+      const singleTemplates = [
+        `⚠️ ${cat}: Anak membutuhkan pendampingan lebih lanjut dalam ${items[0]}.`,
+        `⚠️ ${cat}: Kemampuan ${items[0]} masih perlu dikuatkan melalui latihan rutin di rumah.`,
+        `⚠️ ${cat}: Fokus stimulasi dapat diarahkan pada kemampuan ${items[0]} secara bertahap.`,
+        `⚠️ ${cat}: Perlu perhatian dan bimbingan sabar dari orang tua untuk aspek ${items[0]}.`,
+        `⚠️ ${cat}: Aspek ini memerlukan latihan teratur terutama saat ${items[0]}.`,
+        `⚠️ ${cat}: Stimulasi harian disarankan untuk membangun kematangan dalam ${items[0]}.`,
+        `⚠️ ${cat}: Pendampingan terarah di rumah akan sangat menunjang kemampuan ${items[0]}.`,
+        `⚠️ ${cat}: Area ${items[0]} disarankan menjadi fokus perhatian keluarga secara konsisten.`
+      ];
+      itemAreas.push(singleTemplates[itemSeed % singleTemplates.length]);
     } else {
       const joined = items.slice(0, 2).join(" serta ");
-      itemAreas.push(`⚠️ ${cat}: Kemampuan ${joined} masih dalam tahap berkembang dan memerlukan stimulasi yang lebih teratur di rumah.`);
+      const multiTemplates = [
+        `⚠️ ${cat}: Kemampuan ${joined} masih dalam tahap berkembang dan memerlukan stimulasi yang lebih teratur di rumah.`,
+        `⚠️ ${cat}: Anak membutuhkan bimbingan bertahap saat ${joined} agar perkembangannya lebih optimal.`,
+        `⚠️ ${cat}: Area ${joined} menjadi fokus pendampingan yang dapat ditingkatkan melalui aktivitas bermain edukatif.`,
+        `⚠️ ${cat}: Orang tua disarankan memberikan lebih banyak ruang latihan untuk ${joined} secara konsisten.`,
+        `⚠️ ${cat}: Kemampuan ${joined} masih memerlukan penguatan dengan pendekatan yang sabar dan menyenangkan.`,
+        `⚠️ ${cat}: Diperlukan stimulasi terarah di rumah agar aspek ${joined} dapat berkembang dengan matang.`,
+        `⚠️ ${cat}: Pembiasaan positif di lingkungan keluarga disarankan untuk mengasah kemampuan ${joined}.`,
+        `⚠️ ${cat}: Perhatian berkelanjutan pada ${joined} akan membantu kematangan aspek ini secara bertahap.`
+      ];
+      itemAreas.push(multiTemplates[itemSeed % multiTemplates.length]);
     }
   });
 
@@ -576,12 +592,33 @@ export function generateFallbackResult(childName: string, parentName: string, av
     .sort((a, b) => b[1].length - a[1].length)
     .slice(0, 3);
 
-  topStrengthCats.forEach(([cat, items]) => {
+  topStrengthCats.forEach(([cat, items], idx) => {
+    const itemSeed = Math.abs(Math.imul(childHash, 1597334677) + idx * 6547) >>> 0;
     if (items.length === 1) {
-      itemStrengths.push(`✓ ${cat}: Anak menunjukkan kemampuan yang konsisten dalam ${items[0]}.`);
+      const singleTemplates = [
+        `✓ ${cat}: Anak menunjukkan kemampuan yang konsisten dalam ${items[0]}.`,
+        `✓ ${cat}: Perkembangan positif terlihat nyata pada kemampuan ${items[0]}.`,
+        `✓ ${cat}: Menjadi modal kekuatan anak yang menonjol saat ${items[0]}.`,
+        `✓ ${cat}: Kemampuan ${items[0]} sudah terbangun dengan baik dan patut diapresiasi.`,
+        `✓ ${cat}: Fondasi yang baik tercermin dari kelancaran anak dalam ${items[0]}.`,
+        `✓ ${cat}: Anak memperlihatkan keunggulan dan kenyamanan saat ${items[0]}.`,
+        `✓ ${cat}: Penguasaan pada ${items[0]} menjadi modal positif untuk perkembangan anak.`,
+        `✓ ${cat}: Inisiatif baik ditunjukkan anak ketika melakukan ${items[0]}.`
+      ];
+      itemStrengths.push(singleTemplates[itemSeed % singleTemplates.length]);
     } else {
       const joined = items.slice(0, 2).join(" dan ");
-      itemStrengths.push(`✓ ${cat}: Sudah berkembang baik pada kemampuan ${joined}, yang menjadi fondasi positif perkembangannya.`);
+      const multiTemplates = [
+        `✓ ${cat}: Sudah berkembang baik pada kemampuan ${joined}, yang menjadi fondasi positif perkembangannya.`,
+        `✓ ${cat}: Anak menunjukkan keunggulan yang konsisten saat ${joined}, menjadi modal berharga bagi tumbuh kembangnya.`,
+        `✓ ${cat}: Kekuatan nyata terlihat dari kematangan anak dalam ${joined} yang perlu terus dipupuk.`,
+        `✓ ${cat}: Aspek ini berkembang sangat positif, terutama pada kemampuan ${joined}.`,
+        `✓ ${cat}: Pengamatan orang tua mencatat pencapaian yang baik saat anak ${joined}.`,
+        `✓ ${cat}: Fondasi ${joined} sudah terbangun dengan kokoh dan mendukung rasa percaya diri anak.`,
+        `✓ ${cat}: Anak tampil percaya diri dalam ${joined}, mencerminkan stimulasi rumah yang efektif.`,
+        `✓ ${cat}: Kemampuan ${joined} menguat secara alami dan mendukung kesiapan belajarnya.`
+      ];
+      itemStrengths.push(multiTemplates[itemSeed % multiTemplates.length]);
     }
   });
 
@@ -589,32 +626,47 @@ export function generateFallbackResult(childName: string, parentName: string, av
     itemStrengths.push(`✓ Eksplorasi & Semangat Belajar: Anak menunjukkan keterbukaan dan antusiasme dalam mencoba berbagai kegiatan pra-sekolah bersama orang tua.`);
   }
 
-
-
   // ======================================================
   // STEP 6: Sintesis Kesimpulan Umum
-  // Berdasarkan pola distribusi aktual — bukan avgScore
   // ======================================================
   const dominantStrengthCat = topStrengthCats[0]?.[0] || null;
   const dominantAttentionCat = topAttentionCats[0]?.[0] || null;
   const topStrengthItem = topStrengthCats[0]?.[1]?.[0] || null;
   const topAttentionItem = topAttentionCats[0]?.[1]?.[0] || null;
 
+  const kesimpulanSeed = Math.abs(Math.imul(childHash, 2147483647) + 3715691213) >>> 0;
+
   const kesimpulanPool = [
     `Pengamatan orang tua selama ini memberikan gambaran yang sangat berharga tentang perkembangan ${displayName}. ${topStrengthItem ? `Kekuatan yang paling menonjol tampak pada kemampuan ${topStrengthItem}.` : ""} ${topAttentionItem ? `Area yang paling membutuhkan pendampingan adalah ${topAttentionItem}, yang perlu distimulasi secara teratur di rumah.` : "Secara keseluruhan, perkembangan berjalan dengan positif."} Laporan ini menjadi panduan praktis untuk mengarahkan stimulasi yang tepat sasaran.`,
     `Dari 30 indikator yang diamati orang tua, ${displayName} memperlihatkan profil perkembangan yang unik. ${dominantStrengthCat ? `Aspek ${dominantStrengthCat} menjadi fondasi kekuatan yang menonjol.` : ""} ${dominantAttentionCat ? `Sementara aspek ${dominantAttentionCat} membutuhkan perhatian dan stimulasi lebih lanjut.` : "Secara umum, perkembangan berada pada jalur yang baik."} Pendampingan yang konsisten dari orang tua akan menjadi kunci utama kemajuannya.`,
     `Hasil observasi orang tua di rumah memberikan potret perkembangan ${displayName} yang komprehensif. ${topStrengthItem ? `Kemampuan ${topStrengthItem} menjadi salah satu pencapaian yang patut diapresiasi.` : ""} ${topAttentionItem ? `Di sisi lain, ${topAttentionItem} menjadi fokus utama yang memerlukan bimbingan bertahap.` : ""} Setiap langkah stimulasi yang diberikan orang tua memiliki dampak besar bagi tumbuh kembang anak.`,
+    `Melalui 30 indikator observasi keluarga, profil tumbuh kembang ${displayName} tergambar dengan baik. ${dominantStrengthCat ? `Keunggulan pada aspek ${dominantStrengthCat} merupakan modal yang berharga.` : ""} ${dominantAttentionCat ? `Adapun aspek ${dominantAttentionCat} membutuhkan pendampingan terfokus di rumah.` : ""} Suasana belajar yang gembira akan sangat menunjang keuntungannya.`,
+    `Catatan orang tua menjadi pijakan penting untuk memahami dinamika belajar ${displayName}. ${topStrengthItem ? `Potensi positif terlihat dari kemampuan ${topStrengthItem}.` : ""} ${topAttentionItem ? `Perhatian berkelanjutan disarankan untuk menguatkan ${topAttentionItem}.` : ""} Bimbingan penuh kasih sayang akan membuka potensi terbaiknya.`,
+    `Hasil pemetaan awal menunjukkan keunikan proses tumbuh kembang ${displayName}. ${dominantStrengthCat ? `Pencapaian pada aspek ${dominantStrengthCat} patut terus dipelihara.` : ""} ${dominantAttentionCat ? `Sedangkan area ${dominantAttentionCat} dapat diperkuat melalui rutinitas harian.` : ""} Komunikasi aktif keluarga menjadi pendorong kemajuannya.`,
+    `Setiap anak tumbuh dengan keistimewaan tersendiri, sebagaimana terlihat pada ${displayName}. ${topStrengthItem ? `Kemampuan ${topStrengthItem} menjadi bukti berkembangnya potensi anak.` : ""} ${topAttentionItem ? `Stimulasi yang sabar pada ${topAttentionItem} akan memperkokoh kemampuannya.` : ""} Apresiasi keluarga adalah bahan bakar terbaiknya.`,
+    `Gambaran observasi harian memberikan panduan berharga untuk mendampingi ${displayName}. ${dominantStrengthCat ? `Kekuatan di bidang ${dominantStrengthCat} siap dikembangkan lebih jauh.` : ""} ${dominantAttentionCat ? `Tantangan pada ${dominantAttentionCat} dapat diatasi lewat pembiasaan hangat.` : ""} Nikmati setiap momen kebersamaan belajar di rumah.`,
+    `Informasi dari observasi orang tua membantu memetakan arah pendampingan terbaik untuk ${displayName}. ${topStrengthItem ? `Pencapaian pada ${topStrengthItem} mencerminkan dorongan positif keluarga.` : ""} ${topAttentionItem ? `Penguatan pada ${topAttentionItem} akan melengkapi kesiapan perkembangannya.` : ""} Lakukan stimulasi dengan penuh rasa bangga.`,
+    `Perkembangan ${displayName} memperlihatkan ritme belajar yang positif berdasarkan catatan keluarga. ${dominantStrengthCat ? `Area ${dominantStrengthCat} menjadi pilar utama yang menopang keaktifannya.` : ""} ${dominantAttentionCat ? `Sementara area ${dominantAttentionCat} siap diasah lewat aktivitas interaktif.` : ""} Dukungan rutin akan mengoptimalkan seluruh potensinya.`,
+    `Peta tumbuh kembang ${displayName} menyajikan potret yang jelas bagi bimbingan rumah. ${topStrengthItem ? `Keunggulan dalam ${topStrengthItem} layak mendapatkan apresiasi rutin.` : ""} ${topAttentionItem ? `Bimbingan pada ${topAttentionItem} dapat diselipkan dalam rutinitas sehari-hari.` : ""} Kebersamaan keluarga adalah sarana belajar terbaik.`,
+    `Setiap indikator yang diamati menjadi modal berharga dalam memahami kebutuhan ${displayName}. ${dominantStrengthCat ? `Perkembangan pesat pada ${dominantStrengthCat} merupakan prestasi yang membanggakan.` : ""} ${dominantAttentionCat ? `Pendampingan hangat pada ${dominantAttentionCat} akan mematangkan keterampilannya.` : ""} Terus dampingi anak dengan senyuman dan kasih sayang.`
   ];
-  const kesimpulanNarasi = kesimpulanPool[childHash % kesimpulanPool.length];
+  const kesimpulanNarasi = kesimpulanPool[kesimpulanSeed % kesimpulanPool.length];
 
   // ======================================================
   // STEP 7: Narasi 4 Aspek — dari buildTkChildProfile (item-driven synthesis)
   // ======================================================
-  const childProfile = buildTkChildProfile(parsedAnswers.map(a => ({
-    ...a,
-    score: a.score,
-    question_id: null
-  })), questions, childName, avgScore);
+  const profileSeed = Math.abs(Math.imul(childHash, 1103515245) + 12345) >>> 0;
+  const childProfile = buildTkChildProfile(
+    parsedAnswers.map(a => ({
+      ...a,
+      score: a.score,
+      question_id: null
+    })),
+    questions,
+    childName,
+    avgScore,
+    profileSeed
+  );
 
   const bahasaNarrative = childProfile.communication_pattern;
   const sosialNarrative = childProfile.social_emotional_pattern;
@@ -624,13 +676,22 @@ export function generateFallbackResult(childName: string, parentName: string, av
   // ======================================================
   // STEP 8: Catatan Orang Tua — Natural, 2-4 kalimat, tanpa template baku
   // ======================================================
+  const catatanSeed = Math.abs(Math.imul(childHash, 134775813) + 1013904223) >>> 0;
   const catatanPool = [
     `Setiap anak memiliki ritme perkembangannya sendiri, dan ${displayName} pun demikian. ${dominantStrengthCat ? `Fondasi di area ${dominantStrengthCat} yang sudah baik perlu terus dipupuk.` : "Terus berikan ruang eksplorasi yang aman dan menyenangkan."} Dukungan penuh keluarga adalah bahan bakar terbaik bagi tumbuh kembang anak.`,
     `Tumbuh kembang ${displayName} adalah perjalanan yang unik dan berharga. ${dominantAttentionCat ? `Dengan perhatian khusus pada area ${dominantAttentionCat}, perkembangan akan semakin optimal.` : "Pertahankan suasana belajar yang gembira di rumah."} Setiap apresiasi kecil dari orang tua memberikan dampak besar bagi kepercayaan diri anak.`,
     `Kehadiran dan pendampingan orang tua adalah hadiah terbesar bagi ${displayName}. ${topAttentionItem ? `Fokuskan stimulasi pada ${topAttentionItem} melalui aktivitas yang sesuai minat anak.` : "Teruskan rutinitas stimulasi yang sudah berjalan dengan baik."} Nikmati setiap momen tumbuh kembangnya — setiap hari adalah kesempatan baru untuk belajar bersama.`,
     `Laporan ini adalah refleksi dari kasih sayang dan perhatian keluarga terhadap ${displayName}. ${dominantStrengthCat ? `Kekuatan di aspek ${dominantStrengthCat} adalah modal berharga yang terus bisa dikembangkan.` : "Modal perkembangan yang sudah ada sangat layak untuk terus dipupuk."} Teruslah melangkah bersama anak dengan penuh keyakinan bahwa setiap usaha pasti membuahkan hasil.`,
+    `Perjalanan tumbuh kembang ${displayName} patut disyukuri dan didampingi dengan sukacita. ${dominantStrengthCat ? `Potensi di aspek ${dominantStrengthCat} menjadi pijakan kuat untuk eksplorasi baru.` : "Ciptakan momen belajar interaktif setiap hari."} Bimbingan penuh kesabaran orang tua akan menjadi pelita baginya.`,
+    `Mendampingi ${displayName} adalah proses belajar yang saling menguatkan antara anak dan orang tua. ${dominantAttentionCat ? `Beri ruang dan waktu ekstra pada aspek ${dominantAttentionCat} tanpa membebani anak.` : "Pertahankan interaksi hangat di rumah."} Senyuman dan pujian tulus adalah motivasi terbaik baginya.`,
+    `Pengalaman observasi ini mempererat pemahaman keluarga atas potensi ${displayName}. ${topStrengthItem ? `Dukung terus bakat anak saat ${topStrengthItem}.` : "Pertahankan lingkungan yang penuh dorongan positif."} Kebersamaan di rumah menjadi kunci kematangan karakternya.`,
+    `Masa kanak-kanak ${displayName} adalah fondasi berharga untuk masa depannya. ${dominantStrengthCat ? `Keunggulan pada ${dominantStrengthCat} dapat ditularkan ke area lainnya.` : "Berikan pendampingan yang konsisten dan menyenangkan."} Teruslah berjalan berdampingan dengan rasa bangga dan cinta.`,
+    `Mendampingi ${displayName} tumbuh berkembang memberikan kebahagiaan tersendiri bagi keluarga. ${topAttentionItem ? `Bantu anak saat ${topAttentionItem} melalui permainan yang riang.` : "Pertahankan lingkungan belajar yang ramah."} Setiap usaha kecil orang tua berdampak besar.`,
+    `Setiap tahap pembelajaran ${displayName} merupakan perjalanan berharga yang patut dirayakan. ${dominantStrengthCat ? `Kekuatan di area ${dominantStrengthCat} memperkokoh rasa percaya dirinya.` : "Fokus pada penguatan karakter positif."} Berikan pelukan dan dorongan hangat setiap hari.`,
+    `Keluarga adalah ruang aman terbaik tempat ${displayName} meletakkan harapan perkembangannya. ${dominantAttentionCat ? `Bimbingan ekstra untuk aspek ${dominantAttentionCat} akan mematangkan keterampilannya.` : "Suasana bahagia adalah kunci tumbuh kembangnya."} Percayalah pada potensi hebat anak.`,
+    `Kebersamaan harian bersama ${displayName} membawa banyak momen penuh arti. ${topStrengthItem ? `Terus kembangkan bakat anak dalam ${topStrengthItem}.` : "Dampingi eksplorasinya dengan penuh perhatian."} Langkah demi langkah akan membawanya pada pencapaian terbaik.`
   ];
-  const catatanOrangTua = catatanPool[childHash % catatanPool.length];
+  const catatanOrangTua = catatanPool[catatanSeed % catatanPool.length];
 
   return {
     judul: "LAPORAN PEMETAAN AWAL TUMBUH KEMBANG ANAK",

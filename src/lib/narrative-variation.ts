@@ -654,7 +654,8 @@ export function buildTkChildProfile(
   answers: any[] = [],
   questions: any[] = [],
   childName: string = "Ananda",
-  avgScore: number = 4.0
+  avgScore: number = 4.0,
+  childHashSeed?: number
 ): TkChildProfile {
   const parsed = (answers || []).map((ans, idx) => {
     let text = `Indikator ke-${idx + 1}`;
@@ -710,19 +711,6 @@ export function buildTkChildProfile(
   if (lowAns.length >= 3) behaviorPatterns.push("Membutuhkan pendampingan terstruktur dan pembiasaan berulang di rumah");
   if (midAns.length >= 5) behaviorPatterns.push("Menunjukkan kecenderungan berkembang yang membutuhkan dorongan konsistensi fokus");
 
-  // ============================================================
-  // TRUE DATA-DRIVEN SYNTHESIS ENGINE
-  // Menghasilkan narasi berdasarkan DISTRIBUSI AKTUAL jawaban Q1-Q30
-  // BUKAN berdasarkan status, skor rata-rata, atau template pool
-  // ============================================================
-
-  /**
-   * Empat pola distribusi yang menghasilkan STRUKTUR NARASI berbeda:
-   * ALL_HIGH       → elaborasi kekuatan + dorongan lanjut
-   * DOMINANT_HIGH  → kekuatan dominan + satu area penguatan spesifik
-   * DOMINANT_LOW   → area spesifik yang perlu perhatian + kekuatan tersisa
-   * ALL_LOW        → pendampingan terstruktur + stimulasi spesifik
-   */
   type DistPattern = "ALL_HIGH" | "DOMINANT_HIGH" | "DOMINANT_LOW" | "ALL_LOW" | "EMPTY";
 
   const getPattern = (highs: typeof parsed, lows: typeof parsed, mids: typeof parsed): DistPattern => {
@@ -734,17 +722,21 @@ export function buildTkChildProfile(
     if (highRatio >= 0.4 && lowRatio < 0.3) return "DOMINANT_HIGH";
     if (lowRatio >= 0.4 && highRatio < 0.3) return "DOMINANT_LOW";
     if (lowRatio >= 0.7) return "ALL_LOW";
-    return "DOMINANT_HIGH"; // campuran seimbang → gunakan DOMINANT_HIGH
+    return "DOMINANT_HIGH";
   };
 
-  /**
-   * Fungsi sintesis utama — menghasilkan paragraf yang benar-benar berbeda
-   * berdasarkan distribusi dan isi jawaban aktual, BUKAN template opener
-   */
+  const nameHash = Math.abs(
+    (childName || "Ananda")
+      .split("")
+      .reduce((acc, char) => Math.imul(acc, 31) + char.charCodeAt(0), 0)
+  );
+
+  const baseSeed = childHashSeed !== undefined ? childHashSeed : nameHash;
+
   const synthesizeAspectNarrative = (
     aspectAns: typeof parsed,
     aspectLabel: string,
-    aspectKey: number // seed unik per aspek agar tidak identik antar aspek
+    aspectKey: number
   ): string => {
     if (aspectAns.length === 0) {
       return `Untuk aspek ${aspectLabel.toLowerCase()}, data observasi dari orang tua belum mencakup indikator spesifik pada area ini. Stimulasi rutin di rumah tetap dapat mendukung perkembangan yang optimal.`;
@@ -755,29 +747,54 @@ export function buildTkChildProfile(
     const mids = aspectAns.filter(a => a.score === 3);
     const pattern = getPattern(highs, lows, mids);
 
-    // Ambil teks indikator (dibersihkan) — SUMBER UTAMA NARASI
     const highTexts = highs.map(h => clean(h.text));
     const lowTexts = lows.map(l => clean(l.text));
     const midTexts = mids.map(m => clean(m.text));
 
-    // Seed untuk variasi kalimat — berbeda per aspek
-    const seed = aspectAns.length * 7 + aspectKey + (highs.length * 3) + (lows.length * 5);
+    const aspectSeed = Math.abs(
+      Math.imul(baseSeed, 134775813) +
+      Math.imul(aspectKey, 32452843) +
+      Math.imul(aspectAns.length, 1013904223) +
+      Math.imul(highs.length, 2654435761)
+    ) >>> 0;
+
+    const connectors = [
+      "Orang tua mencatat bahwa ia secara konsisten",
+      "Pengamatan dari rumah memperlihatkan ia",
+      "Dalam aktivitas harian, anak tampak nyaman saat",
+      "Melalui observasi keluarga, anak memperlihatkan kemampuan",
+      "Catatan dari rumah menunjukkan bahwa anak terampil saat",
+      "Dalam interaksi harian, anak secara alami",
+      "Di lingkungan keluarga, ia terbiasa",
+      "Orang tua menyaksikan kemandirian anak ketika"
+    ];
+    const conn = connectors[aspectSeed % connectors.length];
 
     if (pattern === "ALL_HIGH") {
-      // Narasi: elaborasi kekuatan nyata dari jawaban orang tua
       const primary = highTexts.slice(0, 2).join(" dan ");
       const secondary = highTexts.length > 2 ? highTexts.slice(2, 4).join(" serta ") : null;
       const syntheses = [
-        `Kemampuan anak pada ${aspectLabel.toLowerCase()} sudah cukup matang. Orang tua mencatat bahwa ia secara konsisten ${primary}${secondary ? `, dan juga ${secondary}` : ""}. Fondasi yang kuat ini menjadi modal penting untuk terus dikembangkan melalui aktivitas yang lebih menantang.`,
+        `Kemampuan anak pada ${aspectLabel.toLowerCase()} sudah cukup matang. ${conn} ${primary}${secondary ? `, dan juga ${secondary}` : ""}. Fondasi yang kuat ini menjadi modal penting untuk terus dikembangkan melalui aktivitas yang lebih menantang.`,
         `Dalam aspek ${aspectLabel.toLowerCase()}, anak memperlihatkan perkembangan yang menggembirakan. Kemampuan ${primary} sudah menjadi bagian dari rutinitas hariannya${secondary ? `, ditambah kemampuan ${secondary}` : ""}. Berikan apresiasi dan tantangan baru agar perkembangan ini terus terjaga.`,
         `Perkembangan ${aspectLabel.toLowerCase()} anak terlihat sangat positif berdasarkan pengamatan di rumah. Ia sudah mampu ${primary}${secondary ? ` dan menunjukkan ${secondary}` : ""}. Ini merupakan pencapaian yang patut diapresiasi dan terus dipupuk.`,
         `Aspek ${aspectLabel.toLowerCase()} menjadi salah satu kekuatan nyata anak saat ini. Kemampuan ${primary} sudah berkembang dengan baik${secondary ? `, begitu pula dengan ${secondary}` : ""}. Pertahankan suasana yang mendukung agar fondasi ini semakin kokoh.`,
+        `Observasi keluarga menunjukkan potensi ${aspectLabel.toLowerCase()} yang berkembang optimal. Anak tampak nyaman saat ${primary}${secondary ? `, serta terampil dalam ${secondary}` : ""}. Pengayaan aktivitas secara konsisten akan semakin mengasah kemampuan ini.`,
+        `Capaian anak di bidang ${aspectLabel.toLowerCase()} sudah sangat menggembirakan. ${conn} ${primary}${secondary ? ` dan kecakapan dalam ${secondary}` : ""}. Lingkungan rumah yang hangat menjadi faktor pendukung utama keunggulannya.`,
+        `Fondasi ${aspectLabel.toLowerCase()} anak terbangun dengan kokoh melalui aktivitas harian. Kemampuan ${primary} berjalan alami${secondary ? `, disempurnakan dengan kemampuan ${secondary}` : ""}. Terus berikan dorongan positif agar semangat belajarnya makin membumbung.`,
+        `Pada aspek ${aspectLabel.toLowerCase()}, anak mengekspresikan kematangan yang sangat baik. Kebiasaan ${primary} sudah terbentuk aktif${secondary ? `, sejalan dengan penguasaan ${secondary}` : ""}. Ini merupakan kekuatan internal yang siap ditumbuhkan lebih jauh.`,
+        `Perkembangan positif anak pada ${aspectLabel.toLowerCase()} tercermin dari kemampuannya saat ${primary}${secondary ? `, ditambah kelancaran ${secondary}` : ""}. Dukungan stimulasi yang terarah akan menjaga ritme kemajuan anak.`,
+        `Potensi ${aspectLabel.toLowerCase()} anak tampak sangat menjanjikan dalam observasi harian. Kelincahan dalam ${primary}${secondary ? ` dan keterampilan ${secondary}` : ""} menandai kualifikasi perkembangan yang sehat.`,
+        `Pengamatan dari rumah menegaskan bahwa ${aspectLabel.toLowerCase()} menjadi salah satu pilar kekuatan anak. Ia memperlihatkan kemandirian saat ${primary}${secondary ? ` dan konsistensi ${secondary}` : ""}.`,
+        `Kecakapan anak dalam ${aspectLabel.toLowerCase()} berkembang sangat mengesankan. Kesiapan anak saat ${primary}${secondary ? ` serta penguasaan ${secondary}` : ""} memberikan landasan kokoh bagi tahap perkembangan berikutnya.`,
+        `Capaian pada bidang ${aspectLabel.toLowerCase()} mencerminkan dedikasi stimulasi orang tua di rumah. ${conn} ${primary}${secondary ? ` dan ${secondary}` : ""}. Semangat belajar anak patut terus dijaga secara alami.`,
+        `Prestasi perkembangan ${aspectLabel.toLowerCase()} anak terlihat dari antusiasmenya saat ${primary}${secondary ? `, diiringi kebiasaan ${secondary}` : ""}. Lingkungan belajar yang inklusif akan makin memperkuatnya.`,
+        `Profil ${aspectLabel.toLowerCase()} anak berkembang selaras dengan harapan usia pra-sekolah. Kemampuan ${primary} menjadi indikator positif${secondary ? ` bersama ${secondary}` : ""}. Terus ciptakan momen belajar yang riang.`,
+        `Dalam ${aspectLabel.toLowerCase()}, anak telah memiliki fondasi kokoh untuk melangkah ke tahap selanjutnya. Penguasaan ${primary}${secondary ? ` dan ${secondary}` : ""} menjadi modal berharga baginya.`
       ];
-      return syntheses[seed % syntheses.length];
+      return syntheses[aspectSeed % syntheses.length];
     }
 
     if (pattern === "DOMINANT_HIGH") {
-      // Narasi: kekuatan yang konkret + satu area penguatan yang spesifik
       const primary = highTexts.slice(0, 2).join(" dan ");
       const attentionArea = lowTexts[0] || midTexts[0] || "";
       const syntheses = [
@@ -785,12 +802,23 @@ export function buildTkChildProfile(
         `Kemampuan anak pada ${aspectLabel.toLowerCase()} berkembang dengan baik, terutama saat ${primary}. ${attentionArea ? `Adapun pada area ${attentionArea}, anak masih membutuhkan lebih banyak kesempatan latihan.` : "Pembiasaan bertahap akan semakin memperkuat fondasi yang sudah ada."} Dukungan konsisten dari rumah akan mempercepat perkembangan ini.`,
         `Pengamatan orang tua menunjukkan anak mampu ${primary} dengan cukup baik pada aspek ${aspectLabel.toLowerCase()}. ${attentionArea ? `Di sisi lain, kemampuan ${attentionArea} masih dalam tahap berkembang dan memerlukan latihan yang lebih rutin.` : "Konsistensi pembiasaan harian akan memperkuat aspek ini lebih jauh."} Pendampingan yang hangat akan sangat membantu.`,
         `Profil ${aspectLabel.toLowerCase()} anak menunjukkan kekuatan pada kemampuan ${primary}. ${attentionArea ? `Namun kemampuan ${attentionArea} memerlukan lebih banyak kesempatan untuk berkembang.` : "Pembiasaan teratur akan membantu aspek ini semakin matang."} Orang tua memiliki peran kunci dalam memberikan ruang eksplorasi yang aman.`,
+        `Aspek ${aspectLabel.toLowerCase()} menampilkan kelebihan menonjol ketika anak ${primary}. ${attentionArea ? `Guna mengimbangi kemampuan tersebut, area ${attentionArea} dapat diberi perhatian stimulasi khusus di rumah.` : "Lanjutkan pembiasaan positif yang telah terbangun di lingkungan keluarga."} Pendampingan telaten akan menghasilkan kemajuan berarti.`,
+        `Anak memperlihatkan penguasaan yang menjanjikan dalam ${aspectLabel.toLowerCase()}, khususnya saat ${primary}. ${attentionArea ? `Sementara itu, aspek ${attentionArea} masih memerlukan dorongan latihan secara alami.` : "Rutinitas sehari-hari dapat menjadi sarana mengasah aspek ini lebih lanjut."} Berikan motivasi konsisten dalam setiap usahanya.`,
+        `Pada bidang ${aspectLabel.toLowerCase()}, kecakapan anak dalam ${primary} sudah menjadi modal berharga. ${attentionArea ? `Perhatian lebih dapat difokuskan pada ${attentionArea} agar perkembangannya seimbang.` : "Pertahankan pendekatan belajar santai namun rutin bersama orang tua."} Kunci utamanya ada pada pembiasaan yang konsisten.`,
+        `Pengamatan harian menunjukkan aspek ${aspectLabel.toLowerCase()} berkembang positif, didukung kemampuan ${primary}. ${attentionArea ? `Agar makin padu, latih juga ${attentionArea} melalui aktivitas bermain bersama.` : "Eksplorasi lanjutan akan memperkaya keterampilan anak."} Setiap prosesnya patut didampingi dengan rasa gembira.`,
+        `Keunggulan anak di aspek ${aspectLabel.toLowerCase()} terlihat ketika ${primary}. ${attentionArea ? `Penguatan kecil pada ${attentionArea} akan membuat kemampuannya semakin utuh.` : "Jadikan kegiatan rumahan sebagai arena latihan positif."}`,
+        `Kemampuan ${aspectLabel.toLowerCase()} anak tumbuh sehat dengan fokus pada ${primary}. ${attentionArea ? `Di samping itu, dorongan bertahap untuk ${attentionArea} sangat dianjurkan.` : "Stimulasi santai akan mematangkan potensi anak secara konsisten."}`,
+        `Secara umum ${aspectLabel.toLowerCase()} anak tergolong baik melalui pencapaian ${primary}. ${attentionArea ? `Beberapa penyesuaian latihan pada ${attentionArea} akan memaksimalkan hasil.` : "Pertahankan antusiasme anak melalui dialog hangat."}`,
+        `Potensi ${aspectLabel.toLowerCase()} anak terbukti baik saat ${primary}. ${attentionArea ? `Fokus pendampingan rumah dapat diarahkan pada ${attentionArea}.` : "Beri apresiasi rutin atas setiap pencapaiannya."}`,
+        `Observasi ${aspectLabel.toLowerCase()} menunjukkan penguasaan yang stabil saat ${primary}. ${attentionArea ? `Pendampingan bertahap pada ${attentionArea} akan memperlengkap kecakapannya.` : "Fokus pada penguatan karakter positif."}`,
+        `Lingkungan keluarga mendukung perkembangan ${aspectLabel.toLowerCase()} anak, terutama saat ${primary}. ${attentionArea ? `Berikan dorongan ekstra untuk ${attentionArea} dengan sabar.` : "Lanjutkan kebiasaan baik di rumah."}`,
+        `Pada area ${aspectLabel.toLowerCase()}, anak cukup mahir saat ${primary}. ${attentionArea ? `Area ${attentionArea} bisa dilatih lewat permainan interaktif.` : "Apresiasi anak secara berkala."}`,
+        `Kecakapan ${aspectLabel.toLowerCase()} anak tampak saat ${primary}. ${attentionArea ? `Stimulasi ringan untuk ${attentionArea} disarankan di rumah.` : "Suasana hangat akan menjaga konsistensi belajar anak."}`
       ];
-      return syntheses[seed % syntheses.length];
+      return syntheses[aspectSeed % syntheses.length];
     }
 
     if (pattern === "DOMINANT_LOW") {
-      // Narasi: area spesifik yang perlu perhatian, dengan kekuatan tersisa
       const attentionPrimary = lowTexts.slice(0, 2).join(" dan ");
       const remainingStrength = highTexts[0] || midTexts[0] || "";
       const syntheses = [
@@ -798,12 +826,23 @@ export function buildTkChildProfile(
         `Pada aspek ${aspectLabel.toLowerCase()}, terdapat beberapa hal yang masih perlu diperkuat melalui latihan rutin di rumah. Anak masih dalam proses mengembangkan kemampuan ${attentionPrimary}. ${remainingStrength ? `Kabar baiknya, anak sudah mulai menunjukkan ${remainingStrength}.` : "Dengan pendampingan yang tepat, anak akan bertahap membangun kemampuan ini."} Kesabaran dan kreativitas dalam memilih aktivitas akan sangat membantu.`,
         `Berdasarkan pengamatan orang tua, ${aspectLabel.toLowerCase()} menjadi aspek yang paling membutuhkan fokus stimulasi. Kemampuan ${attentionPrimary} masih perlu dikuatkan melalui pembiasaan bertahap. ${remainingStrength ? `Kekuatan yang terlihat ada pada ${remainingStrength}, yang bisa menjadi jembatan untuk membangun area yang lain.` : "Gunakan pendekatan bermain yang gembira agar anak tidak merasa terbebani."} Jadikan aktivitas sehari-hari sebagai kesempatan belajar yang menyenangkan.`,
         `Dalam aspek ${aspectLabel.toLowerCase()}, anak membutuhkan pendampingan yang lebih terstruktur. Kemampuan ${attentionPrimary} masih dalam tahap awal berkembang dan memerlukan latihan berulang. ${remainingStrength ? `Kemampuan ${remainingStrength} yang sudah ada bisa menjadi titik awal yang baik untuk memperluas stimulasi.` : "Mulailah dari aktivitas sederhana yang sesuai dengan minat anak."} Konsistensi adalah kunci utama dalam mendampingi perkembangan area ini.`,
+        `Pendampingan khusus diperlukan untuk aspek ${aspectLabel.toLowerCase()}, terutama saat anak ${attentionPrimary}. ${remainingStrength ? `Penguatan dapat diawali dari modal kemampuan ${remainingStrength} yang sudah dikuasainya.` : "Gunakan metode permainan santai tanpa membuat anak merasa tertekan."} Bimbingan penuh kasih sayang dari orang tua akan membuahkan hasil positif.`,
+        `Area ${aspectLabel.toLowerCase()} menunjukkan perlunya stimulasi tambahan bagi anak dalam ${attentionPrimary}. ${remainingStrength ? `Di sisi lain, minat anak pada ${remainingStrength} dapat dimanfaatkan sebagai sarana latihan.` : "Lakukan pembiasaan pendek namun rutin setiap harinya."} Dukungan keluarga yang sabar menjadi faktor penentu kemajuannya.`,
+        `Orang tua mencatat bahwa bidang ${aspectLabel.toLowerCase()} memerlukan dorongan lebih saat ${attentionPrimary}. ${remainingStrength ? `Gunakan modal kekuatan ${remainingStrength} untuk menarik rasa ingin tahu anak.` : "Ciptakan suasana belajar yang interaktif dan penuh kejutan menyenangkan."} Langkah bertahap akan membangun kepercayaan dirinya.`,
+        `Proses perkembangan ${aspectLabel.toLowerCase()} anak masih membutuhkan latihan saat ${attentionPrimary}. ${remainingStrength ? `Inisiatif yang terlihat ketika ${remainingStrength} menjadi jembatan berharga.` : "Apresiasi setiap usaha sekecil apa pun untuk menjaga motivasinya."} Pendampingan yang konsisten sangat berarti baginya.`,
+        `Kebutuhan stimulasi ${aspectLabel.toLowerCase()} anak berfokus pada kemampuan ${attentionPrimary}. ${remainingStrength ? `Pengalaman positif saat ${remainingStrength} dapat dijadikan titik lejit latihan.` : "Fokus pada pengulangan yang menyenangkan."}`,
+        `Pendampingan rumah untuk ${aspectLabel.toLowerCase()} difokuskan pada ${attentionPrimary}. ${remainingStrength ? `Gunakan modal ${remainingStrength} untuk menumbuhkan rasa percaya diri anak.` : "Lakukan pendekatan yang fleksibel dan santai."}`,
+        `Area ${aspectLabel.toLowerCase()} memerlukan bimbingan lebih saat ${attentionPrimary}. ${remainingStrength ? `Respons anak saat ${remainingStrength} menunjukkan potensi yang bisa terus diasah.` : "Ciptakan permainan yang melatih area ini."}`,
+        `Pembiasaan ${aspectLabel.toLowerCase()} anak memerlukan dorongan pada ${attentionPrimary}. ${remainingStrength ? `Keterampilan ${remainingStrength} yang sudah ada menjadi pijakan awal.` : "Beri rasa aman agar anak tidak canggung mencoba."}`,
+        `Perhatian terarah pada aspek ${aspectLabel.toLowerCase()} difokuskan saat anak ${attentionPrimary}. ${remainingStrength ? `Kelebihan anak ketika ${remainingStrength} dapat dipadukan dalam sesi bermain.` : "Bangun rutinitas yang membangkitkan semangat."}`,
+        `Aspek ${aspectLabel.toLowerCase()} membutuhkan pendekatan yang sabar pada ${attentionPrimary}. ${remainingStrength ? `Potensi awal saat ${remainingStrength} mendukung proses belajar.` : "Dampingi anak tanpa membandingkan."}`,
+        `Stimulasi ${aspectLabel.toLowerCase()} hendaknya mengutamakan latihan ${attentionPrimary}. ${remainingStrength ? `Respons positif saat ${remainingStrength} adalah sinyal bagus.` : "Fokus pada progres harian anak."}`,
+        `Bimbingan keluarga pada ${aspectLabel.toLowerCase()} dapat diprioritaskan untuk ${attentionPrimary}. ${remainingStrength ? `Daya tarik anak pada ${remainingStrength} mempermudah proses latihan.` : "Beri suasana rumah yang suportif."}`
       ];
-      return syntheses[seed % syntheses.length];
+      return syntheses[aspectSeed % syntheses.length];
     }
 
     if (pattern === "ALL_LOW") {
-      // Narasi: pendampingan terstruktur dengan stimulasi spesifik
       const specificAreas = lowTexts.slice(0, 3);
       const areaDesc = specificAreas.length > 1
         ? specificAreas.slice(0, -1).join(", ") + " serta " + specificAreas[specificAreas.length - 1]
@@ -813,15 +852,25 @@ export function buildTkChildProfile(
         `Pada aspek ${aspectLabel.toLowerCase()}, anak membutuhkan pendampingan yang intensif namun tetap menyenangkan. Kemampuan ${areaDesc} memerlukan lebih banyak kesempatan latihan yang terstruktur. Pastikan setiap sesi latihan dilakukan tanpa tekanan agar anak tetap termotivasi untuk mencoba.`,
         `Pengamatan dari rumah menunjukkan bahwa aspek ${aspectLabel.toLowerCase()} masih membutuhkan perhatian ekstra. Area ${areaDesc} adalah yang paling perlu diperkuat saat ini. Bangun rutinitas latihan harian yang pendek namun konsisten — bahkan 10 menit setiap hari bisa memberikan dampak yang signifikan.`,
         `Dalam aspek ${aspectLabel.toLowerCase()}, anak memerlukan stimulasi yang lebih terarah dan sabar. Kemampuan ${areaDesc} masih dalam tahap yang sangat awal dan membutuhkan pendekatan step-by-step. Jadikan setiap kemajuan kecil sebagai momentum apresiasi yang membangun kepercayaan diri anak.`,
+        `Fokus pendampingan ${aspectLabel.toLowerCase()} disarankan tertuju pada ${areaDesc}. Lakukan kegiatan permainan interaktif sederhana di rumah tanpa membebankan target tinggi. Pendampingan telaten akan membantu anak beradaptasi secara alami.`,
+        `Bimbingan penuh kesabaran sangat dibutuhkan untuk mengasah ${aspectLabel.toLowerCase()}, khususnya dalam ${areaDesc}. Luangkan waktu khusus setiap hari untuk berinteraksi dan melatih kemampuan ini. Proses yang bertahap akan memberikan fondasi yang kuat.`,
+        `Area ${aspectLabel.toLowerCase()} anak memerlukan pendekatan stimulasi terstruktur untuk ${areaDesc}. Buat suasana rumah penuh rasa aman agar anak berani mencoba hal baru. Setiap dukungan hangat orang tua menjadi dorongan semangat yang berarti.`,
+        `Perkembangan ${aspectLabel.toLowerCase()} anak membutuhkan perhatian khusus pada ${areaDesc}. Dampingi anak dengan contoh konkret dan pengulangan yang ramah. Rutinitas positif akan membantu mematangkan keterampilan ini.`,
+        `Aspek ${aspectLabel.toLowerCase()} perlu disikapi dengan pendampingan bertahap pada ${areaDesc}. Pilih aktivitas yang sesuai kesukaan anak.`,
+        `Latihan rutin di rumah untuk ${aspectLabel.toLowerCase()} difokuskan pada ${areaDesc}. Dukungan konsisten dari keluarga akan sangat membantu.`,
+        `Penguatan aspek ${aspectLabel.toLowerCase()} mengutamakan stimulasi ramah pada ${areaDesc}. Berikan pengalaman belajar yang menyenangkan.`,
+        `Perhatian terfokus untuk ${aspectLabel.toLowerCase()} disarankan pada area ${areaDesc}. Hadirkan stimulasi harian secara alami.`,
+        `Stimulasi ${aspectLabel.toLowerCase()} disesuaikan dengan ritme belajar anak pada ${areaDesc}. Pendampingan yang lembut akan membuat anak nyaman.`,
+        `Pengembangan ${aspectLabel.toLowerCase()} diutamakan pada ${areaDesc}. Ciptakan momen kebersamaan yang berkualitas setiap hari.`,
+        `Bimbingan ramah untuk ${aspectLabel.toLowerCase()} diprioritaskan pada ${areaDesc}. Apresiasi setiap langkah kecil yang dicapainya.`,
+        `Proses pematangan ${aspectLabel.toLowerCase()} membutuhkan latihan konsisten pada ${areaDesc}. Kehadiran orang tua menjadi pilar utamanya.`
       ];
-      return syntheses[seed % syntheses.length];
+      return syntheses[aspectSeed % syntheses.length];
     }
 
-    // EMPTY
     return `Untuk aspek ${aspectLabel.toLowerCase()}, data observasi masih terbatas. Stimulasi rutin di rumah akan membantu mengoptimalkan perkembangan pada area ini.`;
   };
 
-  // Filter jawaban per aspek berdasarkan kategori pertanyaan
   const commAns = parsed.filter(a => {
     const c = a.category.toLowerCase();
     return c.includes("bahasa") || c.includes("komunikasi") || c.includes("bicara") || c.includes("bercerita");
@@ -839,10 +888,10 @@ export function buildTkChildProfile(
     return c.includes("kognitif") || c.includes("pikir") || c.includes("angka") || c.includes("huruf") || c.includes("fokus") || c.includes("konsentrasi");
   });
 
-  const communicationPattern = synthesizeAspectNarrative(commAns, "Bahasa & Komunikasi", 1);
-  const socialEmotionalPattern = synthesizeAspectNarrative(socialAns, "Sosial & Emosional", 2);
-  const motorPattern = synthesizeAspectNarrative(motorAns, "Motorik", 3);
-  const cognitivePattern = synthesizeAspectNarrative(cogAns, "Kognitif & Cara Berpikir", 4);
+  const communicationPattern = synthesizeAspectNarrative(commAns, "Bahasa & Komunikasi", 47);
+  const socialEmotionalPattern = synthesizeAspectNarrative(socialAns, "Sosial & Emosional", 71);
+  const motorPattern = synthesizeAspectNarrative(motorAns, "Motorik", 97);
+  const cognitivePattern = synthesizeAspectNarrative(cogAns, "Kognitif & Cara Berpikir", 131);
 
   return {
     dominant_aspects: strongCats.length > 0 ? strongCats : ["Eksplorasi Bermain", "Kreativitas"],
