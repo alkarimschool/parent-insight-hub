@@ -190,6 +190,73 @@ export const LEVEL_TITLES_MAP: Record<EducationLevel, string> = {
   SMA: getAssessmentContent("SMA").title,
 };
 
+export function sanitizeNarrativeText(text: string): string {
+  if (!text || typeof text !== "string") return text;
+
+  let s = text;
+
+  // 1. Perbaiki frasa janggal / redundan / berulang
+  s = s
+    .replace(/\bkemampuan\s+mampu\s+/gi, "kemampuan ")
+    .replace(/\bkecakapan\s+dalam\s+mampu\s+/gi, "kecakapan dalam ")
+    .replace(/\bketerampilan\s+dalam\s+mampu\s+/gi, "keterampilan ")
+    .replace(/\bbakat\s+anak\s+saat\s+mampu\s+/gi, "bakat anak dalam ")
+    .replace(/\blatihan\s+untuk\s+mampu\s+/gi, "latihan agar anak mampu ")
+    .replace(/\bfokuskan\s+stimulasi\s+pada\s+mampu\s+/gi, "fokuskan stimulasi agar anak mampu ")
+    .replace(/\bperkembangan\s+anak\s+terlihat\s+berkembang\b/gi, "perkembangan anak menunjukkan kemajuan positif")
+    .replace(/\bterlihat\s+berkembang\b/gi, "menunjukkan kemajuan positif")
+    .replace(/\bperlu\s+diperkuat\s+dengan\s+penguatan\b/gi, "perlu diperkuat dengan pendampingan bertahap")
+    .replace(/\bstimulasi\s+untuk\s+stimulasi\b/gi, "stimulasi harian")
+    .replace(/\bregulasi\s+emosi\s+yang\s+belum\s+optimal\b/gi, "dukungan dalam mengelola emosi")
+    .replace(/\bpeserta\s+didik\b/gi, "anak")
+    .replace(/\bindividu\b/gi, "anak")
+    .replace(/\banak\s+tersebut\b/gi, "anak");
+
+  // 2. Perbaiki titik sebelum konjungsi di tengah kalimat
+  s = s.replace(/\.\s*(serta|dan|namun|tetapi|sehingga)\b/gi, ", $1");
+
+  // 3. Ganti penggunaan titik koma (;) berlebihan dengan titik (.)
+  s = s.replace(/;\s*/g, ". ");
+
+  // 4. Hapus koma & titik ganda / janggal
+  s = s.replace(/,\s*,/g, ",");
+  s = s.replace(/\.\s*\./g, ".");
+  s = s.replace(/\s*\.\s*,/g, ".");
+  s = s.replace(/\s*,\s*\./g, ".");
+
+  // 5. Hapus spasi berlebih
+  s = s.replace(/\s+/g, " ");
+
+  // 6. Rapikan kapitalisasi awal kalimat setelah titik & pastikan titik penutup
+  const parts = s.split(/(?<=[.!?])\s+/);
+  const cleanedParts = parts.map((part) => {
+    let cleanPart = part.trim();
+    if (!cleanPart) return "";
+    cleanPart = cleanPart.charAt(0).toUpperCase() + cleanPart.slice(1);
+    cleanPart = cleanPart.replace(/\.+$/, ".");
+    if (!cleanPart.endsWith(".") && !cleanPart.endsWith("!") && !cleanPart.endsWith("?")) {
+      cleanPart += ".";
+    }
+    return cleanPart;
+  });
+
+  return cleanedParts.filter(Boolean).join(" ");
+}
+
+export function sanitizeReportPayload(obj: any): any {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === "string") return sanitizeNarrativeText(obj);
+  if (Array.isArray(obj)) return obj.map((item) => sanitizeReportPayload(item));
+  if (typeof obj === "object") {
+    const cleanedObj: any = {};
+    for (const key of Object.keys(obj)) {
+      cleanedObj[key] = sanitizeReportPayload(obj[key]);
+    }
+    return cleanedObj;
+  }
+  return obj;
+}
+
 export function generateFallbackResult(childName: string, parentName: string, avgScore: number, level: EducationLevel, answers: any[] = [], questions: any[] = []) {
 
   const safeLevel = getEducationLevel(level);
@@ -497,15 +564,22 @@ export function generateFallbackResult(childName: string, parentName: string, av
       .reduce((acc, char) => Math.imul(acc, 31) + char.charCodeAt(0), 0)
   );
 
-  const cleanText = (t: string) => t
+  const cleanTextBase = (t: string) => t
     .replace(/^apakah anak\s*/i, "")
     .replace(/^bagaimana\s*/i, "")
     .replace(/^menurut anda[,\s]*/i, "")
     .replace(/^sejauh mana\s*/i, "")
     .replace(/^anak\s+/i, "")
     .replace(/\?$/, "")
+    .replace(/[\.\s]+$/, "")
     .trim()
     .toLowerCase();
+
+  const cleanActionText = (t: string) => {
+    let base = cleanTextBase(t);
+    base = base.replace(/^mampu\s+/i, "");
+    return base;
+  };
 
   // ======================================================
   // STEP 1: Analisis distribusi jawaban per aspek
@@ -531,10 +605,10 @@ export function generateFallbackResult(childName: string, parentName: string, av
     const cat = a.category || "Umum";
     if (a.score <= 2) {
       if (!attentionCatMap[cat]) attentionCatMap[cat] = [];
-      attentionCatMap[cat].push(cleanText(a.text));
+      attentionCatMap[cat].push(cleanActionText(a.text));
     } else if (a.score >= 4) {
       if (!strengthCatMap[cat]) strengthCatMap[cat] = [];
-      strengthCatMap[cat].push(cleanText(a.text));
+      strengthCatMap[cat].push(cleanActionText(a.text));
     }
   });
 
@@ -693,7 +767,7 @@ export function generateFallbackResult(childName: string, parentName: string, av
   ];
   const catatanOrangTua = catatanPool[catatanSeed % catatanPool.length];
 
-  return {
+  return sanitizeReportPayload({
     judul: "LAPORAN PEMETAAN AWAL TUMBUH KEMBANG ANAK",
     status_perkembangan: status_tk,
     kesimpulan_umum_perkembangan: kesimpulanNarasi,
@@ -707,7 +781,7 @@ export function generateFallbackResult(childName: string, parentName: string, av
     potensi_dan_kelebihan: itemStrengths,
     potensi_dan_kelebihan_anak: itemStrengths,
     catatan_untuk_orang_tua: catatanOrangTua
-  };
+  });
 }
 
 async function getOrSeedQuestionsForLevel(level: EducationLevel) {
@@ -1557,6 +1631,8 @@ export async function getAssessmentResultServer(assessmentId: string, clientAdmi
       content.disclaimer_catatan = TK_PARENT_NOTE;
     }
 
+    const cleanContent = sanitizeReportPayload(content);
+
     console.log("[STAGE 10: RESULT_PAGE_RENDERED]", "Successfully fetched result payload for assessment ID:", assessmentId);
 
     return {
@@ -1569,7 +1645,7 @@ export async function getAssessmentResultServer(assessmentId: string, clientAdmi
       class_name: child?.class_name || "",
       parent_name: parentName,
       created_at: assessment?.created_at || cached?.created_at || new Date().toISOString(),
-      content,
+      content: cleanContent,
     };
   }
 

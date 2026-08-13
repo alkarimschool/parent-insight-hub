@@ -693,18 +693,25 @@ export function buildTkChildProfile(
   const strongCats = Object.keys(catAvgs).filter(c => catAvgs[c] >= 4.0);
   const attentionCats = Object.keys(catAvgs).filter(c => catAvgs[c] <= 2.5);
 
-  const clean = (t: string) => t
+  const cleanBase = (t: string) => t
     .replace(/^apakah anak\s*/i, "")
     .replace(/^bagaimana\s*/i, "")
     .replace(/^menurut anda[,\s]*/i, "")
     .replace(/^sejauh mana\s*/i, "")
     .replace(/^anak\s+/i, "")
     .replace(/\?$/, "")
+    .replace(/[\.\s]+$/, "")
     .trim()
     .toLowerCase();
 
-  const strongAspects = highAns.slice(0, 4).map(a => `[${a.category}] ${clean(a.text)}`);
-  const attentionAspects = lowAns.slice(0, 4).map(a => `[${a.category}] ${clean(a.text)}`);
+  const cleanAction = (t: string) => {
+    let base = cleanBase(t);
+    base = base.replace(/^mampu\s+/i, "");
+    return base;
+  };
+
+  const strongAspects = highAns.slice(0, 4).map(a => `[${a.category}] ${cleanAction(a.text)}`);
+  const attentionAspects = lowAns.slice(0, 4).map(a => `[${a.category}] ${cleanAction(a.text)}`);
   const behaviorPatterns: string[] = [];
 
   if (highAns.length >= 8) behaviorPatterns.push("Mampu berkegiatan secara mandiri dengan antusiasme tinggi");
@@ -747,9 +754,9 @@ export function buildTkChildProfile(
     const mids = aspectAns.filter(a => a.score === 3);
     const pattern = getPattern(highs, lows, mids);
 
-    const highTexts = highs.map(h => clean(h.text));
-    const lowTexts = lows.map(l => clean(l.text));
-    const midTexts = mids.map(m => clean(m.text));
+    const highTexts = highs.map(h => cleanAction(h.text));
+    const lowTexts = lows.map(l => cleanAction(l.text));
+    const midTexts = mids.map(m => cleanAction(m.text));
 
     const aspectSeed = Math.abs(
       Math.imul(baseSeed, 134775813) +
@@ -905,7 +912,7 @@ export function buildTkChildProfile(
     independence_pattern: highAns.length > lowAns.length
       ? "Memperlihatkan kemandirian dan inisiatif yang berkembang baik dalam rutinitas harian"
       : "Membutuhkan pendampingan dan pembiasaan bertahap dalam rutinitas harian di rumah",
-    notable_observations: parsed.slice(0, 5).map(a => `${a.category}: ${clean(a.text)} (${a.score}/5)`),
+    notable_observations: parsed.slice(0, 5).map(a => `${a.category}: ${cleanAction(a.text)} (${a.score}/5)`),
     narrative_focus: attentionAspects.length > 0 ? attentionAspects : ["Penguatan Kesiapan Pra-Sekolah"]
   };
 }
